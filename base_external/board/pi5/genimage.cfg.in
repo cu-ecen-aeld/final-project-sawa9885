@@ -1,0 +1,36 @@
+# SD card layout for the Pi 5, laid out like Raspberry Pi OS: an aligned FAT32 boot partition at 8 MiB.
+# Buildroot's stock board/raspberrypi/genimage.cfg.in starts the boot partition at sector 1 with a
+# 32 MB FAT16 filesystem; our Pi 5 never started Linux from that card (see issue #1).
+# post-image.sh fills in the boot file list below.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
+
+image boot.vfat {
+	vfat {
+		extraargs = "-F 32 -n BOOT"
+		files = {
+#BOOT_FILES#
+		}
+	}
+
+	size = 128M
+}
+
+image sdcard.img {
+	hdimage {
+		align = 1M
+	}
+
+	partition boot {
+		partition-type = 0xC
+		bootable = "true"
+		offset = 8M
+		image = "boot.vfat"
+	}
+
+	partition rootfs {
+		partition-type = 0x83
+		image = "rootfs.ext4"
+	}
+}
