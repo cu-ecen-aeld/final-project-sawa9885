@@ -8,6 +8,6 @@ country=US
 network={
 	ssid="YOUR_SSID"
 	psk="YOUR_PASSPHRASE"
-	key_mgmt=WPA-PSK WPA-PSK-SHA256 SAE
-	ieee80211w=1
+	# WPA2-Personal. For a WPA3-only network use: key_mgmt=SAE and ieee80211w=2
+	key_mgmt=WPA-PSK
 }

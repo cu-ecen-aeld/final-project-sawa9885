@@ -37,7 +37,7 @@ wait_for_iface() {
 	[ -d /sys/class/net/$IFACE ]
 }
 
-start() {
+do_start() {
 	provision
 	if [ ! -f "$CONF" ]; then
 		echo "wifi: no $CONF, skipping (put wpa_supplicant.conf on the boot partition)"
@@ -48,11 +48,35 @@ start() {
 		return 1
 	fi
 	printf "Starting wifi on %s: " "$IFACE"
+	# -s: log to syslog, so the report below can include the association log.
 	start-stop-daemon -S -q -p "$WPA_PID" --exec /usr/sbin/wpa_supplicant -- \
-		-B -D nl80211 -i "$IFACE" -c "$CONF" -P "$WPA_PID"
+		-B -s -D nl80211 -i "$IFACE" -c "$CONF" -P "$WPA_PID"
 	# -b: go to the background if there is no lease yet, so boot doesn't block.
 	udhcpc -i "$IFACE" -b -S -p "$DHCP_PID" >/dev/null 2>&1
 	[ $? = 0 ] && echo "OK" || echo "FAIL"
+}
+
+# The gateway runs headless, so write the network state to the boot partition, where it can be
+# read on a laptop if the Pi never shows up on the network. No credentials are logged.
+report() {
+	{
+		echo "== aesd-net.log, uptime $(cut -d' ' -f1 /proc/uptime) s"
+		echo "== ip addr"; ip addr
+		echo "== ip route"; ip route
+		echo "== iw dev"; iw dev
+		echo "== iw $IFACE link"; iw dev "$IFACE" link
+		echo "== $CONF present: $([ -f "$CONF" ] && echo yes || echo no)"
+		echo "== dmesg (wifi)"; dmesg | grep -i -E 'brcm|wlan|cfg80211|ieee80211|firmware'
+		echo "== syslog (wpa_supplicant, udhcpc)"; grep -E 'wpa_supplicant|udhcpc' /var/log/messages | tail -n 60
+	} > /boot/aesd-net.log 2>&1
+	sync
+}
+
+start() {
+	do_start
+	ret=$?
+	(sleep 30; report) >/dev/null 2>&1 &
+	return $ret
 }
 
 stop() {
