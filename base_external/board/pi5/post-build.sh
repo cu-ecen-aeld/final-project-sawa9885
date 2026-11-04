@@ -2,7 +2,7 @@
 # Post-build fixups for the AESD Pi 5 gateway rootfs. Buildroot passes the target directory as $1.
 #
 # This script was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #1): __AI_SESSION_LINK__
+# Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
 
 set -u
 set -e
