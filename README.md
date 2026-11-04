@@ -7,7 +7,24 @@ An 8-channel LoRaWAN gateway built from a Raspberry Pi 5 and a Seeed WM1302 (Sem
 
 ## Build
 
-Build steps will be added in Sprint 1 (`./build.sh` from a clean clone produces `sdcard.img`).
+On an Ubuntu host (24.04 under WSL2 works) with the [Buildroot host packages](https://buildroot.org/downloads/manual/manual.html#requirement-mandatory) installed:
+
+```bash
+git clone --recursive https://github.com/cu-ecen-aeld/final-project-sawa9885.git
+cd final-project-sawa9885
+./build.sh
+```
+
+The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the build output, and `./save_config.sh` saves `menuconfig` changes to `base_external/configs/aesd_pi5_defconfig`.
+
+- Buildroot is a submodule pinned to the 2026.02.3 LTS release. The image starts from Buildroot's `raspberrypi5_defconfig`.
+- `base_external/` is the `BR2_EXTERNAL` tree: the defconfig, board scripts and the rootfs overlay.
+
+## Flash and first boot
+
+1. Write `sdcard.img` to the microSD (Raspberry Pi Imager → "Use custom", or balenaEtcher).
+2. For Wi-Fi, copy `base_external/board/pi5/wpa_supplicant.conf.example` to the card's boot partition as `wpa_supplicant.conf` and fill in the network. At boot, `S41wifi` moves it into the rootfs and deletes it from the boot partition. Credentials are never in the repo.
+3. Boot the Pi and log in over SSH as `root`. Dropbear accepts only the public key that the overlay installs in `/root/.ssh/authorized_keys`; password logins are off. Ethernet (`eth0`) uses DHCP as well.
 
 ## AI use
 

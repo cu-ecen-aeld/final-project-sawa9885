@@ -1,0 +1,3 @@
+# Read by /etc/init.d/S50dropbear. -s disables password logins, so SSH accepts only the keys in
+# /root/.ssh/authorized_keys.
+DROPBEAR_ARGS="-s"

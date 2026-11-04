@@ -1,0 +1,13 @@
+# Copy this file to the boot partition of the flashed microSD as wpa_supplicant.conf and fill in
+# your network. Never commit the filled-in file. On the next boot, /etc/init.d/S41wifi moves it into
+# /etc/wpa_supplicant.conf on the rootfs and deletes it from the boot partition.
+ctrl_interface=/var/run/wpa_supplicant
+update_config=1
+country=US
+
+network={
+	ssid="YOUR_SSID"
+	psk="YOUR_PASSPHRASE"
+	key_mgmt=WPA-PSK WPA-PSK-SHA256 SAE
+	ieee80211w=1
+}

@@ -1,0 +1,81 @@
+#!/bin/sh
+#
+# Start Wi-Fi on wlan0 with wpa_supplicant and get an address with udhcpc.
+#
+# Credentials never live in the repo. At boot, if the FAT boot partition has a wpa_supplicant.conf
+# (added on the laptop after flashing), it is moved into /etc/wpa_supplicant.conf and removed from
+# the boot partition.
+#
+# This script was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #1): __AI_SESSION_LINK__
+
+IFACE=wlan0
+CONF=/etc/wpa_supplicant.conf
+BOOT_CONF=/boot/wpa_supplicant.conf
+WPA_PID=/var/run/wpa_supplicant.${IFACE}.pid
+DHCP_PID=/var/run/udhcpc.${IFACE}.pid
+
+provision() {
+	grep -q ' /boot ' /proc/mounts || mount /boot 2>/dev/null
+	if [ -f "$BOOT_CONF" ]; then
+		echo "wifi: installing $BOOT_CONF as $CONF"
+		# The boot partition may have DOS line endings when edited on Windows.
+		tr -d '\r' < "$BOOT_CONF" > "$CONF.new" && chmod 600 "$CONF.new" && mv "$CONF.new" "$CONF"
+		rm -f "$BOOT_CONF"
+		sync
+	fi
+}
+
+wait_for_iface() {
+	# eudev loads brcmfmac; give the firmware a few seconds to bring up wlan0.
+	n=0
+	while [ ! -d /sys/class/net/$IFACE ] && [ $n -lt 10 ]; do
+		[ $n -eq 0 ] && modprobe brcmfmac 2>/dev/null
+		sleep 1
+		n=$((n + 1))
+	done
+	[ -d /sys/class/net/$IFACE ]
+}
+
+start() {
+	provision
+	if [ ! -f "$CONF" ]; then
+		echo "wifi: no $CONF, skipping (put wpa_supplicant.conf on the boot partition)"
+		return 0
+	fi
+	if ! wait_for_iface; then
+		echo "wifi: $IFACE not found"
+		return 1
+	fi
+	printf "Starting wifi on %s: " "$IFACE"
+	start-stop-daemon -S -q -p "$WPA_PID" --exec /usr/sbin/wpa_supplicant -- \
+		-B -D nl80211 -i "$IFACE" -c "$CONF" -P "$WPA_PID"
+	# -b: go to the background if there is no lease yet, so boot doesn't block.
+	udhcpc -i "$IFACE" -b -S -p "$DHCP_PID" >/dev/null 2>&1
+	[ $? = 0 ] && echo "OK" || echo "FAIL"
+}
+
+stop() {
+	printf "Stopping wifi on %s: " "$IFACE"
+	[ -f "$DHCP_PID" ] && kill "$(cat "$DHCP_PID")" 2>/dev/null
+	start-stop-daemon -K -q -p "$WPA_PID"
+	rm -f "$DHCP_PID" "$WPA_PID"
+	echo "OK"
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		sleep 1
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

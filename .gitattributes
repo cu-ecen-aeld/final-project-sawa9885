@@ -1,0 +1,4 @@
+# Scripts and Buildroot files run on Linux, so keep LF line endings on every checkout.
+* text=auto eol=lf
+*.jpg binary
+*.png binary
