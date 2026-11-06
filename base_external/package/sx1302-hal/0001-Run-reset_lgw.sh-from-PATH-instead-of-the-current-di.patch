@@ -1,0 +1,62 @@
+From: Samuel Walker <112030184+sawa9885@users.noreply.github.com>
+Date: Thu, 5 Nov 2026 12:00:00 -0700
+Subject: [PATCH] Run reset_lgw.sh from PATH instead of the current directory
+
+chip_id and lora_pkt_fwd reset the concentrator with
+system("./reset_lgw.sh ..."), so they only work when started from the
+directory that holds the script. The Buildroot package installs
+reset_lgw.sh in /usr/bin, so call it by name and let the shell find it
+in PATH. Then both tools work from any directory.
+
+This patch was partially generated using Claude Code using the chat session at:
+Link to chat session (issue #3): https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9
+
+Upstream: not sent (board-specific install layout)
+Signed-off-by: Samuel Walker <112030184+sawa9885@users.noreply.github.com>
+---
+diff --git a/packet_forwarder/src/lora_pkt_fwd.c b/packet_forwarder/src/lora_pkt_fwd.c
+index 53661de..0149384 100644
+--- a/packet_forwarder/src/lora_pkt_fwd.c
++++ b/packet_forwarder/src/lora_pkt_fwd.c
+@@ -1641,7 +1641,7 @@ int main(int argc, char ** argv)
+ 
+     if (com_type == LGW_COM_SPI) {
+         /* Board reset */
+-        if (system("./reset_lgw.sh start") != 0) {
++        if (system("reset_lgw.sh start") != 0) {
+             printf("ERROR: failed to reset SX1302, check your reset_lgw.sh script\n");
+             exit(EXIT_FAILURE);
+         }
+@@ -1939,7 +1939,7 @@ int main(int argc, char ** argv)
+ 
+     if (com_type == LGW_COM_SPI) {
+         /* Board reset */
+-        if (system("./reset_lgw.sh stop") != 0) {
++        if (system("reset_lgw.sh stop") != 0) {
+             printf("ERROR: failed to reset SX1302, check your reset_lgw.sh script\n");
+             exit(EXIT_FAILURE);
+         }
+diff --git a/util_chip_id/src/chip_id.c b/util_chip_id/src/chip_id.c
+index ae670b4..fa19ea4 100644
+--- a/util_chip_id/src/chip_id.c
++++ b/util_chip_id/src/chip_id.c
+@@ -150,7 +150,7 @@ int main(int argc, char **argv)
+ 
+     if (com_type == LGW_COM_SPI) {
+         /* Board reset */
+-        if (system("./reset_lgw.sh start") != 0) {
++        if (system("reset_lgw.sh start") != 0) {
+             printf("ERROR: failed to reset SX1302, check your reset_lgw.sh script\n");
+             exit(EXIT_FAILURE);
+         }
+@@ -214,7 +214,7 @@ int main(int argc, char **argv)
+ 
+     if (com_type == LGW_COM_SPI) {
+         /* Board reset */
+-        if (system("./reset_lgw.sh stop") != 0) {
++        if (system("reset_lgw.sh stop") != 0) {
+             printf("ERROR: failed to reset SX1302, check your reset_lgw.sh script\n");
+             exit(EXIT_FAILURE);
+         }
+-- 
+2.43.0

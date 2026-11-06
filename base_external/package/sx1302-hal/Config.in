@@ -1,0 +1,18 @@
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #3): https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9
+config BR2_PACKAGE_SX1302_HAL
+	bool "sx1302-hal"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_LIBGPIOD # reset_lgw.sh calls wm1302-reset.sh, which uses gpioset
+	select BR2_PACKAGE_LIBGPIOD_TOOLS
+	help
+	  Semtech's hardware abstraction layer for SX1302/SX1303
+	  LoRa concentrators (libloragw), with the lora_pkt_fwd
+	  packet forwarder and the util_chip_id tool. Also installs
+	  a reset_lgw.sh for the Seeed WM1302 Pi HAT and a US915
+	  sub-band 2 global_conf.json in /etc/lora_pkt_fwd.
+
+	  https://github.com/Lora-net/sx1302_hal
+
+comment "sx1302-hal needs a toolchain w/ threads"
+	depends on !BR2_TOOLCHAIN_HAS_THREADS
