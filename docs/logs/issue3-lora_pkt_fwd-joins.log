@@ -1,0 +1,310 @@
+wm1302-reset: resetting the SX1302 (GPIO17) and SX1261 (GPIO5) on gpiochip0
+wm1302-reset: done
+*** Packet Forwarder ***
+Version: 2.1.0
+*** SX1302 HAL library version info ***
+Version: 2.1.0;
+***
+INFO: Little endian host
+INFO: found configuration file /etc/lora_pkt_fwd/global_conf.json, parsing it
+INFO: /etc/lora_pkt_fwd/global_conf.json does contain a JSON object named SX130x_conf, parsing SX1302 parameters
+INFO: com_type SPI, com_path /dev/spidev0.0, lorawan_public 1, clksrc 0, full_duplex 0
+INFO: antenna_gain 0 dBi
+INFO: Configuring legacy timestamp
+INFO: Configuring Tx Gain LUT for rf_chain 0 with 16 indexes for sx1250
+INFO: radio 0 enabled (type SX1250), center frequency 904300000, RSSI offset -215.399994, tx enabled 1, single input mode 0
+INFO: radio 1 enabled (type SX1250), center frequency 905000000, RSSI offset -215.399994, tx enabled 0, single input mode 0
+INFO: Lora multi-SF channel 0>  radio 0, IF -400000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 1>  radio 0, IF -200000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 2>  radio 0, IF 0 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 3>  radio 0, IF 200000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 4>  radio 1, IF -300000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 5>  radio 1, IF -100000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 6>  radio 1, IF 100000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora multi-SF channel 7>  radio 1, IF 300000 Hz, 125 kHz bw, SF 5 to 12
+INFO: Lora std channel> radio 0, IF 300000 Hz, 500000 Hz bw, SF 8, Explicit header
+INFO: FSK channel 8 disabled
+INFO: /etc/lora_pkt_fwd/global_conf.json does contain a JSON object named gateway_conf, parsing gateway parameters
+INFO: gateway MAC address is configured to 0016C001F1135844
+INFO: server hostname or IP address is configured to "localhost"
+INFO: upstream port is configured to "1730"
+INFO: downstream port is configured to "1730"
+INFO: downstream keep-alive interval is configured to 10 seconds
+INFO: statistics display interval is configured to 30 seconds
+INFO: upstream PUSH_DATA time-out is configured to 100 ms
+INFO: packets received with a valid CRC will be forwarded
+INFO: packets received with a CRC error will NOT be forwarded
+INFO: packets received with no CRC will NOT be forwarded
+INFO: Reference latitude is configured to 0.000000 deg
+INFO: Reference longitude is configured to 0.000000 deg
+INFO: Reference altitude is configured to 0 meters
+INFO: Beaconing period is configured to 0 seconds
+INFO: Beaconing signal will be emitted at 869525000 Hz
+INFO: Beaconing datarate is set to SF9
+INFO: Beaconing modulation bandwidth is set to 125000Hz
+INFO: Beaconing TX power is set to 14dBm
+INFO: Beaconing information descriptor is set to 0
+INFO: /etc/lora_pkt_fwd/global_conf.json does contain a JSON object named debug_conf, parsing debug parameters
+INFO: got 2 debug reference payload
+INFO: reference payload ID 0 is 0xCAFE1234
+INFO: reference payload ID 1 is 0xCAFE2345
+INFO: setting debug log file name to loragw_hal.log
+Opening SPI communication interface
+Note: chip version is 0x10 (v1.0)
+INFO: using legacy timestamp
+INFO: LoRa Service modem: configuring preamble size to 8 symbols
+ARB: dual demodulation disabled for all SF
+INFO: found temperature sensor on port 0x39
+INFO: [main] concentrator started, packet can now be received
+INFO: concentrator EUI: 0x0016c001f1135844
+
+##### 2026-11-06 05:16:14 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 0 (0 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 30726844
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:16:14 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+##### 2026-11-06 05:16:44 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 60727991
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:16:44 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+INFO: Received pkt from mote: 00000000 (fcnt=0)
+
+JSON up: {"rxpk":[{"jver":1,"tmst":62479295,"chan":8,"rfch":0,"freq":904.600000,"mid":16,"stat":1,"modu":"LORA","datr":"SF8BW500","codr":"4/5","rssis":-68,"lsnr":15.2,"foff":196,"rssi":-68,"size":23,"data":"AAAAAAAAAAAAJIJQ/v9i8qAAAIQ9aG4="}]}
+
+INFO: Received pkt from mote: 00000000 (fcnt=0)
+
+JSON up: {"rxpk":[{"jver":1,"tmst":74616639,"chan":7,"rfch":1,"freq":905.300000,"mid": 8,"stat":1,"modu":"LORA","datr":"SF10BW125","codr":"4/5","rssis":-69,"lsnr":13.2,"foff":242,"rssi":-69,"size":23,"data":"AAAAAAAAAAAAJIJQ/v9i8qABABd3mAU="}]}
+
+INFO: Received pkt from mote: 00000000 (fcnt=0)
+
+JSON up: {"rxpk":[{"jver":1,"tmst":86679689,"chan":3,"rfch":0,"freq":904.500000,"mid": 8,"stat":1,"modu":"LORA","datr":"SF10BW125","codr":"4/5","rssis":-69,"lsnr":13.0,"foff":227,"rssi":-69,"size":23,"data":"AAAAAAAAAAAAJIJQ/v9i8qACAO9no2o="}]}
+
+##### 2026-11-06 05:17:14 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 5
+# CRC_OK: 60.00%, CRC_FAIL: 40.00%, NO_CRC: 0.00%
+# RF packets forwarded: 3 (69 bytes)
+# PUSH_DATA datagrams sent: 4 (863 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 90729112
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:17:14 GMT","rxnb":5,"rxok":3,"rxfw":3,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+##### 2026-11-06 05:17:44 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 120730265
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:17:44 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+##### 2026-11-06 05:18:14 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 150731649
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:18:14 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+##### 2026-11-06 05:18:44 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 180735640
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:18:44 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.8}}
+
+##### 2026-11-06 05:19:14 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 3 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 210736763
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+JSON up: {"stat":{"time":"2026-11-06 05:19:14 GMT","rxnb":0,"rxok":0,"rxfw":0,"ackr":0.0,"dwnb":0,"txnb":0,"temp":29.9}}
+
+##### 2026-11-06 05:19:37 GMT #####
+### [UPSTREAM] ###
+# RF packets received by concentrator: 0
+# CRC_OK: 0.00%, CRC_FAIL: 0.00%, NO_CRC: 0.00%
+# RF packets forwarded: 0 (0 bytes)
+# PUSH_DATA datagrams sent: 1 (123 bytes)
+# PUSH_DATA acknowledged: 0.00%
+### [DOWNSTREAM] ###
+# PULL_DATA sent: 2 (0.00% acknowledged)
+# PULL_RESP(onse) datagrams received: 0 (0 bytes)
+# RF packets sent to concentrator: 0 (0 bytes)
+# TX errors: 0
+### SX1302 Status ###
+# SX1302 counter (INST): 233145973
+# SX1302 counter (PPS):  0
+# BEACON queued: 0
+# BEACON sent so far: 0
+# BEACON rejected: 0
+### [JIT] ###
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+#--------
+src/jitqueue.c:440:jit_print_queue(): INFO: [jit] queue is empty
+### [GPS] ###
+# GPS sync is disabled
+### Concentrator temperature: 30 C ###
+##### END #####
+
+INFO: End of upstream thread
+
+INFO: End of JIT thread
+
+INFO: End of downstream thread
+Closing SPI communication interface
+INFO: concentrator stopped successfully
+INFO: Exiting packet forwarder program
