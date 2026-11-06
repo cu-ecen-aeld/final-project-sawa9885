@@ -1,0 +1,17 @@
+# Raspberry Pi 5 firmware config for the AESD LoRaWAN gateway.
+# Buildroot installs this as config.txt on the boot partition (BR2_PACKAGE_RPI_FIRMWARE_CONFIG_FILE).
+# It is Buildroot's board/raspberrypi5/config_5.txt plus the SPI and I2C settings the WM1302 HAT needs.
+# See https://www.raspberrypi.com/documentation/computers/config_txt.html
+#
+# This file was partially generated using Claude Code using the chat sessions at:
+# Link to chat session (issue #2): https://claude.ai/code/cshk_01CSAPnvczn7U1rhz8Wn7mvALHP1X5aHUucnKHJGvS8E1v
+
+kernel=Image
+
+# Disable overscan assuming the display supports displaying the full resolution
+disable_overscan=1
+
+# WM1302 Pi HAT: the SX1302 is on SPI0 CE0 (/dev/spidev0.0) and its temperature sensor is on
+# I2C1, header pins 3 and 5 (/dev/i2c-1). i2c-dev is loaded at boot by /etc/modules-load.d/wm1302.conf.
+dtparam=spi=on
+dtparam=i2c_arm=on
