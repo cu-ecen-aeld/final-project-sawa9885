@@ -3,7 +3,7 @@
 Results for the five "definition of done" items of issue #4, measured on the Pi 5 with the image built from commit `a611da7` (`sdcard.img` SHA-256 `793aac4c…00a6`, written to the card from the PC and verified by read-back).
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #4): TODO(issue-4-session-link) -->
+     Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh -->
 
 - Gateway: Pi 5 with the Seeed WM1302 Pi HAT (SX1302, US915), Ethernet only. No Wi-Fi file was provisioned, so `wlan0` stays down.
 - Gateway EUI: `0016C001F1135844`, the SX1302's EUI.

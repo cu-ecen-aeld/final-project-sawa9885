@@ -5,7 +5,7 @@
 # wlan0 is not listed here: S41wifi starts it when /etc/wpa_supplicant.conf exists.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #4): TODO(issue-4-session-link)
+# Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
 
 auto lo
 iface lo inet loopback

@@ -3,7 +3,7 @@
 #
 # This script was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
-# Link to chat session (issue #4): TODO(issue-4-session-link)
+# Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
 
 set -u
 set -e
