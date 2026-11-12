@@ -1,0 +1,17 @@
+Nov 12 17:13:50 aesd-pi5 user.notice outage-sim: start: ifplugd stop for 30 s, uptime 151.20 s
+Nov 12 17:13:50 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 down'
+Nov 12 17:13:50 aesd-pi5 user.notice ifplugd.action: eth0 link down, uptime 151.20 s: ifdown
+Nov 12 17:13:50 aesd-pi5 kern.info kernel: [  152.136925] macb 1f00100000.ethernet eth0: Link is Down
+Nov 12 17:13:50 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 12 17:13:50 aesd-pi5 daemon.err ifplugd(eth0): exiting
+Nov 12 17:14:20 aesd-pi5 daemon.info ifplugd(eth0): started: BusyBox v1.37.0 (2026-11-12 09:40:48 MST)
+Nov 12 17:14:20 aesd-pi5 daemon.info ifplugd(eth0): upping interface
+Nov 12 17:14:20 aesd-pi5 daemon.info ifplugd(eth0): using SIOCETHTOOL detection mode
+Nov 12 17:14:20 aesd-pi5 daemon.info ifplugd(eth0): link is down
+Nov 12 17:14:23 aesd-pi5 kern.info kernel: [  185.042250] macb 1f00100000.ethernet eth0: Link is Up - 1Gbps/Full - flow control off
+Nov 12 17:14:24 aesd-pi5 daemon.info ifplugd(eth0): link is up
+Nov 12 17:14:24 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 12 17:14:24 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 185.25 s: ifup
+Nov 12 17:14:27 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 12 17:14:31 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 191.74 s
+Nov 12 17:14:31 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 191.74 s

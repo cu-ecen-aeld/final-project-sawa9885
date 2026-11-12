@@ -71,3 +71,42 @@ UTC now: 2026-11-12 17:12:17
 gateway 92f4b2e8-b047-46a1-859b-b15ad06d79a2 (EUI 0016c001f1135844): ConnectionStatus=Connected LastUplinkReceivedAt=2026-11-12T17:11:51.436146234Z
 ```
 
+## 3. An uplink from a node, with this gateway in its metadata
+
+TODO(issue-4-uplink): not done yet. See "Open items" at the end.
+
+## 4. Station starts at boot and reconnects after the Ethernet cable is pulled
+
+**Start at boot.** `/etc/init.d/S60station` started Station on the first boot of the flashed card with no manual step (section 2): `station: starting /usr/bin/station, uptime 24.82 s`, then two processes, `station --daemon --home /etc/station` (the daemon and its worker). With no `cups.uri` or `tc.uri` in `/etc/station` the script logs `no cups.uri or tc.uri in /etc/station, not starting` and exits 0.
+
+**How eth0 is handled.** BusyBox `ifplugd` (`S41ifplugd`) runs `ifdown eth0` 2 s after the link goes down and `ifup eth0` when it comes back. Before this issue `eth0` was configured once at boot. It did keep asking for a lease in the background, so a cable plugged in late still got an address, but an unplugged cable left the old address and default route in place.
+
+**Cable pull.** The Ethernet cable was pulled out of the Pi by hand for 4 min 14 s and plugged back in. The Pi stayed powered. For this run Station had been restarted with `STATION_LOGLEVEL=VERBOSE` (same binary and `station.conf`), so the log has the `Connected to MUXS` lines. From [logs/issue4-cable-pull-syslog.log](logs/issue4-cable-pull-syslog.log) and [logs/issue4-cable-pull-station.log](logs/issue4-cable-pull-station.log):
+
+| UTC | Event | After link-up |
+|---|---|---|
+| 17:18:58 | `eth0: Link is Down` (cable out) | |
+| 17:19:01 | `ifplugd.action: eth0 link down ... ifdown` | |
+| 17:20:44.6 | Station: `Recv failed`, `Connection to MUXS closed`. It retries every 10, 20, 30, 40, 50 s; each try fails at once with `Failed to get an IP address for the given hostname` | |
+| 17:23:12 | `eth0: Link is Up` (cable in), `ifplugd.action: eth0 link up ... ifup` | 0 s |
+| 17:23:15.6 | Station's next try, 3 s before the lease: fails, `INFOS reconnect backoff 60s (retry 6)` | 3 s |
+| 17:23:18 | `ntp-hook: eth0 has a DHCP lease` | 6 s |
+| 17:24:15.6 | `Connecting to INFOS` | 63 s |
+| 17:24:16.2 | `Connected to MUXS.` | **64 s** |
+| 17:24:18.8 | `Concentrator started`, `Configuring for region: US915` | 67 s |
+
+So the gateway was connected again 64 s after the cable went back in, inside the 2-minute limit. AWS agreed: `ConnectionStatus=Connected`, `LastUplinkReceivedAt=2026-11-12T17:24:16Z`.
+
+Almost all of that time is Station's retry timer, not the network: the lease took 6 s. Station waits 10 s times the retry count between tries, 60 s at most, so this run was close to the worst case for an outage of a few minutes (a try just before the lease, then the full 60 s).
+
+**Short loss (simulated).** `eth0` was taken down for 30 s by stopping `ifplugd` on the Pi, which runs the same `ifdown`, and started again ([logs/issue4-outage-30s-syslog.log](logs/issue4-outage-30s-syslog.log)). The lease was back 7.5 s after link-up with the same address. Station logged nothing: its TLS connection to the LNS survived, and AWS showed the gateway Connected throughout. This was not a cable pull.
+
+## 5. No certificates or keys in the repo
+
+```
+$ git grep -l "BEGIN .*PRIVATE KEY"
+$ echo $?
+1
+```
+
+`.gitignore` (issue #5) excludes `cups.*`, `tc.*`, `*.pem`, `*.key`, `*.crt` and `*.trust`. The gateway's files were created by the AWS CLI straight into a folder outside the repo, copied to the boot partition, and moved into `/etc/station` by `S35provision`. On the Pi they were only ever listed by name, size and mode.
