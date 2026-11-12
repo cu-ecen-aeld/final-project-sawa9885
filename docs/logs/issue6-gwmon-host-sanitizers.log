@@ -1,0 +1,147 @@
+== gcc AddressSanitizer + LeakSanitizer + UndefinedBehaviorSanitizer build
+gcc  -g -O1 -fno-omit-frame-pointer -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=undefined -std=gnu11 -pthread -c -o gwmon.o gwmon.c
+gcc -g -O1 -fno-omit-frame-pointer -Wall -Wextra -Werror -fsanitize=address,undefined -fno-sanitize-recover=undefined -std=gnu11 -pthread  -o gwmon gwmon.o 
+== gwmon host test: gwmon 1.0.0, port 19000, fake watchdog /tmp/tmp.C4YX5EZoUC/fake-watchdog
+== 1. Foreground, status line, clean stop with SIGTERM
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397036s daemon_uptime=0s watchdog=fake wd_timeout=5s wd_interval=1s wd_feeds=1 wd_last_feed_age=0s
+PASS: status line has version, uptime and watchdog state
+PASS: five clients at once each get a status line (5/5)
+PASS: a client that sends data still gets the status line
+PASS: the watchdog is fed on the timer (wd_feeds=4)
+PASS: exit status 0 after SIGTERM (got 0)
+PASS: the last byte written to the watchdog is the magic 'V'
+PASS: every byte before it is a NUL keepalive (5 bytes in total)
+PASS: the syslog output reports the magic close
+    | gwmon[735651]: /tmp/tmp.C4YX5EZoUC/fake-watchdog is not a character device: test mode, nothing resets this machine
+    | gwmon[735651]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Accepted connection from 127.0.0.1
+    | gwmon[735651]: Caught signal 15, exiting
+    | gwmon[735651]: watchdog closed with the magic close after 4 feeds
+== 2. Clean stop with SIGINT
+PASS: gwmon starts and listens
+PASS: exit status 0 after SIGINT (got 0)
+PASS: the last byte written to the watchdog is the magic 'V'
+    | gwmon[735700]: /tmp/tmp.C4YX5EZoUC/fake-watchdog is not a character device: test mode, nothing resets this machine
+    | gwmon[735700]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[735700]: Accepted connection from 127.0.0.1
+    | gwmon[735700]: Caught signal 2, exiting
+    | gwmon[735700]: watchdog closed with the magic close after 1 feeds
+== 3. kill -9: no magic close, so a real watchdog would reset the board
+PASS: gwmon starts and listens
+PASS: the watchdog was fed before the kill (2 bytes)
+PASS: no 'V' was written
+== 4. Daemon mode (-d)
+PASS: gwmon -d returns 0 to the caller (got 0)
+PASS: the daemon listens
+PASS: the daemon is running (pid 735721) and is a session leader
+    status: gwmon 1.0.0 uptime=397041s daemon_uptime=0s watchdog=fake wd_timeout=5s wd_interval=1s wd_feeds=1 wd_last_feed_age=0s
+PASS: the daemon answers with a status line
+PASS: the daemon exits after SIGTERM
+PASS: the last byte written to the watchdog is the magic 'V'
+== 5. Start failures and watchdog states
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397041s daemon_uptime=0s watchdog=disabled
+PASS: -w none reports watchdog=disabled
+PASS: a second gwmon on the same port fails to start (exit status 1)
+    | gwmon[735738]: watchdog disabled (-w none)
+    | gwmon[735738]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[735738]: Accepted connection from 127.0.0.1
+    | gwmon[735738]: Accepted connection from 127.0.0.1
+    | gwmon[735738]: Caught signal 15, exiting
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397041s daemon_uptime=0s watchdog=unavailable
+PASS: a missing device reports watchdog=unavailable
+PASS: gwmon did not create the missing device
+PASS: exit status 0 after SIGTERM (got 0)
+    | gwmon[735751]: cannot open watchdog /tmp/tmp.C4YX5EZoUC/no-such-device: No such file or directory
+    | gwmon[735751]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[735751]: Accepted connection from 127.0.0.1
+    | gwmon[735751]: Accepted connection from 127.0.0.1
+    | gwmon[735751]: Caught signal 15, exiting
+PASS: an interval that is not below the timeout is rejected
+
+RESULT: all checks passed
+rc=0
+
+== gcc ThreadSanitizer build (run under setarch -R: libtsan in gcc 13 cannot map its shadow with ASLR on this kernel)
+gcc  -g -O1 -fno-omit-frame-pointer -Wall -Wextra -Werror -fsanitize=thread -std=gnu11 -pthread -c -o gwmon.o gwmon.c
+gcc -g -O1 -fno-omit-frame-pointer -Wall -Wextra -Werror -fsanitize=thread -std=gnu11 -pthread  -o gwmon gwmon.o 
+== gwmon host test: gwmon 1.0.0, port 19000, fake watchdog /tmp/tmp.LSZ0Teyhz9/fake-watchdog
+== 1. Foreground, status line, clean stop with SIGTERM
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397108s daemon_uptime=0s watchdog=fake wd_timeout=5s wd_interval=1s wd_feeds=1 wd_last_feed_age=0s
+PASS: status line has version, uptime and watchdog state
+PASS: five clients at once each get a status line (5/5)
+PASS: a client that sends data still gets the status line
+PASS: the watchdog is fed on the timer (wd_feeds=4)
+PASS: exit status 0 after SIGTERM (got 0)
+PASS: the last byte written to the watchdog is the magic 'V'
+PASS: every byte before it is a NUL keepalive (5 bytes in total)
+PASS: the syslog output reports the magic close
+    | gwmon[736925]: /tmp/tmp.LSZ0Teyhz9/fake-watchdog is not a character device: test mode, nothing resets this machine
+    | gwmon[736925]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Accepted connection from 127.0.0.1
+    | gwmon[736925]: Caught signal 15, exiting
+    | gwmon[736925]: watchdog closed with the magic close after 4 feeds
+== 2. Clean stop with SIGINT
+PASS: gwmon starts and listens
+PASS: exit status 0 after SIGINT (got 0)
+PASS: the last byte written to the watchdog is the magic 'V'
+    | gwmon[736974]: /tmp/tmp.LSZ0Teyhz9/fake-watchdog is not a character device: test mode, nothing resets this machine
+    | gwmon[736974]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[736974]: Accepted connection from 127.0.0.1
+    | gwmon[736974]: Caught signal 2, exiting
+    | gwmon[736974]: watchdog closed with the magic close after 1 feeds
+== 3. kill -9: no magic close, so a real watchdog would reset the board
+PASS: gwmon starts and listens
+PASS: the watchdog was fed before the kill (2 bytes)
+PASS: no 'V' was written
+== 4. Daemon mode (-d)
+PASS: gwmon -d returns 0 to the caller (got 0)
+PASS: the daemon listens
+PASS: the daemon is running (pid 736996) and is a session leader
+    status: gwmon 1.0.0 uptime=397113s daemon_uptime=0s watchdog=fake wd_timeout=5s wd_interval=1s wd_feeds=1 wd_last_feed_age=0s
+PASS: the daemon answers with a status line
+PASS: the daemon exits after SIGTERM
+PASS: the last byte written to the watchdog is the magic 'V'
+== 5. Start failures and watchdog states
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397113s daemon_uptime=0s watchdog=disabled
+PASS: -w none reports watchdog=disabled
+PASS: a second gwmon on the same port fails to start (exit status 1)
+    | gwmon[737014]: watchdog disabled (-w none)
+    | gwmon[737014]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[737014]: Accepted connection from 127.0.0.1
+    | gwmon[737014]: Accepted connection from 127.0.0.1
+    | gwmon[737014]: Caught signal 15, exiting
+PASS: gwmon starts and listens
+    status: gwmon 1.0.0 uptime=397114s daemon_uptime=0s watchdog=unavailable
+PASS: a missing device reports watchdog=unavailable
+PASS: gwmon did not create the missing device
+PASS: exit status 0 after SIGTERM (got 0)
+    | gwmon[737026]: cannot open watchdog /tmp/tmp.LSZ0Teyhz9/no-such-device: No such file or directory
+    | gwmon[737026]: gwmon 1.0.0 started, status on TCP port 19000
+    | gwmon[737026]: Accepted connection from 127.0.0.1
+    | gwmon[737026]: Accepted connection from 127.0.0.1
+    | gwmon[737026]: Caught signal 15, exiting
+PASS: an interval that is not below the timeout is rejected
+
+RESULT: all checks passed
+rc=0
