@@ -2,3 +2,4 @@
 # Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
 # Menu entries for this tree's packages are added here as they are written (issues #3, #4, #6).
 source "$BR2_EXTERNAL_project_base_PATH/package/sx1302-hal/Config.in"
+source "$BR2_EXTERNAL_project_base_PATH/package/basicstation/Config.in"

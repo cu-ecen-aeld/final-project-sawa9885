@@ -1,0 +1,7 @@
+# Locally computed
+sha256  7e285de94bae1174b4c3496fc3ab15fe67c72f92c0693d2320bafc654a9dfb43  basicstation-v2.0.6.tar.gz
+sha256  4b62aa6a83ad449c68fdd844fc35024586c9faabca3c5a90a2544735b380de5b  sx1302_hal-V2.1.0.tar.gz
+sha256  19e5b81fdac0fe22009b9e2bdcd52d7dcafbf62bc67fc59cf0a76b5b5540d149  mbedtls-2.28.10.tar.bz2
+sha256  2d387eb28ff18d148c93ad69389383bb311fc5d2976e1093a53f359f22893114  LICENSE
+sha256  c2e5aab8fbb007c6ad5188406a785b727c017e49ff84fa4e884c41ecdfbcff30  deps/lgw1302/platform-corecell/LICENSE.TXT
+sha256  9b405ef4c89342f5eae1dd828882f931747f71001cfba7d114801039b52ad09b  deps/mbedtls/platform-corecell/LICENSE

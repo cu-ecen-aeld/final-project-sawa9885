@@ -1,0 +1,23 @@
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): TODO(issue-4-session-link)
+config BR2_PACKAGE_BASICSTATION
+	bool "basicstation"
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on BR2_USE_MMU # fork()
+	select BR2_PACKAGE_SX1302_HAL # S60station reads the gateway EUI with util_chip_id
+	help
+	  Semtech's LoRa Basics Station for SX1302 concentrators
+	  (the "corecell" platform), the gateway program that
+	  AWS IoT Core for LoRaWAN accepts. It is linked statically
+	  with its own patched copy of libloragw and with mbedtls 2.28.
+
+	  Installs /usr/bin/station, /etc/station/station.conf for
+	  the Seeed WM1302 (US915) and the S60station init script.
+	  The CUPS/LNS credentials are not part of the image:
+	  S35provision installs them in /etc/station at boot.
+
+	  https://github.com/lorabasics/basicstation
+
+comment "basicstation needs a toolchain w/ threads"
+	depends on BR2_USE_MMU
+	depends on !BR2_TOOLCHAIN_HAS_THREADS
