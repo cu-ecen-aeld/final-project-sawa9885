@@ -155,10 +155,6 @@ Here the next LNS try happened to fall 3 s after the lease. With the timers abov
 
 ## 5. No certificates or keys in the repo
 
-```
-$ git grep -l "BEGIN .*PRIVATE KEY"
-$ echo $?
-1
-```
+The check from the issue, `git grep -l` for the PEM private-key header line, prints nothing and exits 1 (no match) on this branch. The pattern itself is not written out here, because this file would then match it.
 
 `.gitignore` (issue #5) excludes `cups.*`, `tc.*`, `*.pem`, `*.key`, `*.crt` and `*.trust`. The gateway's files were created by the AWS CLI straight into a folder outside the repo, copied to the boot partition, and moved into `/etc/station` by `S35provision`. On the Pi they were only ever listed by name, size and mode.
