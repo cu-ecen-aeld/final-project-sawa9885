@@ -11,7 +11,7 @@
 | SIGTERM closes the watchdog with the magic close | **Pass.** Watchdog `inactive` after `S99gwmon stop`, Pi still up 30 s later |
 | A host build under Valgrind shows no leaks | **Pass.** Valgrind 3.22.0: 0 errors and no leaks in all 7 gwmon processes of the host test. The AddressSanitizer, LeakSanitizer, UBSan and ThreadSanitizer runs are clean too |
 
-One caveat on the first row: the SD card was not reflashed with the new image. The card holds the image flashed for issue #4 (commit `a611da7`), and the two files this issue adds were copied to it over SSH from the Buildroot output. Their SHA-256 on the Pi equals that of the same files inside the new `rootfs.ext2`. Apart from them, the new image differs from the card only in comment lines (the issue #4 session link).
+One caveat on the first row: the SD card was not reflashed with the new image. The card holds the image flashed for issue #4 (commit `a611da7`), and the two files this issue adds were copied to it over SSH from the Buildroot output. Their SHA-256 on the Pi equals that of the same files inside the new `rootfs.ext2`. (`S99gwmon` was copied once more after the session link was added to its header comment.) Apart from them, the new image differs from the card only in comment lines (the issue #4 session link).
 
 ## Design
 
@@ -50,7 +50,7 @@ After a watchdog reset, sysfs `bootstatus` is 0: this driver does not report tha
 
 Full output: [logs/issue6-bench-pi.log](logs/issue6-bench-pi.log). Package build: [logs/issue6-gwmon-buildroot-pkg.log](logs/issue6-gwmon-buildroot-pkg.log).
 
-**Build.** `make -C buildroot gwmon` cross-compiled `gwmon.c` with `aarch64-linux-gcc` and installed both files; the full `make` then built `sdcard.img`. The image now in the build tree is from commit `e10b233` (SHA-256 `68222ce5…e8e6`); its `gwmon` binary is byte for byte the one tested here (SHA-256 `5f937cca…8569`). The binary is an `ELF 64-bit LSB pie executable, ARM aarch64`, 18 kB stripped.
+**Build.** `make -C buildroot gwmon` cross-compiled `gwmon.c` with `aarch64-linux-gcc` and installed both files; the full `make` then built `sdcard.img`. Later commits changed comments only, and a rebuild from them gives the same `gwmon` binary, byte for byte, as the one tested here (SHA-256 `5f937cca…8569`). The binary is an `ELF 64-bit LSB pie executable, ARM aarch64`, 18 kB stripped.
 
 **Boot start.** After a clean `reboot`, `S99gwmon` had started `/usr/bin/gwmon -d`, and syslog showed:
 
@@ -102,10 +102,9 @@ Under Valgrind, each of the 7 gwmon processes that exit normally reports `All he
 
 The checks cover: the status line format; five clients at once; a client that sends data before reading; feeds arriving on the timer; exit status 0 and a final `V` after SIGTERM and after SIGINT; no `V` after `kill -9`; daemon mode (the caller gets 0, the daemon is a session leader and answers); `watchdog=disabled` and `watchdog=unavailable`; a second instance on the same port failing to start; and a feed interval that isn't below the timeout being rejected.
 
-## Still to do
+## Not done
 
-1. **Optional: a full reflash** with the new `sdcard.img`, to boot the image as built rather than the issue #4 card with two files added. The AWS credential files have to be copied to the boot partition again afterwards (README, "Flash and first boot").
-2. **Session link:** replace `TODO(issue-6-session-link)` (`git grep -l 'TODO(issue-6-session-link)'`).
+**A full reflash** with the new `sdcard.img`, to boot the image as built rather than the issue #4 card with two files added. The AWS credential files have to be copied to the boot partition again afterwards (README, "Flash and first boot").
 
 ## How to repeat the bench tests
 

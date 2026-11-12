@@ -10,7 +10,7 @@
 # base_external/package/gwmon/gwmon.mk).
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #6): TODO(issue-6-session-link)
+# Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
 
 # make predefines CC as "cc", so "CC ?=" would never apply CROSS_COMPILE.
 ifeq ($(origin CC),default)

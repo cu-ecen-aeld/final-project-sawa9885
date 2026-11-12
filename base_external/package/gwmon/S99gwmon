@@ -12,7 +12,7 @@
 #   GWMON_ARGS="-t 15 -i 3"    other watchdog timeout and feed interval
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #6): TODO(issue-6-session-link)
+# Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
 
 NAME=gwmon
 DAEMON=/usr/bin/gwmon

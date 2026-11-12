@@ -89,4 +89,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #3 sx1302_hal package and lora_pkt_fwd | https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9 |
 | #4 Basics Station and AWS IoT Core for LoRaWAN | https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh |
 | #5 Network, time and credential provisioning | https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg |
-| #6 gwmon v1: TCP status server and hardware watchdog | TODO(issue-6-session-link) |
+| #6 gwmon v1: TCP status server and hardware watchdog | https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT |

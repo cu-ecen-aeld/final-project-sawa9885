@@ -39,7 +39,7 @@
  *     loop) leaves the watchdog armed on purpose: the Pi resets wd_timeout seconds later.
  *
  * This file was partially generated using Claude Code using the chat session at:
- * Link to chat session (issue #6): TODO(issue-6-session-link)
+ * Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
  */
 
 #define _GNU_SOURCE
