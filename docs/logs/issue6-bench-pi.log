@@ -1,0 +1,127 @@
+# Issue #6 bench run on the Pi 5, 2026-11-12. Branch issue-6-gwmon-v1 at 41490ca.
+# The card holds the image flashed for issue #4 (a611da7) plus /usr/bin/gwmon and /etc/init.d/S99gwmon from this
+# branch's Buildroot build, copied over SSH. SHA-256 on the Pi and inside the new rootfs.ext2:
+#   5f937cca088017c58206779748607fd21062eff8e0d2f02f96edf0bf422a8569  /usr/bin/gwmon
+#   e9c7dd7e7f06002127f01148d1a1c3c50a6ce9fe4a97622880723c1f1da8d362  /etc/init.d/S99gwmon
+# Lines starting with $ are the commands, run over SSH as root unless marked PC. 192.168.0.103 is the Pi.
+
+== 1. After a clean reboot: boot start and the watchdog driver (on the Pi)
+$ cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"; grep gwmon /var/log/messages
+18.27
+  264 root     /usr/bin/gwmon -d
+  310 root     sh -c cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"; grep gwmon /var/log/messages
+Nov 12 18:16:04 aesd-pi5 daemon.info gwmon[264]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 12 18:16:04 aesd-pi5 daemon.info gwmon[264]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 12 18:16:04 aesd-pi5 daemon.info gwmon[264]: gwmon 1.0.0 started, status on TCP port 9000
+$ ls -l /dev/watchdog /dev/watchdog0; cd /sys/class/watchdog/watchdog0 && grep . identity timeout min_timeout max_timeout nowayout state timeleft
+crw-------    1 root     root       10, 130 Nov 12 18:16 /dev/watchdog
+crw-------    1 root     root      248,   0 Nov 12 18:16 /dev/watchdog0
+identity:Broadcom BCM2835 Watchdog timer
+timeout:10
+min_timeout:1
+max_timeout:0
+nowayout:0
+state:active
+timeleft:9
+$ dmesg | grep -i -E "watchdog|wdt"; uname -r
+[    1.542095] bcm2835-wdt bcm2835-wdt: Poweroff handler already present!
+[    1.548650] bcm2835-wdt bcm2835-wdt: Broadcom BCM2835 watchdog timer
+6.12.61-v8-16k
+
+== 2. Status line from the LAN (PC, WSL): nc -w 3 192.168.0.103 9000 </dev/null; sleep 5; nc -w 3 192.168.0.103 9000 </dev/null
+gwmon 1.0.0 uptime=30s daemon_uptime=25s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=13 wd_last_feed_age=1s
+gwmon 1.0.0 uptime=35s daemon_uptime=31s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=16 wd_last_feed_age=1s
+
+== 3. Clean stop (on the Pi)
+$ /etc/init.d/S99gwmon stop; cat /sys/class/watchdog/watchdog0/state; grep -E "Caught signal|magic close" /var/log/messages | tail -n 2; dmesg | grep "did not stop"; cut -d" " -f1 /proc/uptime; sleep 30; cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"
+Stopping gwmon: OK
+inactive
+Nov 12 18:16:35 aesd-pi5 daemon.info gwmon[264]: Caught signal 15, exiting
+Nov 12 18:16:35 aesd-pi5 daemon.info gwmon[264]: watchdog closed with the magic close after 16 feeds
+36.25
+66.25
+  350 root     sh -c /etc/init.d/S99gwmon stop; cat /sys/class/watchdog/watchdog0/state; grep -E "Caught signal|magic close" /var/log/messages | tail -n 2; dmesg | grep "did not stop"; cut -d" " -f1 /proc/uptime; sleep 30; cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"
+$ /etc/init.d/S99gwmon start; /etc/init.d/S99gwmon start; /etc/init.d/S99gwmon restart; ps | grep "[g]wmon"; cat /sys/class/watchdog/watchdog0/state; grep gwmon /var/log/messages | tail -n 9
+Starting gwmon: OK
+Starting gwmon: FAIL
+Stopping gwmon: OK
+Starting gwmon: OK
+  365 root     sh -c /etc/init.d/S99gwmon start; /etc/init.d/S99gwmon start; /etc/init.d/S99gwmon restart; ps | grep "[g]wmon"; cat /sys/class/watchdog/watchdog0/state; grep gwmon /var/log/messages | tail -n 9
+  375 root     /usr/bin/gwmon -d
+active
+Nov 12 18:16:35 aesd-pi5 daemon.info gwmon[264]: watchdog closed with the magic close after 16 feeds
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[368]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[368]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[368]: gwmon 1.0.0 started, status on TCP port 9000
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[368]: Caught signal 15, exiting
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[368]: watchdog closed with the magic close after 1 feeds
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[375]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[375]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 12 18:17:05 aesd-pi5 daemon.info gwmon[375]: gwmon 1.0.0 started, status on TCP port 9000
+
+== 4. kill -9 (from the PC)
+$ ssh root@pi 'sync; cut -d" " -f1 /proc/uptime; kill -9 $(pidof gwmon); dmesg | tail -n 1; while true; do cut -d" " -f1 /proc/uptime; sleep 0.5; done'
+PC clock at start: 18:17:18 UTC
+80.28
+[   80.971655] watchdog: watchdog0: watchdog left running
+80.29
+80.79
+81.29
+81.79
+82.30
+82.80
+83.30
+83.80
+84.30
+84.80
+85.31
+85.81
+86.31
+86.81
+87.31
+87.81
+88.32
+88.82
+89.32
+89.82
+90.32
+Timeout, server 192.168.0.103 not responding.
+(ssh ended, rc=255)
+PC clock when the connection dropped: 18:17:34 UTC
+$ (after the reset) cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"; cat /sys/class/watchdog/watchdog0/bootstatus /sys/class/watchdog/watchdog0/state; grep gwmon /var/log/messages; /etc/init.d/S60station status
+14.07
+  267 root     /usr/bin/gwmon -d
+  313 root     sh -c cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"; cat /sys/class/watchdog/watchdog0/bootstatus /sys/class/watchdog/watchdog0/state; grep gwmon /var/log/messages; /etc/init.d/S60station status
+0
+active
+Nov 12 18:17:42 aesd-pi5 daemon.info gwmon[267]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 12 18:17:42 aesd-pi5 daemon.info gwmon[267]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 12 18:17:42 aesd-pi5 daemon.info gwmon[267]: gwmon 1.0.0 started, status on TCP port 9000
+station: waiting for the clock
+
+== 5a. Safety catch (on the Pi)
+$ /etc/init.d/S99gwmon stop; touch /boot/gwmon.disable; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"; rm /boot/gwmon.disable; sync; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"
+Stopping gwmon: OK
+gwmon: /boot/gwmon.disable exists, not starting
+  347 root     sh -c /etc/init.d/S99gwmon stop; touch /boot/gwmon.disable; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"; rm /boot/gwmon.disable; sync; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"
+Starting gwmon: OK
+  347 root     sh -c /etc/init.d/S99gwmon stop; touch /boot/gwmon.disable; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"; rm /boot/gwmon.disable; sync; /etc/init.d/S99gwmon start; ps | grep "[g]wmon"
+  359 root     /usr/bin/gwmon -d
+== 5b. A hung gwmon: kill -STOP (from the PC)
+$ ssh root@pi 'sync; cut -d" " -f1 /proc/uptime; kill -STOP $(pidof gwmon); while true; do cut -d" " -f1 /proc/uptime; sleep 0.5; done'
+37.42
+37.43
+Timeout, server 192.168.0.103 not responding.
+(first two lines and the last line shown)
+14.10
+  265 root     /usr/bin/gwmon -d
+== 5b (repeated, to keep the last uptime). Uptime at kill -STOP, then the last two uptimes printed before the reset:
+25.51
+34.53
+35.03
+$ (after the reset, about 60 s later) cut -d" " -f1 /proc/uptime; ps | grep "[g]wmon"; /etc/init.d/S60station status; grep -c "Concentrator started" /var/log/station.log; ls /etc/station | wc -l
+54.03
+  267 root     /usr/bin/gwmon -d
+station: running, pid 314
+1
+20

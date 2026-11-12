@@ -17,23 +17,21 @@
  *   - A ping is a write of any byte to the device (same effect as ioctl WDIOC_KEEPALIVE).
  *   - ioctl WDIOC_SETTIMEOUT sets the timeout in seconds and writes back the value really used.
  *   - "Magic close": writing the character 'V' just before close() stops the watchdog. A close
- *     without it (a crash, kill -9) leaves the watchdog running, the kernel logs
- *     "watchdog0: watchdog did not stop!", and the board resets when the timeout runs out.
- *     With CONFIG_WATCHDOG_NOWAYOUT=y (or the driver's nowayout=1 parameter) even the magic
- *     close does not stop it.
+ *     without it (a crash, kill -9) leaves the watchdog running, the kernel pings it one last
+ *     time and logs "watchdog0: watchdog left running", and the board resets when the timeout
+ *     runs out. With CONFIG_WATCHDOG_NOWAYOUT=y (or the driver's nowayout=1 parameter) even the
+ *     magic close does not stop it.
  *
- * What the Pi 5 is expected to have, read from the kernel source this image pins (raspberrypi/linux
- * 21b41014, 6.12.61) and NOT YET CONFIRMED ON THE BOARD:
+ * The Pi 5's watchdog, read from the kernel source this image pins (raspberrypi/linux 21b41014,
+ * 6.12.61) and confirmed on the board on 2026-11-12 (docs/issue6-gwmon.md):
  *   - Driver bcm2835-wdt (CONFIG_BCM2835_WDT=y in bcm2712_defconfig), a child of the
  *     "brcm,bcm2712-pm" node. Identity string "Broadcom BCM2835 Watchdog timer", options
- *     WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE | WDIOF_KEEPALIVEPING.
+ *     WDIOF_SETTIMEOUT | WDIOF_MAGICCLOSE | WDIOF_KEEPALIVEPING (0x8180).
  *   - Default timeout 15 s, minimum 1 s. The hardware counter holds at most 15.999 s
  *     (max_hw_heartbeat_ms); the watchdog core accepts longer timeouts and pings the hardware
- *     itself in between. gwmon asks for 10 s, so the hardware limit is not involved.
- *   - CONFIG_WATCHDOG_NOWAYOUT is not set in bcm2712_defconfig, so the magic close should work.
- *   To confirm on the board: /sys/class/watchdog/watchdog0/{identity,timeout,nowayout,state},
- *   the "watchdog ..." line gwmon writes to syslog at start, the time from kill -9 to the reset,
- *   and that a watchdog reset really reboots the Pi 5 rather than halting it.
+ *     itself in between. gwmon asks for 10 s and the driver reports 10 s back.
+ *   - CONFIG_WATCHDOG_NOWAYOUT is not set (sysfs nowayout is 0), so the magic close works.
+ *   - Measured: the Pi resets 10.0 to 10.5 s after kill -9 of gwmon and boots again by itself.
  *
  * Shutdown rules:
  *   - SIGINT or SIGTERM: magic close first, then the rest of the cleanup. The Pi keeps running.

@@ -64,7 +64,7 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
 
 ## gwmon
 
-`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. Version 1 is a TCP status server that owns the hardware watchdog. **Tested on the build host only so far**: the Buildroot package and everything on the Pi are still to be checked, see [docs/issue6-gwmon.md](docs/issue6-gwmon.md).
+`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. Version 1 is a TCP status server that owns the hardware watchdog. Test results, on the build host and on the Pi, are in [docs/issue6-gwmon.md](docs/issue6-gwmon.md).
 
 - **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d`. `/etc/init.d/S99gwmon stop|restart` also work. Options go in `GWMON_ARGS` in `/etc/default/gwmon`.
 - **Status:** `nc <pi-address> 9000` prints one line and closes:
