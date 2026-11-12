@@ -1,0 +1,13 @@
+Nov 12 17:18:58 aesd-pi5 kern.info kernel: [  459.476486] macb 1f00100000.ethernet eth0: Link is Down
+Nov 12 17:18:59 aesd-pi5 daemon.info ifplugd(eth0): link is down
+Nov 12 17:19:01 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 down'
+Nov 12 17:19:01 aesd-pi5 user.notice ifplugd.action: eth0 link down, uptime 461.62 s: ifdown
+Nov 12 17:19:01 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 12 17:19:02 aesd-pi5 daemon.info ifplugd(eth0): upping interface
+Nov 12 17:23:12 aesd-pi5 kern.info kernel: [  713.463852] macb 1f00100000.ethernet eth0: Link is Up - 1Gbps/Full - flow control off
+Nov 12 17:23:12 aesd-pi5 daemon.info ifplugd(eth0): link is up
+Nov 12 17:23:12 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 12 17:23:12 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 713.13 s: ifup
+Nov 12 17:23:15 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 12 17:23:18 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 719.39 s
+Nov 12 17:23:18 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 719.39 s

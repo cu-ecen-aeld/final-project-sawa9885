@@ -1,0 +1,126 @@
+#!/bin/sh
+#
+# Start LoRa Basics Station, the LoRaWAN gateway program, as a daemon.
+#
+# Station's home directory is /etc/station. It holds station.conf (from the basicstation package)
+# and the credential files cups.{uri,trust,crt,key} and/or tc.{uri,trust,crt,key}, which
+# S35provision installs from the boot partition. With no .uri file there, this script does nothing
+# and the boot goes on.
+#
+# Before Station starts, this script:
+#   1. resets the WM1302 and reads the SX1302's EUI with util_chip_id (it runs reset_lgw.sh, which
+#      runs wm1302-reset.sh), and writes the EUI to /var/run/station.eui. station.conf names that
+#      file as its "routerid", so the gateway EUI is the concentrator's EUI.
+#   2. waits, in the background, for chronyd to set the clock. The Pi has no RTC battery, and TLS
+#      rejects the server certificates when the date is wrong.
+# Station resets the radio again itself each time it starts it ("radio_init" in station.conf).
+#
+# "station --daemon" keeps a worker process running and restarts it if it dies. It writes its PID
+# to /tmp/station.pid and its log to /var/log/station.log (see station.conf).
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
+
+DAEMON=/usr/bin/station
+STATION_HOME=/etc/station
+SPI_DEV=/dev/spidev0.0
+EUI_FILE=/var/run/station.eui
+# The background job that waits for the clock and then starts Station.
+STARTER_PID=/var/run/station-starter.pid
+# Written by Station itself, in its temp directory.
+STATION_PID=/tmp/station.pid
+# Up to 30 checks, 2 s apart, for chronyd to report a synchronised clock.
+CLOCK_TRIES=30
+
+log() {
+	echo "station: $*"
+	logger -t station "$*"
+}
+
+# Station needs at least one server address. These are all the names it looks for.
+have_uri() {
+	for f in cups cups-bak cups-boot tc tc-bak tc-boot; do
+		[ -s "$STATION_HOME/$f.uri" ] && return 0
+	done
+	return 1
+}
+
+pid_alive() {
+	[ -f "$1" ] && kill -0 "$(cat "$1")" 2>/dev/null
+}
+
+# util_chip_id prints "INFO: concentrator EUI: 0x0016c001f1135844".
+read_eui() {
+	eui=$(util_chip_id -d "$SPI_DEV" 2>/dev/null |
+		sed -n 's/.*concentrator EUI: 0x\([0-9a-fA-F]\{16\}\).*/\1/p')
+	[ -n "$eui" ] || return 1
+	echo "$eui" > "$EUI_FILE"
+}
+
+start() {
+	if ! have_uri; then
+		log "no cups.uri or tc.uri in $STATION_HOME, not starting (see the README, \"Flash and first boot\")"
+		return 0
+	fi
+	if pid_alive "$STATION_PID" || pid_alive "$STARTER_PID"; then
+		log "already running"
+		return 0
+	fi
+	if ! read_eui; then
+		log "could not read the SX1302 EUI on $SPI_DEV, not starting"
+		return 1
+	fi
+	log "gateway EUI $(cat "$EUI_FILE"), starting when the clock is set"
+	(
+		if [ -x /usr/bin/chronyc ] && ! chronyc -n waitsync $CLOCK_TRIES 0 0 2 >/dev/null 2>&1; then
+			logger -t station "clock not synchronised after $((CLOCK_TRIES * 2)) s, starting anyway"
+		fi
+		logger -t station "starting $DAEMON, uptime $(cut -d' ' -f1 /proc/uptime) s"
+		exec "$DAEMON" --daemon --home "$STATION_HOME"
+	) </dev/null >/dev/null 2>&1 &
+	echo $! > "$STARTER_PID"
+}
+
+stop() {
+	if pid_alive "$STARTER_PID"; then
+		kill "$(cat "$STARTER_PID")" 2>/dev/null
+	fi
+	rm -f "$STARTER_PID"
+	if pid_alive "$STATION_PID"; then
+		# Kills the daemon and its worker (SIGINT to the process group, then SIGKILL).
+		"$DAEMON" --kill --home "$STATION_HOME" >/dev/null 2>&1
+		log "stopped"
+	fi
+	rm -f "$STATION_PID"
+}
+
+status() {
+	if pid_alive "$STATION_PID"; then
+		echo "station: running, pid $(cat "$STATION_PID")"
+	elif pid_alive "$STARTER_PID"; then
+		echo "station: waiting for the clock"
+	else
+		echo "station: not running"
+		return 1
+	fi
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		sleep 1
+		start
+		;;
+	status)
+		status
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart|status}"
+		exit 1
+esac

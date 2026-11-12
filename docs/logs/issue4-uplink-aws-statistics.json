@@ -1,0 +1,19 @@
+{
+    "WirelessDeviceId": "905d0b19-a543-4553-a06d-964abbf1fdc5",
+    "LastUplinkReceivedAt": "2026-11-12T18:00:25.222644404Z",
+    "LoRaWAN": {
+        "DevEui": "a0f262fffe507c7c",
+        "FPort": 13,
+        "DataRate": 0,
+        "Frequency": 905300000,
+        "Timestamp": "2026-11-12T18:00:25.222644404Z",
+        "Gateways": [
+            {
+                "GatewayEui": "0016c001f1135844",
+                "Snr": 10.0,
+                "Rssi": -84.0
+            }
+        ],
+        "PublicGateways": []
+    }
+}

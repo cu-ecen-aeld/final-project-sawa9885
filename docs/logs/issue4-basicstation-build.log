@@ -1,0 +1,407 @@
+make: Entering directory '<repo>/buildroot'
+basicstation-v2.0.6.tar.gz: OK (sha256: 7e285de94bae1174b4c3496fc3ab15fe67c72f92c0693d2320bafc654a9dfb43)
+sx1302_hal-V2.1.0.tar.gz: OK (sha256: 4b62aa6a83ad449c68fdd844fc35024586c9faabca3c5a90a2544735b380de5b)
+mbedtls-2.28.10.tar.bz2: OK (sha256: 19e5b81fdac0fe22009b9e2bdcd52d7dcafbf62bc67fc59cf0a76b5b5540d149)
+>>> basicstation v2.0.6 Extracting
+gzip -d -c <repo>/buildroot/dl/basicstation/basicstation-v2.0.6.tar.gz | tar --strip-components=1 -C <repo>/buildroot/output/build/basicstation-v2.0.6   -xf -
+mkdir -p <repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302/platform-corecell <repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell
+gzip -d -c <repo>/buildroot/dl/basicstation/sx1302_hal-V2.1.0.tar.gz | tar --strip-components=1 -C <repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302/platform-corecell  -xf -
+bzcat <repo>/buildroot/dl/basicstation/mbedtls-2.28.10.tar.bz2 | tar --strip-components=1 -C <repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell  -xf -
+>>> basicstation v2.0.6 Patching
+TAR="tar" PATH=<repo>/buildroot/output/host/bin:$PATH support/scripts/apply-patches.sh  <repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302/platform-corecell <repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302 V2.1.0-corecell.patch
+
+Applying V2.1.0-corecell.patch using patch: 
+patching file libloragw/Makefile
+patching file libloragw/inc/loragw_hal.h
+patching file libloragw/inc/loragw_spi.h
+patching file libloragw/inc/loragw_stationlog.h
+patching file libloragw/src/loragw_ad5338r.c
+patching file libloragw/src/loragw_cal.c
+patching file libloragw/src/loragw_com.c
+patching file libloragw/src/loragw_debug.c
+patching file libloragw/src/loragw_hal.c
+patching file libloragw/src/loragw_i2c.c
+patching file libloragw/src/loragw_lbt.c
+patching file libloragw/src/loragw_mcu.c
+patching file libloragw/src/loragw_reg.c
+patching file libloragw/src/loragw_spi.c
+patching file libloragw/src/loragw_sx1302.c
+patching file libloragw/src/loragw_sx1302_rx.c
+patching file libloragw/src/loragw_sx1302_timestamp.c
+patching file libloragw/src/loragw_usb.c
+>>> basicstation v2.0.6 Configuring
+>>> basicstation v2.0.6 Building
+GIT_DIR=. PATH="<repo>/buildroot/output/host/bin:<repo>/buildroot/output/host/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" /usr/bin/make -j17 -C <repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell lib CC="<repo>/buildroot/output/host/bin/aarch64-linux-gcc" AR="<repo>/buildroot/output/host/bin/aarch64-linux-gcc-ar" CFLAGS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1"
+make[1]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell'
+make[2]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell/library'
+  CC    aes.c
+  CC    aesni.c
+  CC    arc4.c
+  CC    aria.c
+  CC    asn1parse.c
+  CC    asn1write.c
+  CC    base64.c
+  CC    bignum.c
+  CC    blowfish.c
+  CC    camellia.c
+  CC    ccm.c
+  CC    chacha20.c
+  CC    chachapoly.c
+  CC    cipher.c
+  CC    cipher_wrap.c
+  CC    cmac.c
+  CC    constant_time.c
+  CC    des.c
+  CC    ctr_drbg.c
+  CC    dhm.c
+  CC    ecdh.c
+  CC    ecdsa.c
+  CC    ecjpake.c
+  CC    ecp.c
+  CC    ecp_curves.c
+  CC    entropy.c
+  CC    entropy_poll.c
+  CC    error.c
+  CC    gcm.c
+  CC    havege.c
+  CC    hkdf.c
+  CC    hmac_drbg.c
+  CC    md.c
+  CC    md2.c
+  CC    md4.c
+  CC    md5.c
+  CC    memory_buffer_alloc.c
+  CC    mps_reader.c
+  CC    mps_trace.c
+  CC    nist_kw.c
+  CC    oid.c
+  CC    padlock.c
+  CC    pem.c
+  CC    pk.c
+  CC    pk_wrap.c
+  CC    pkcs12.c
+  CC    pkcs5.c
+  CC    pkparse.c
+  CC    pkwrite.c
+  CC    platform.c
+  CC    platform_util.c
+  CC    poly1305.c
+  CC    psa_crypto.c
+  CC    psa_crypto_aead.c
+  CC    psa_crypto_cipher.c
+  CC    psa_crypto_client.c
+  CC    psa_crypto_driver_wrappers.c
+  CC    psa_crypto_ecp.c
+  CC    psa_crypto_hash.c
+  CC    psa_crypto_mac.c
+  CC    psa_crypto_rsa.c
+  CC    psa_crypto_se.c
+  CC    psa_crypto_slot_management.c
+  CC    psa_crypto_storage.c
+  CC    psa_its_file.c
+  CC    ripemd160.c
+  CC    rsa.c
+  CC    rsa_internal.c
+  CC    sha1.c
+  CC    sha256.c
+  CC    sha512.c
+  CC    threading.c
+  CC    timing.c
+  CC    version.c
+  CC    version_features.c
+  CC    xtea.c
+  CC    ../3rdparty/everest/library/everest.c
+  CC    ../3rdparty/everest/library/x25519.c
+  CC    ../3rdparty/everest/library/Hacl_Curve25519_joined.c
+  CC    certs.c
+  CC    pkcs11.c
+  CC    x509_create.c
+  CC    x509_crl.c
+  CC    x509.c
+  CC    x509_crt.c
+  CC    x509_csr.c
+  CC    x509write_crt.c
+  CC    x509write_csr.c
+  CC    debug.c
+  CC    net_sockets.c
+  CC    ssl_cache.c
+  CC    ssl_ciphersuites.c
+  CC    ssl_cli.c
+  CC    ssl_cookie.c
+  CC    ssl_msg.c
+  CC    ssl_srv.c
+  CC    ssl_ticket.c
+  CC    ssl_tls.c
+  CC    ssl_tls13_keys.c
+  AR    libmbedx509.a
+  AR    libmbedtls.a
+  AR    libmbedcrypto.a
+make[2]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell/library'
+make[1]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls/platform-corecell'
+GIT_DIR=. PATH="<repo>/buildroot/output/host/bin:<repo>/buildroot/output/host/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" /usr/bin/make -j1  -C <repo>/buildroot/output/build/basicstation-v2.0.6 platform=corecell variant=std TOOLPREFIX="<repo>/buildroot/output/host/bin/aarch64-linux-" CFG.corecell.std="no_rmtsh" CFLAGS.corecell.std="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1" LDFLAGS.corecell="" build-local/bin/crc32 src/kwcrc.h deps
+make[1]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6'
+setup.gmk:60: No toolchain for platform 'corecell' and local arch is not 'arm-linux-gnueabihf'
+mkdir -p build-local/bin
+gcc -std=gnu11 -Isrc -DCFG_prog_crc32 src/crc32.c -o build-local/bin/crc32
+mkdir -p build-local/bin
+gcc -std=gnu11 -Isrc -DCFG_prog_genkwcrcs src/genkwcrcs.c -o build-local/bin/genkwcrcs
+build-local/bin/genkwcrcs $(cat src/kwlist.txt | sed -e '/^#/d;s/[ \t]\+#.*//') > build-local/temp-kwcrc.h
+mv build-local/temp-kwcrc.h src/kwcrc.h
+platform=corecell variant=std /usr/bin/make -C deps/mbedtls
+make[2]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls'
+../../setup.gmk:60: No toolchain for platform 'corecell' and local arch is not 'arm-linux-gnueabihf'
+  CP    libmbedtls.a -> ../../build-corecell-std/lib/libmbedtls.a
+  CP    libmbedx509.a -> ../../build-corecell-std/lib/libmbedx509.a
+  CP    libmbedcrypto.a -> ../../build-corecell-std/lib/libmbedcrypto.a
+  CP    aes.h -> ../../build-corecell-std/include/mbedtls/aes.h
+  CP    aesni.h -> ../../build-corecell-std/include/mbedtls/aesni.h
+  CP    arc4.h -> ../../build-corecell-std/include/mbedtls/arc4.h
+  CP    aria.h -> ../../build-corecell-std/include/mbedtls/aria.h
+  CP    asn1.h -> ../../build-corecell-std/include/mbedtls/asn1.h
+  CP    asn1write.h -> ../../build-corecell-std/include/mbedtls/asn1write.h
+  CP    base64.h -> ../../build-corecell-std/include/mbedtls/base64.h
+  CP    bignum.h -> ../../build-corecell-std/include/mbedtls/bignum.h
+  CP    blowfish.h -> ../../build-corecell-std/include/mbedtls/blowfish.h
+  CP    bn_mul.h -> ../../build-corecell-std/include/mbedtls/bn_mul.h
+  CP    camellia.h -> ../../build-corecell-std/include/mbedtls/camellia.h
+  CP    ccm.h -> ../../build-corecell-std/include/mbedtls/ccm.h
+  CP    certs.h -> ../../build-corecell-std/include/mbedtls/certs.h
+  CP    chacha20.h -> ../../build-corecell-std/include/mbedtls/chacha20.h
+  CP    chachapoly.h -> ../../build-corecell-std/include/mbedtls/chachapoly.h
+  CP    check_config.h -> ../../build-corecell-std/include/mbedtls/check_config.h
+  CP    cipher.h -> ../../build-corecell-std/include/mbedtls/cipher.h
+  CP    cipher_internal.h -> ../../build-corecell-std/include/mbedtls/cipher_internal.h
+  CP    cmac.h -> ../../build-corecell-std/include/mbedtls/cmac.h
+  CP    compat-1.3.h -> ../../build-corecell-std/include/mbedtls/compat-1.3.h
+  CP    config.h -> ../../build-corecell-std/include/mbedtls/config.h
+  CP    config_psa.h -> ../../build-corecell-std/include/mbedtls/config_psa.h
+  CP    constant_time.h -> ../../build-corecell-std/include/mbedtls/constant_time.h
+  CP    ctr_drbg.h -> ../../build-corecell-std/include/mbedtls/ctr_drbg.h
+  CP    debug.h -> ../../build-corecell-std/include/mbedtls/debug.h
+  CP    des.h -> ../../build-corecell-std/include/mbedtls/des.h
+  CP    dhm.h -> ../../build-corecell-std/include/mbedtls/dhm.h
+  CP    ecdh.h -> ../../build-corecell-std/include/mbedtls/ecdh.h
+  CP    ecdsa.h -> ../../build-corecell-std/include/mbedtls/ecdsa.h
+  CP    ecjpake.h -> ../../build-corecell-std/include/mbedtls/ecjpake.h
+  CP    ecp.h -> ../../build-corecell-std/include/mbedtls/ecp.h
+  CP    ecp_internal.h -> ../../build-corecell-std/include/mbedtls/ecp_internal.h
+  CP    entropy.h -> ../../build-corecell-std/include/mbedtls/entropy.h
+  CP    entropy_poll.h -> ../../build-corecell-std/include/mbedtls/entropy_poll.h
+  CP    error.h -> ../../build-corecell-std/include/mbedtls/error.h
+  CP    gcm.h -> ../../build-corecell-std/include/mbedtls/gcm.h
+  CP    havege.h -> ../../build-corecell-std/include/mbedtls/havege.h
+  CP    hkdf.h -> ../../build-corecell-std/include/mbedtls/hkdf.h
+  CP    hmac_drbg.h -> ../../build-corecell-std/include/mbedtls/hmac_drbg.h
+  CP    md.h -> ../../build-corecell-std/include/mbedtls/md.h
+  CP    md2.h -> ../../build-corecell-std/include/mbedtls/md2.h
+  CP    md4.h -> ../../build-corecell-std/include/mbedtls/md4.h
+  CP    md5.h -> ../../build-corecell-std/include/mbedtls/md5.h
+  CP    md_internal.h -> ../../build-corecell-std/include/mbedtls/md_internal.h
+  CP    memory_buffer_alloc.h -> ../../build-corecell-std/include/mbedtls/memory_buffer_alloc.h
+  CP    net.h -> ../../build-corecell-std/include/mbedtls/net.h
+  CP    net_sockets.h -> ../../build-corecell-std/include/mbedtls/net_sockets.h
+  CP    nist_kw.h -> ../../build-corecell-std/include/mbedtls/nist_kw.h
+  CP    oid.h -> ../../build-corecell-std/include/mbedtls/oid.h
+  CP    padlock.h -> ../../build-corecell-std/include/mbedtls/padlock.h
+  CP    pem.h -> ../../build-corecell-std/include/mbedtls/pem.h
+  CP    pk.h -> ../../build-corecell-std/include/mbedtls/pk.h
+  CP    pk_internal.h -> ../../build-corecell-std/include/mbedtls/pk_internal.h
+  CP    pkcs11.h -> ../../build-corecell-std/include/mbedtls/pkcs11.h
+  CP    pkcs12.h -> ../../build-corecell-std/include/mbedtls/pkcs12.h
+  CP    pkcs5.h -> ../../build-corecell-std/include/mbedtls/pkcs5.h
+  CP    platform.h -> ../../build-corecell-std/include/mbedtls/platform.h
+  CP    platform_time.h -> ../../build-corecell-std/include/mbedtls/platform_time.h
+  CP    platform_util.h -> ../../build-corecell-std/include/mbedtls/platform_util.h
+  CP    poly1305.h -> ../../build-corecell-std/include/mbedtls/poly1305.h
+  CP    psa_util.h -> ../../build-corecell-std/include/mbedtls/psa_util.h
+  CP    ripemd160.h -> ../../build-corecell-std/include/mbedtls/ripemd160.h
+  CP    rsa.h -> ../../build-corecell-std/include/mbedtls/rsa.h
+  CP    rsa_internal.h -> ../../build-corecell-std/include/mbedtls/rsa_internal.h
+  CP    sha1.h -> ../../build-corecell-std/include/mbedtls/sha1.h
+  CP    sha256.h -> ../../build-corecell-std/include/mbedtls/sha256.h
+  CP    sha512.h -> ../../build-corecell-std/include/mbedtls/sha512.h
+  CP    ssl.h -> ../../build-corecell-std/include/mbedtls/ssl.h
+  CP    ssl_cache.h -> ../../build-corecell-std/include/mbedtls/ssl_cache.h
+  CP    ssl_ciphersuites.h -> ../../build-corecell-std/include/mbedtls/ssl_ciphersuites.h
+  CP    ssl_cookie.h -> ../../build-corecell-std/include/mbedtls/ssl_cookie.h
+  CP    ssl_internal.h -> ../../build-corecell-std/include/mbedtls/ssl_internal.h
+  CP    ssl_ticket.h -> ../../build-corecell-std/include/mbedtls/ssl_ticket.h
+  CP    threading.h -> ../../build-corecell-std/include/mbedtls/threading.h
+  CP    timing.h -> ../../build-corecell-std/include/mbedtls/timing.h
+  CP    version.h -> ../../build-corecell-std/include/mbedtls/version.h
+  CP    x509.h -> ../../build-corecell-std/include/mbedtls/x509.h
+  CP    x509_crl.h -> ../../build-corecell-std/include/mbedtls/x509_crl.h
+  CP    x509_crt.h -> ../../build-corecell-std/include/mbedtls/x509_crt.h
+  CP    x509_csr.h -> ../../build-corecell-std/include/mbedtls/x509_csr.h
+  CP    xtea.h -> ../../build-corecell-std/include/mbedtls/xtea.h
+make[2]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/mbedtls'
+platform=corecell variant=std /usr/bin/make -C deps/lgw1302
+make[2]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302'
+../../setup.gmk:60: No toolchain for platform 'corecell' and local arch is not 'arm-linux-gnueabihf'
+/usr/bin/make -C platform-corecell/libloragw libloragw.a CC="<repo>/buildroot/output/host/bin/aarch64-linux-gcc" AR="<repo>/buildroot/output/host/bin/aarch64-linux-ar" LD="<repo>/buildroot/output/host/bin/aarch64-linux-ld" TDfull="<repo>/buildroot/output/build/basicstation-v2.0.6" EXTRA_CFLAGS="-DNODEBUG       -DSTATIONLOG  "
+make[3]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302/platform-corecell/libloragw'
+*** Checking libloragw library configuration ***
+#File initialization
+# Release version
+Release version   : 2.1.0
+# Debug options
+# end of file
+*** Configuration seems ok ***
+mkdir -p obj
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_spi.c -o obj/loragw_spi.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_usb.c -o obj/loragw_usb.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_com.c -o obj/loragw_com.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_mcu.c -o obj/loragw_mcu.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_i2c.c -o obj/loragw_i2c.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx125x_spi.c -o obj/sx125x_spi.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx125x_com.c -o obj/sx125x_com.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1250_spi.c -o obj/sx1250_spi.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1250_usb.c -o obj/sx1250_usb.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1250_com.c -o obj/sx1250_com.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1261_spi.c -o obj/sx1261_spi.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1261_usb.c -o obj/sx1261_usb.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/sx1261_com.c -o obj/sx1261_com.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_aux.c -o obj/loragw_aux.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_reg.c -o obj/loragw_reg.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx1250.c -o obj/loragw_sx1250.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx1261.c -o obj/loragw_sx1261.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx125x.c -o obj/loragw_sx125x.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx1302.c -o obj/loragw_sx1302.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_cal.c -o obj/loragw_cal.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_debug.c -o obj/loragw_debug.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_hal.c -o obj/loragw_hal.o
+src/loragw_hal.c: In function ‘is_same_pkt’:
+src/loragw_hal.c:262:14: warning: taking the absolute value of unsigned type ‘uint32_t’ {aka ‘unsigned int’} has no effect [-Wabsolute-value]
+  262 |         if ((abs(p1->count_us - p2->count_us) <= 24) &&
+      |              ^~~
+src/loragw_hal.c: In function ‘lgw_debug_setconf’:
+src/loragw_hal.c:842:29: warning: the comparison will always evaluate as ‘true’ for the address of ‘log_file_name’ will never be NULL [-Waddress]
+  842 |     if (conf->log_file_name != NULL) {
+      |                             ^~
+In file included from src/loragw_hal.c:37:
+inc/loragw_hal.h:307:10: note: ‘log_file_name’ declared here
+  307 |     char log_file_name[128];
+      |          ^~~~~~~~~~~~~
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_lbt.c -o obj/loragw_lbt.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_stts751.c -o obj/loragw_stts751.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_gps.c -o obj/loragw_gps.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx1302_timestamp.c -o obj/loragw_sx1302_timestamp.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_sx1302_rx.c -o obj/loragw_sx1302_rx.o
+<repo>/buildroot/output/host/bin/aarch64-linux-gcc -c -O2 -Wall -Wextra -std=c99 -Iinc -I. -I../libtools/inc -DNODEBUG       -DSTATIONLOG   src/loragw_ad5338r.c -o obj/loragw_ad5338r.o
+<repo>/buildroot/output/host/bin/aarch64-linux-ar rcs libloragw.a obj/loragw_spi.o obj/loragw_usb.o obj/loragw_com.o obj/loragw_mcu.o obj/loragw_i2c.o obj/sx125x_spi.o obj/sx125x_com.o obj/sx1250_spi.o obj/sx1250_usb.o obj/sx1250_com.o obj/sx1261_spi.o obj/sx1261_usb.o obj/sx1261_com.o obj/loragw_aux.o obj/loragw_reg.o obj/loragw_sx1250.o obj/loragw_sx1261.o obj/loragw_sx125x.o obj/loragw_sx1302.o obj/loragw_cal.o obj/loragw_debug.o obj/loragw_hal.o obj/loragw_lbt.o obj/loragw_stts751.o obj/loragw_gps.o obj/loragw_sx1302_timestamp.o obj/loragw_sx1302_rx.o obj/loragw_ad5338r.o
+make[3]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302/platform-corecell/libloragw'
+  CP    libloragw.a -> ../../build-corecell-std/lib/liblgw1302.a
+  CP    loragw_ad5338r.h -> ../../build-corecell-std/include/lgw/loragw_ad5338r.h
+  CP    loragw_agc_params.h -> ../../build-corecell-std/include/lgw/loragw_agc_params.h
+  CP    loragw_aux.h -> ../../build-corecell-std/include/lgw/loragw_aux.h
+  CP    loragw_cal.h -> ../../build-corecell-std/include/lgw/loragw_cal.h
+  CP    loragw_com.h -> ../../build-corecell-std/include/lgw/loragw_com.h
+  CP    loragw_debug.h -> ../../build-corecell-std/include/lgw/loragw_debug.h
+  CP    loragw_gps.h -> ../../build-corecell-std/include/lgw/loragw_gps.h
+  CP    loragw_hal.h -> ../../build-corecell-std/include/lgw/loragw_hal.h
+  CP    loragw_i2c.h -> ../../build-corecell-std/include/lgw/loragw_i2c.h
+  CP    loragw_lbt.h -> ../../build-corecell-std/include/lgw/loragw_lbt.h
+  CP    loragw_mcu.h -> ../../build-corecell-std/include/lgw/loragw_mcu.h
+  CP    loragw_reg.h -> ../../build-corecell-std/include/lgw/loragw_reg.h
+  CP    loragw_spi.h -> ../../build-corecell-std/include/lgw/loragw_spi.h
+  CP    loragw_stationlog.h -> ../../build-corecell-std/include/lgw/loragw_stationlog.h
+  CP    loragw_stts751.h -> ../../build-corecell-std/include/lgw/loragw_stts751.h
+  CP    loragw_sx1250.h -> ../../build-corecell-std/include/lgw/loragw_sx1250.h
+  CP    loragw_sx125x.h -> ../../build-corecell-std/include/lgw/loragw_sx125x.h
+  CP    loragw_sx1261.h -> ../../build-corecell-std/include/lgw/loragw_sx1261.h
+  CP    loragw_sx1302.h -> ../../build-corecell-std/include/lgw/loragw_sx1302.h
+  CP    loragw_sx1302_rx.h -> ../../build-corecell-std/include/lgw/loragw_sx1302_rx.h
+  CP    loragw_sx1302_timestamp.h -> ../../build-corecell-std/include/lgw/loragw_sx1302_timestamp.h
+  CP    loragw_usb.h -> ../../build-corecell-std/include/lgw/loragw_usb.h
+  CP    sx1250_com.h -> ../../build-corecell-std/include/lgw/sx1250_com.h
+  CP    sx1250_defs.h -> ../../build-corecell-std/include/lgw/sx1250_defs.h
+  CP    sx1250_spi.h -> ../../build-corecell-std/include/lgw/sx1250_spi.h
+  CP    sx1250_usb.h -> ../../build-corecell-std/include/lgw/sx1250_usb.h
+  CP    sx125x_com.h -> ../../build-corecell-std/include/lgw/sx125x_com.h
+  CP    sx125x_spi.h -> ../../build-corecell-std/include/lgw/sx125x_spi.h
+  CP    sx1261_com.h -> ../../build-corecell-std/include/lgw/sx1261_com.h
+  CP    sx1261_defs.h -> ../../build-corecell-std/include/lgw/sx1261_defs.h
+  CP    sx1261_spi.h -> ../../build-corecell-std/include/lgw/sx1261_spi.h
+  CP    sx1261_usb.h -> ../../build-corecell-std/include/lgw/sx1261_usb.h
+  CP    config.h -> ../../build-corecell-std/include/lgw/config.h
+make[2]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/deps/lgw1302'
+make[1]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6'
+GIT_DIR=. PATH="<repo>/buildroot/output/host/bin:<repo>/buildroot/output/host/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" /usr/bin/make -j17 -C <repo>/buildroot/output/build/basicstation-v2.0.6 platform=corecell variant=std TOOLPREFIX="<repo>/buildroot/output/host/bin/aarch64-linux-" CFG.corecell.std="no_rmtsh" CFLAGS.corecell.std="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1" LDFLAGS.corecell="" s-all
+make[1]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6'
+setup.gmk:60: No toolchain for platform 'corecell' and local arch is not 'arm-linux-gnueabihf'
+mkdir -p build-corecell-std/s2core build-corecell-std/bin build-corecell-std/lib
+cd build-corecell-std/s2core && (	echo "platform=corecell"; \
+		echo "variant=std"; \
+		echo "TD=../.."; \
+		echo "-include ../../makefile.corecell"; \
+		echo "include ../../makefile.s2core") > makefile
+/usr/bin/make -C build-corecell-std/s2core all
+make[2]: Entering directory '<repo>/buildroot/output/build/basicstation-v2.0.6/build-corecell-std/s2core'
+../../setup.gmk:60: No toolchain for platform 'corecell' and local arch is not 'arm-linux-gnueabihf'
+ [arm-linux-gnueabihf] CC   aio.o
+ [arm-linux-gnueabihf] CC   argp.o
+ [arm-linux-gnueabihf] CC   crc32.o
+ [arm-linux-gnueabihf] CC   cups.o
+ [arm-linux-gnueabihf] CC   flashsim.o
+ [arm-linux-gnueabihf] CC   fs.o
+ [arm-linux-gnueabihf] CC   genkwcrcs.o
+ [arm-linux-gnueabihf] CC   lgwsim.o
+ [arm-linux-gnueabihf] CC   log.o
+ [arm-linux-gnueabihf] CC   lora.o
+ [arm-linux-gnueabihf] CC   net.o
+ [arm-linux-gnueabihf] CC   ral.o
+ [arm-linux-gnueabihf] CC   ral_lgw.o
+ [arm-linux-gnueabihf] CC   ral_lgw2.o
+ [arm-linux-gnueabihf] CC   rt.o
+ [arm-linux-gnueabihf] CC   s2conf.o
+ [arm-linux-gnueabihf] CC   s2e.o
+ [arm-linux-gnueabihf] CC   selftest_fs.o
+ [arm-linux-gnueabihf] CC   selftest_lora.o
+ [arm-linux-gnueabihf] CC   selftest_rt.o
+ [arm-linux-gnueabihf] CC   selftest_ujdec.o
+ [arm-linux-gnueabihf] CC   selftest_ujenc.o
+ [arm-linux-gnueabihf] CC   selftest_xprintf.o
+ [arm-linux-gnueabihf] CC   selftest_xq.o
+ [arm-linux-gnueabihf] CC   selftests.o
+ [arm-linux-gnueabihf] CC   sx1301v2conf.o
+ [arm-linux-gnueabihf] CC   sx130xconf.o
+ [arm-linux-gnueabihf] CC   sys.o
+ [arm-linux-gnueabihf] CC   tc.o
+ [arm-linux-gnueabihf] CC   timesync.o
+ [arm-linux-gnueabihf] CC   tls.o
+ [arm-linux-gnueabihf] CC   uj.o
+ [arm-linux-gnueabihf] CC   web.o
+ [arm-linux-gnueabihf] CC   xq.o
+ [arm-linux-gnueabihf] CC   cmdfifo.o
+ [arm-linux-gnueabihf] CC   commands.o
+ [arm-linux-gnueabihf] CC   gps.o
+ [arm-linux-gnueabihf] CC   leds.o
+ [arm-linux-gnueabihf] CC   ral_master.o
+ [arm-linux-gnueabihf] CC   ral_slave.o
+ [arm-linux-gnueabihf] CC   rmtsh.o
+ [arm-linux-gnueabihf] CC   station_main.o
+../../src-linux/gps.c: In function ‘nmea_gga’:
+../../src-linux/gps.c:342:9: warning: this ‘while’ clause does not guard... [-Wmisleading-indentation]
+  342 |         while (pp[len]>31 && pp[len]<128 && ++len );
+      |         ^~~~~
+In file included from ../../src-linux/gps.c:46:
+../../src/rt.h:150:30: note: ...this statement, but the latter is misleadingly indented as if it were guarded by the ‘while’
+  150 | #define LOG(level, fmt, ...) {                                  \
+      |                              ^
+../../src-linux/gps.c:343:9: note: in expansion of macro ‘LOG’
+  343 |         LOG(MOD_GPS|ERROR, "Failed to parse GPS GGA sentence: (len=%d) %.*s", len, len, pp);
+      |         ^~~
+ [arm-linux-gnueabihf] CC   sys_linux.o
+ [arm-linux-gnueabihf] CC   sys_log.o
+ [arm-linux-gnueabihf] CC   web_linux.o
+ [arm-linux-gnueabihf] AR   ../lib/libs2core.a
+ [arm-linux-gnueabihf] CC   ../bin/station
+ platform=corecell variant=std STATION EXE built
+make[2]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6/build-corecell-std/s2core'
+make[1]: Leaving directory '<repo>/buildroot/output/build/basicstation-v2.0.6'
+>>> basicstation v2.0.6 Installing to target
+/usr/bin/install -D -m 0755 <repo>/buildroot/output/build/basicstation-v2.0.6/build-corecell-std/bin/station <repo>/buildroot/output/target/usr/bin/station
+/usr/bin/install -D -m 0644 <repo>/base_external/package/basicstation/station.conf <repo>/buildroot/output/target/etc/station/station.conf
+echo "2.0.6" > <repo>/buildroot/output/target/etc/station/version.txt
+/usr/bin/install -D -m 0755 <repo>/base_external/package/basicstation/S60station <repo>/buildroot/output/target/etc/init.d/S60station
+make: Leaving directory '<repo>/buildroot'

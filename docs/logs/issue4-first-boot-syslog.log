@@ -1,0 +1,19 @@
+Nov 12 17:11:22 aesd-pi5 user.notice provision: installed /etc/station/cups.uri
+Nov 12 17:11:22 aesd-pi5 user.notice provision: installed /etc/station/cups.trust
+Nov 12 17:11:22 aesd-pi5 user.notice provision: installed /etc/station/cups.crt
+Nov 12 17:11:22 aesd-pi5 user.notice provision: installed /etc/station/cups.key
+Nov 12 17:11:22 aesd-pi5 daemon.info ifplugd(eth0): started: BusyBox v1.37.0 (2026-11-12 09:40:48 MST)
+Nov 12 17:11:22 aesd-pi5 daemon.info ifplugd(eth0): upping interface
+Nov 12 17:11:22 aesd-pi5 daemon.info chronyd[256]: chronyd version 4.8 starting (+CMDMON +REFCLOCK +RTC +PRIVDROP -SCFILTER -SIGND -NTS -SECHASH +IPV6 -DEBUG)
+Nov 12 17:11:22 aesd-pi5 daemon.info ifplugd(eth0): using SIOCETHTOOL detection mode
+Nov 12 17:11:22 aesd-pi5 daemon.info ifplugd(eth0): link is down
+Nov 12 17:11:24 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 12 17:11:25 aesd-pi5 kern.info kernel: [    6.778306] macb 1f00100000.ethernet eth0: Link is Up - 1Gbps/Full - flow control off
+Nov 12 17:11:26 aesd-pi5 daemon.info ifplugd(eth0): link is up
+Nov 12 17:11:26 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 12 17:11:26 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 7.30 s: ifup
+Nov 12 17:11:29 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 12 17:11:32 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 13.58 s
+Nov 12 17:11:42 aesd-pi5 daemon.info chronyd[256]: Selected source 66.175.236.237 (pool.ntp.org)
+Nov 12 17:11:42 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 23.59 s
+Nov 12 17:11:44 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 24.82 s

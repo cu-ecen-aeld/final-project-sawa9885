@@ -3,3 +3,4 @@
 # Menu entries for this tree's packages are added here as they are written (issues #3, #4, #6).
 source "$BR2_EXTERNAL_project_base_PATH/package/gwmon/Config.in"
 source "$BR2_EXTERNAL_project_base_PATH/package/sx1302-hal/Config.in"
+source "$BR2_EXTERNAL_project_base_PATH/package/basicstation/Config.in"

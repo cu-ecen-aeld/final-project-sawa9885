@@ -1,0 +1,14 @@
+# Network interfaces for the AESD Pi 5 gateway. This replaces the file Buildroot generates.
+#
+# eth0 has no "auto" line on purpose: S40network ("ifup -a") only brings up the loopback, and
+# ifplugd (S41ifplugd) runs "ifup eth0" / "ifdown eth0" as the Ethernet cable is plugged in or out.
+# wlan0 is not listed here: S41wifi starts it when /etc/wpa_supplicant.conf exists.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
+
+auto lo
+iface lo inet loopback
+
+iface eth0 inet dhcp
+  hostname $(hostname)

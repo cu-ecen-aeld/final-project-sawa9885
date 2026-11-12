@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Run by ifplugd (see /etc/init.d/S41ifplugd) with the interface in $1 and "up" or "down" in $2.
+#
+# up:   "ifup" starts udhcpc as configured in /etc/network/interfaces. udhcpc goes to the
+#       background if there is no answer yet and keeps asking, so a slow DHCP server is fine.
+# down: "ifdown" stops udhcpc and removes the address and the routes.
+#
+# The uptime is logged with each event, to measure how long a reconnect takes:
+#   grep -E 'ifplugd|ntp-hook' /var/log/messages
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
+
+IFACE=$1
+EVENT=$2
+
+uptime_s() {
+	cut -d' ' -f1 /proc/uptime
+}
+
+case "$EVENT" in
+	up)
+		logger -t ifplugd.action "$IFACE link up, uptime $(uptime_s) s: ifup"
+		ifup "$IFACE"
+		;;
+	down)
+		logger -t ifplugd.action "$IFACE link down, uptime $(uptime_s) s: ifdown"
+		ifdown "$IFACE"
+		;;
+	*)
+		logger -t ifplugd.action "$IFACE: unknown event '$EVENT'"
+		exit 1
+		;;
+esac
