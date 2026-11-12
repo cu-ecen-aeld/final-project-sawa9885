@@ -96,6 +96,10 @@ AWS recorded that uplink with this gateway, and only this gateway, in its metada
 
 The RSSI and SNR match what the gateway logged for the same frame (-84 dBm, 10.0 dB at 905.3 MHz, SF10).
 
+A second uplink followed at 18:01:14.557 (905.3 MHz, now SF7 after the network's data-rate command, RSSI -82 dBm, SNR 9.8 dB at the gateway). AWS recorded it at 18:01:14.787 through the same gateway with RSSI -82 and SNR 9.75. This is the uplink that was on screen in the MQTT test client.
+
+The node sends on request, not on a schedule, and transmits at 0 dBm because this board's radio fails at higher power. That is a fault of the node, so the RSSI here says nothing about the gateway's range.
+
 TODO(issue-4-uplink): the screenshot of the same kind of uplink in the AWS IoT MQTT test client (topic `aesd/lorawan/uplink`) is still missing. The test client only shows messages that arrive while it is subscribed.
 
 ## 4. Station starts at boot and reconnects after the Ethernet cable is pulled
