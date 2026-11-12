@@ -110,11 +110,14 @@ endef
 # station.conf has no secret, so it is installed here. The credential files
 # (cups.*, tc.*) are never in the image: S35provision moves them from the boot
 # partition into /etc/station, Station's home directory, at boot.
+# version.txt is the "package" version that Station reports to CUPS and
+# prints with --version, as in upstream's examples/corecell/lns-ttn.
 define BASICSTATION_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/$(BASICSTATION_BUILD_DIR)/bin/station \
 		$(TARGET_DIR)/usr/bin/station
 	$(INSTALL) -D -m 0644 $(BASICSTATION_PKGDIR)/station.conf \
 		$(TARGET_DIR)/etc/station/station.conf
+	echo "$(BASICSTATION_VERSION:v%=%)" > $(TARGET_DIR)/etc/station/version.txt
 endef
 
 define BASICSTATION_INSTALL_INIT_SYSV
