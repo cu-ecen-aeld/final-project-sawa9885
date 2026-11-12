@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# Start ifplugd (BusyBox) on eth0: it watches the Ethernet link and runs
+# /etc/ifplugd/ifplugd.action, which calls "ifup eth0" when the cable is plugged in and
+# "ifdown eth0" when it is pulled out.
+#
+# Why: eth0 used to be brought up once, by "ifup -a" in S40network. Its DHCP client then kept the
+# old address and routes while the cable was out, so the dead Ethernet route stayed in front of
+# Wi-Fi, and a cable moved to another network kept the old lease. Now eth0 is not "auto" in
+# /etc/network/interfaces and this daemon owns it: each link-up starts a fresh DHCP exchange, and
+# each link-down removes the address and the route at once, so programs such as Basics Station
+# see the loss and reconnect.
+#
+# Runs after S40network (loopback) and before S41wifi.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): TODO(issue-4-session-link)
+
+IFACE=eth0
+DAEMON=/usr/sbin/ifplugd
+PIDFILE=/var/run/ifplugd.$IFACE.pid
+# -n  stay in the foreground: start-stop-daemon puts it in the background and writes the PID
+#     file (BusyBox is built without FEATURE_PIDFILE, so ifplugd has no PID file or -k of its own)
+# -I  keep running if the action script fails
+# -f  treat a failed link query as "link down" instead of exiting
+# -u  seconds between link up and "ifup"
+# -d  seconds between link down and "ifdown", so a short link flap doesn't drop the lease
+ARGS="-n -i $IFACE -I -f -u 0 -d 2"
+
+case "$1" in
+	start)
+		printf "Starting ifplugd on %s: " "$IFACE"
+		start-stop-daemon -S -q -b -m -p "$PIDFILE" -x "$DAEMON" -- $ARGS
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		;;
+	stop)
+		# On SIGINT ifplugd runs the action script with "down" (which releases the lease) and exits.
+		printf "Stopping ifplugd on %s: " "$IFACE"
+		start-stop-daemon -K -q -s INT -p "$PIDFILE"
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		rm -f "$PIDFILE"
+		;;
+	restart|reload)
+		"$0" stop
+		sleep 1
+		"$0" start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

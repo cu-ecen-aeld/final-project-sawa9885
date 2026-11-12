@@ -1,0 +1,7 @@
+# BusyBox options added to Buildroot's package/busybox/busybox.config.
+#
+# ifplugd: the link-watching daemon that S41ifplugd runs on eth0 (issue #4).
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #4): TODO(issue-4-session-link)
+CONFIG_IFPLUGD=y
