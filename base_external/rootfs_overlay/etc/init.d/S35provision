@@ -25,13 +25,15 @@ log() {
 }
 
 # install_secret SRC DST [text]
-# "text" strips the DOS line endings that Windows editors add. Certificates and keys are copied
-# byte for byte: they may be DER, and a Basics Station token in tc.key ends in CRLF on purpose.
+# "text" strips the DOS line endings and the UTF-8 byte order mark that Windows tools add;
+# wpa_supplicant rejects a file that starts with one. Certificates and keys are copied byte for
+# byte: they may be DER, and a Basics Station token in tc.key ends in CRLF on purpose.
+BOM=$(printf '\357\273\277')
 install_secret() {
 	src=$1
 	dst=$2
 	if [ "$3" = text ]; then
-		tr -d '\r' < "$src" > "$dst.new"
+		tr -d '\r' < "$src" | sed "1s/^$BOM//" > "$dst.new"
 	else
 		cat "$src" > "$dst.new"
 	fi
