@@ -1,0 +1,82 @@
+#!/bin/sh
+#
+# Install first-boot secrets from the FAT boot partition (mounted on /boot) into the rootfs.
+#
+#   /boot/wpa_supplicant.conf            -> /etc/wpa_supplicant.conf   (optional, Wi-Fi)
+#   /boot/{cups,tc}.{uri,trust,crt,key}  -> /etc/station/              (Basics Station)
+#
+# Each file is installed with mode 0600 and then deleted from the boot partition, so the secret is
+# kept in one place only. Files that are not on the boot partition are left as they are in /etc,
+# so this does nothing on later boots. Only file names are logged, never contents.
+#
+# Runs before S40network and S41wifi, so Wi-Fi and Basics Station find their files in place.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #5): TODO(issue-5-session-link): add the public link when the session is shared
+
+BOOT=/boot
+WIFI_CONF=/etc/wpa_supplicant.conf
+STATION_DIR=/etc/station
+STATION_FILES="cups.uri cups.trust cups.crt cups.key tc.uri tc.trust tc.crt tc.key"
+
+log() {
+	echo "provision: $*"
+	logger -t provision "$*"
+}
+
+# install_secret SRC DST [text]
+# "text" strips the DOS line endings that Windows editors add. Certificates and keys are copied
+# byte for byte: they may be DER, and a Basics Station token in tc.key ends in CRLF on purpose.
+install_secret() {
+	src=$1
+	dst=$2
+	if [ "$3" = text ]; then
+		tr -d '\r' < "$src" > "$dst.new"
+	else
+		cat "$src" > "$dst.new"
+	fi
+	if [ $? -ne 0 ] || ! chmod 600 "$dst.new" || ! mv "$dst.new" "$dst"; then
+		rm -f "$dst.new"
+		log "FAILED to install $dst, leaving $src in place"
+		return 1
+	fi
+	rm -f "$src" || log "could not delete $src"
+	log "installed $dst"
+}
+
+start() {
+	# New files must never be readable by other users, even for a moment.
+	umask 077
+
+	grep -q " $BOOT " /proc/mounts || mount "$BOOT" 2>/dev/null
+	if ! grep -q " $BOOT " /proc/mounts; then
+		log "$BOOT is not mounted, nothing to install"
+		return 0
+	fi
+
+	mkdir -p "$STATION_DIR"
+	chmod 700 "$STATION_DIR"
+
+	[ -f "$BOOT/wpa_supplicant.conf" ] && install_secret "$BOOT/wpa_supplicant.conf" "$WIFI_CONF" text
+
+	for f in $STATION_FILES; do
+		[ -f "$BOOT/$f" ] || continue
+		case "$f" in
+			*.uri) install_secret "$BOOT/$f" "$STATION_DIR/$f" text ;;
+			*) install_secret "$BOOT/$f" "$STATION_DIR/$f" ;;
+		esac
+	done
+	sync
+	return 0
+}
+
+case "$1" in
+	start|restart|reload)
+		start
+		;;
+	stop)
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

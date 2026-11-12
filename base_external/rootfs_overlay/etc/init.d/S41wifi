@@ -2,29 +2,18 @@
 #
 # Start Wi-Fi on wlan0 with wpa_supplicant and get an address with udhcpc.
 #
-# Credentials never live in the repo. At boot, if the FAT boot partition has a wpa_supplicant.conf
-# (added on the laptop after flashing), it is moved into /etc/wpa_supplicant.conf and removed from
-# the boot partition.
+# Credentials never live in the repo. /etc/init.d/S35provision installs /etc/wpa_supplicant.conf from
+# the FAT boot partition before this script runs. With no such file, Wi-Fi is skipped and the
+# gateway uses Ethernet only.
 #
-# This script was partially generated using Claude Code using the chat session at:
+# This script was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
+# Link to chat session (issue #5): TODO(issue-5-session-link): add the public link when the session is shared
 
 IFACE=wlan0
 CONF=/etc/wpa_supplicant.conf
-BOOT_CONF=/boot/wpa_supplicant.conf
 WPA_PID=/var/run/wpa_supplicant.${IFACE}.pid
 DHCP_PID=/var/run/udhcpc.${IFACE}.pid
-
-provision() {
-	grep -q ' /boot ' /proc/mounts || mount /boot 2>/dev/null
-	if [ -f "$BOOT_CONF" ]; then
-		echo "wifi: installing $BOOT_CONF as $CONF"
-		# The boot partition may have DOS line endings when edited on Windows.
-		tr -d '\r' < "$BOOT_CONF" > "$CONF.new" && chmod 600 "$CONF.new" && mv "$CONF.new" "$CONF"
-		rm -f "$BOOT_CONF"
-		sync
-	fi
-}
 
 wait_for_iface() {
 	# eudev loads brcmfmac; give the firmware a few seconds to bring up wlan0.
@@ -38,7 +27,6 @@ wait_for_iface() {
 }
 
 do_start() {
-	provision
 	if [ ! -f "$CONF" ]; then
 		echo "wifi: no $CONF, skipping (put wpa_supplicant.conf on the boot partition)"
 		return 0
