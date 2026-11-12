@@ -96,11 +96,22 @@ AWS recorded that uplink with this gateway, and only this gateway, in its metada
 
 The RSSI and SNR match what the gateway logged for the same frame (-84 dBm, 10.0 dB at 905.3 MHz, SF10).
 
-A second uplink followed at 18:01:14.557 (905.3 MHz, now SF7 after the network's data-rate command, RSSI -82 dBm, SNR 9.8 dB at the gateway). AWS recorded it at 18:01:14.787 through the same gateway with RSSI -82 and SNR 9.75. This is the uplink that was on screen in the MQTT test client.
+A second uplink followed at 18:01:14.557 (905.3 MHz, now SF7 after the network's data-rate command, RSSI -82 dBm, SNR 9.8 dB at the gateway). AWS recorded it at 18:01:14.787 through the same gateway with RSSI -82 and SNR 9.75.
+
+**MQTT test client.** With the AWS IoT MQTT test client subscribed to `aesd/lorawan/uplink`, the node sent a third uplink. The message lists this gateway in `WirelessMetadata.LoRaWAN.Gateways`:
+
+![Uplink in the AWS IoT MQTT test client](issue4-mqtt-uplink.png)
+
+| | MQTT message (screenshot) | Gateway log |
+|---|---|---|
+| Time | `"Timestamp": "2026-11-12T18:03:39Z"` | `18:03:39.190 ... RX 905.3MHz DR3 SF7/BW125` |
+| Device | `"DevEui": "a0f262fffe507c7c"`, `"DevAddr": "00bc32bd"`, `"FCnt": 2`, `"FPort": 13` | `updf mhdr=80 DevAddr=00BC32BD ... FCnt=2` |
+| Gateway | `"GatewayEui": "0016c001f1135844"`, `"Rssi": -92`, `"Snr": 11` | `snr=11.0 rssi=-92` |
+| MIC | `"MIC": "c301acc2"` | `mic=-1028914749`, which is 0xC2AC01C3, the same four bytes in transmit order |
+
+So the frame in the test client is the frame this gateway received and forwarded, and no other gateway heard it. `PayloadData` is empty because the node's link test sends a confirmed frame with no payload.
 
 The node sends on request, not on a schedule, and transmits at 0 dBm because this board's radio fails at higher power. That is a fault of the node, so the RSSI here says nothing about the gateway's range.
-
-TODO(issue-4-uplink): the screenshot of the same kind of uplink in the AWS IoT MQTT test client (topic `aesd/lorawan/uplink`) is still missing. The test client only shows messages that arrive while it is subscribed.
 
 ## 4. Station starts at boot and reconnects after the Ethernet cable is pulled
 
