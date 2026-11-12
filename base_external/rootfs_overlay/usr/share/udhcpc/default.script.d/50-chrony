@@ -11,7 +11,7 @@
 # Both moments are logged with the uptime, because the wall clock jumps when it is set.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #5): TODO(issue-5-session-link): add the public link when the session is shared
+# Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
 
 [ "$1" = bound ] || exit 0
 [ -x /usr/bin/chronyc ] || exit 0

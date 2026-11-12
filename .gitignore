@@ -1,6 +1,6 @@
 # Secrets that go on the microSD boot partition, never in the repo (see README, "Flash and first boot").
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #5): TODO(issue-5-session-link): add the public link when the session is shared
+# Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
 
 # Wi-Fi settings. wpa_supplicant.conf.example is the template and stays tracked.
 wpa_supplicant.conf
