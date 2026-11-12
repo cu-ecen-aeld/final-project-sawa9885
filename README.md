@@ -40,13 +40,27 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
    | `tc.uri`, `tc.trust`, `tc.crt`, `tc.key` (optional) | `/etc/station/tc.*` | The same four for a direct LNS connection (`wss://<id>.lns.lorawan.<region>.amazonaws.com:443`, `lns.trust`). Not needed with CUPS, which fetches them. |
 
    At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot.
+   [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) says where each `cups.*` file comes from in the AWS console.
 3. Boot the Pi and log in over SSH as `root`. Dropbear accepts only the public key that the overlay installs in `/root/.ssh/authorized_keys`; password logins are off.
 
 ## Network and time
 
-- Ethernet (`eth0`) uses DHCP and needs no file. Wi-Fi (`wlan0`) starts only when `/etc/wpa_supplicant.conf` exists.
+- Ethernet (`eth0`) uses DHCP and needs no file. BusyBox `ifplugd` (`S41ifplugd`) watches the link: it runs `ifup eth0` when the cable is plugged in, at boot or later, and `ifdown eth0` when it is pulled out, so the address and the default route go away with the cable. `grep ifplugd /var/log/messages` shows each event with the uptime.
+- Wi-Fi (`wlan0`) starts only when `/etc/wpa_supplicant.conf` exists. The image has no such file until `S35provision` installs one: Buildroot's default file, which joins any open network, is removed in `post-build.sh`.
 - The Pi 5 has no RTC battery here, so the clock is wrong after a cold boot. `chronyd` sets it from `pool.ntp.org`. A udhcpc hook (`/usr/share/udhcpc/default.script.d/50-chrony`) tells chronyd when an interface gets a lease, and logs the uptime of the lease and of the first sync: `grep ntp-hook /var/log/messages`. `chronyc tracking` shows the current state, and `chronyc waitsync` blocks until the clock is set.
 - The `ca-certificates` bundle is `/etc/ssl/certs/ca-certificates.crt`.
+
+## Basics Station
+
+`base_external/package/basicstation` builds [LoRa Basics Station](https://github.com/lorabasics/basicstation) v2.0.6 for its `corecell` platform (SX1302), `std` variant. `station` is linked statically with Station's own patched copy of sx1302_hal V2.1.0 and with mbedtls 2.28.10. Buildroot downloads both and checks their hashes, in place of the `git clone` that upstream's makefiles run. The comments in `basicstation.mk` say why the Buildroot `mbedtls` and our `sx1302-hal` library can't be used.
+
+- **Start at boot:** `/etc/init.d/S60station`. It reads the SX1302's EUI with `util_chip_id` (which also resets the WM1302), writes it to `/var/run/station.eui`, waits up to 60 s for chronyd to set the clock, then runs `station --daemon --home /etc/station`. With no `cups.uri` or `tc.uri` in `/etc/station` it logs one line and does nothing.
+- **Gateway EUI:** the concentrator's EUI. `station.conf` names `/var/run/station.eui` as its `routerid`, so the image isn't tied to one board. `grep 'gateway EUI' /var/log/messages` shows it.
+- **Configuration:** `/etc/station/station.conf` (radio settings for the WM1302, no secrets). The channel plan comes from the network server. The credentials are the `cups.*` files from "Flash and first boot"; Station fetches the LNS address and credentials from CUPS and saves them as `tc.*` in the same directory.
+- **Log:** `/var/log/station.log` (tmpfs, 3 x 2 MB at most). `/etc/init.d/S60station status|stop|restart`.
+- **AWS IoT Core for LoRaWAN:** [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) has the console steps to register the gateway and a device, and which downloaded file gets which name.
+- **Results:** [docs/issue4-basicstation-aws.md](docs/issue4-basicstation-aws.md).
+- Station's remote shell (`rmtsh`) is compiled out. The gateway is managed over SSH.
 
 ## AI use
 
@@ -57,4 +71,5 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #1 Buildroot base image | https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA |
 | #2 SPI, I2C and WM1302 reset | https://claude.ai/code/cshk_01CSAPnvczn7U1rhz8Wn7mvALHP1X5aHUucnKHJGvS8E1v |
 | #3 sx1302_hal package and lora_pkt_fwd | https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9 |
+| #4 Basics Station and AWS IoT Core for LoRaWAN | TODO(issue-4-session-link) |
 | #5 Network, time and credential provisioning | https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg |
