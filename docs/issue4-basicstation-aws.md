@@ -73,7 +73,30 @@ gateway 92f4b2e8-b047-46a1-859b-b15ad06d79a2 (EUI 0016c001f1135844): ConnectionS
 
 ## 3. An uplink from a node, with this gateway in its metadata
 
-TODO(issue-4-uplink): not done yet. See "Open items" at the end.
+The node is a SoilData V2 board on the bench next to the gateway, registered in AWS as `aesd-test-node` (DevEUI `A0F262FFFE507C7C`, LoRaWAN 1.1 OTAA, a service profile with gateway metadata on, destination `aesd_uplinks`, which publishes to the MQTT topic `aesd/lorawan/uplink`). Its keys were generated and written to the board outside this work and are not in this repo.
+
+The gateway received its join request, sent the join-accept that AWS answered with, and then received its first data uplink ([logs/issue4-uplink-station.log](logs/issue4-uplink-station.log), Station at log level VERBOSE):
+
+```
+17:59:51.142 [S2E:VERB] RX 903.9MHz DR0 SF10/BW125 snr=11.8 rssi=-84 ... - jreq MHdr=00 JoinEUI=::0 DevEUI=a0f2:62ff:fe50:7c7c DevNonce=1
+17:59:56.132 [S2E:INFO] TX ::1 diid=24707 [ant#0] - dntxed: 923.3MHz 26.0dBm ant#0(0) DR10 SF10/BW500 ... (33 bytes)
+18:00:24.988 [S2E:VERB] RX 905.3MHz DR0 SF10/BW125 snr=10.0 rssi=-84 ... - updf mhdr=80 DevAddr=00BC32BD FCtrl=82 FCnt=0 FOpts=[7D4F] 0D ... (15 bytes)
+18:00:25.982 [S2E:INFO] TX ::1 diid=20186 [ant#0] - dntxed: 927.5MHz 26.0dBm ant#0(0) DR10 SF10/BW500 ... (19 bytes)
+```
+
+AWS recorded that uplink with this gateway, and only this gateway, in its metadata. `aws iotwireless get-wireless-device-statistics` ([logs/issue4-uplink-aws-statistics.json](logs/issue4-uplink-aws-statistics.json)):
+
+```json
+"LastUplinkReceivedAt": "2026-11-12T18:00:25.222644404Z",
+"LoRaWAN": {
+    "DevEui": "a0f262fffe507c7c", "FPort": 13, "DataRate": 0, "Frequency": 905300000,
+    "Gateways": [ { "GatewayEui": "0016c001f1135844", "Snr": 10.0, "Rssi": -84.0 } ]
+}
+```
+
+The RSSI and SNR match what the gateway logged for the same frame (-84 dBm, 10.0 dB at 905.3 MHz, SF10).
+
+TODO(issue-4-uplink): the screenshot of the same kind of uplink in the AWS IoT MQTT test client (topic `aesd/lorawan/uplink`) is still missing. The test client only shows messages that arrive while it is subscribed.
 
 ## 4. Station starts at boot and reconnects after the Ethernet cable is pulled
 
