@@ -101,6 +101,20 @@ Almost all of that time is Station's retry timer, not the network: the lease too
 
 **Short loss (simulated).** `eth0` was taken down for 30 s by stopping `ifplugd` on the Pi, which runs the same `ifdown`, and started again ([logs/issue4-outage-30s-syslog.log](logs/issue4-outage-30s-syslog.log)). The lease was back 7.5 s after link-up with the same address. Station logged nothing: its TLS connection to the LNS survived, and AWS showed the gateway Connected throughout. This was not a cable pull.
 
+**Long loss (simulated).** The same way, `eth0` was taken down for 12 minutes ([logs/issue4-outage-12min-syslog.log](logs/issue4-outage-12min-syslog.log), [logs/issue4-outage-12min-station.log](logs/issue4-outage-12min-station.log)). This reaches a path the 4-minute cable pull did not: after its ninth failed try Station logged `Router rejected or retry limit reached. Invoking CUPS`, and from then on it tried CUPS once a minute and the LNS with the same 10 to 60 s back-off, both failing while the network was down.
+
+| UTC | Event | After link-up |
+|---|---|---|
+| 17:29:11 | `ifplugd.action: eth0 link down ... ifdown` | |
+| 17:30:24 | Station: `Recv failed`, `Connection to MUXS closed` | |
+| 17:36:54 | `Router rejected or retry limit reached. Invoking CUPS.` | |
+| 17:41:15 | `ifplugd.action: eth0 link up ... ifup` | 0 s |
+| 17:41:21 | `ntp-hook: eth0 has a DHCP lease` | 6 s |
+| 17:41:24.8 | `Connected to MUXS.` | **10 s** |
+| 17:41:27.4 | `Concentrator started` | 12 s |
+
+Here the next LNS try happened to fall 3 s after the lease. With the timers above, the wait after the lease is between 0 and 60 s, whatever the length of the outage, so the reconnect stays under about 70 s after the cable is back.
+
 ## 5. No certificates or keys in the repo
 
 ```
