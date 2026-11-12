@@ -1,0 +1,69 @@
+#!/bin/sh
+#
+# Start and stop gwmon, the gateway monitor daemon (issue #6).
+#
+# gwmon -d serves a status line on TCP port 9000 and feeds /dev/watchdog. Once it runs, the
+# hardware watchdog is armed: if gwmon is killed or hangs, the Pi resets about 10 s later.
+# "stop" sends SIGTERM, on which gwmon stops the watchdog with the magic close, so a normal
+# stop (and the stop at shutdown) does not reset the Pi.
+#
+# Options can be added in /etc/default/gwmon, for example:
+#   GWMON_ARGS="-w none"       run without the watchdog while debugging
+#   GWMON_ARGS="-t 15 -i 3"    other watchdog timeout and feed interval
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #6): TODO(issue-6-session-link)
+
+NAME=gwmon
+DAEMON=/usr/bin/gwmon
+GWMON_ARGS=""
+
+[ -r /etc/default/$NAME ] && . /etc/default/$NAME
+
+start() {
+	# Safety catch for a headless board: a file named gwmon.disable on the SD card's boot partition
+	# keeps gwmon, and with it the watchdog, off. It is the way out if a fault ever makes gwmon
+	# die at every boot, which would otherwise reset the Pi in a loop.
+	if [ -e /boot/gwmon.disable ]; then
+		echo "$NAME: /boot/gwmon.disable exists, not starting"
+		return 0
+	fi
+	printf "Starting %s: " "$NAME"
+	# gwmon forks only after its socket is bound, so a failed start shows here.
+	# shellcheck disable=SC2086 # GWMON_ARGS is a list of options
+	start-stop-daemon -S -q -x "$DAEMON" -- -d $GWMON_ARGS
+	ret=$?
+	[ $ret = 0 ] && echo "OK" || echo "FAIL"
+	return $ret
+}
+
+stop() {
+	printf "Stopping %s: " "$NAME"
+	# SIGTERM is the default signal.
+	start-stop-daemon -K -q -x "$DAEMON"
+	ret=$?
+	# Wait until gwmon is gone, so the magic close is done and the port is free for a restart.
+	n=0
+	while pidof "$NAME" >/dev/null && [ $n -lt 50 ]; do
+		sleep 0.1
+		n=$((n + 1))
+	done
+	[ $ret = 0 ] && echo "OK" || echo "FAIL"
+	return $ret
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac
