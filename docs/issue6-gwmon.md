@@ -9,7 +9,7 @@
 | `nc <pi-address> 9000` returns one status line with version, uptime and watchdog state | **Pass** from a PC on the LAN |
 | gwmon opens `/dev/watchdog` and feeds it on a timer; the Pi reboots within 15 s of `kill -9` | **Pass.** Fed every 2 s; reset 10.0 to 10.5 s after the kill |
 | SIGTERM closes the watchdog with the magic close | **Pass.** Watchdog `inactive` after `S99gwmon stop`, Pi still up 30 s later |
-| A host build under Valgrind shows no leaks | **Not yet run.** Valgrind is not installed on the build host. AddressSanitizer, LeakSanitizer, UBSan and ThreadSanitizer runs are clean |
+| A host build under Valgrind shows no leaks | **Pass.** Valgrind 3.22.0: 0 errors and no leaks in all 7 gwmon processes of the host test. The AddressSanitizer, LeakSanitizer, UBSan and ThreadSanitizer runs are clean too |
 
 One caveat on the first row: the SD card was not reflashed with the new image. The card holds the image flashed for issue #4 (commit `a611da7`), and the two files this issue adds were copied to it over SSH from the Buildroot output. Their SHA-256 on the Pi equals that of the same files inside the new `rootfs.ext2`. Apart from them, the new image differs from the card only in comment lines (the issue #4 session link).
 
@@ -96,21 +96,16 @@ Run in WSL2 Ubuntu 24.04 (gcc 13.3.0) in a directory of its own. `gwmon/test/hos
 | `make check` (`-O2 -Wall -Wextra -Werror`) | 29 of 29 checks pass | [logs/issue6-gwmon-host-test.log](logs/issue6-gwmon-host-test.log) |
 | AddressSanitizer + LeakSanitizer + UBSan build | 29 of 29, no reports | [logs/issue6-gwmon-host-sanitizers.log](logs/issue6-gwmon-host-sanitizers.log) |
 | ThreadSanitizer build | 29 of 29, no reports | same log |
-| `make valgrind` | **not run**, Valgrind is not installed | to be `logs/issue6-gwmon-valgrind.log` |
+| `make valgrind` (Valgrind 3.22.0, `--leak-check=full --show-leak-kinds=all --track-fds=yes`) | 30 of 30, no errors, no leaks | [logs/issue6-gwmon-valgrind.log](logs/issue6-gwmon-valgrind.log) |
+
+Under Valgrind, each of the 7 gwmon processes that exit normally reports `All heap blocks were freed -- no leaks are possible` and `ERROR SUMMARY: 0 errors`. The run has one check more than the others: that every Valgrind log ends with 0 errors. The file descriptors listed as open at exit are inherited from the test (Valgrind's own log and the terminal). The one exception is the listening socket in the short-lived parent of `gwmon -d`, which exits right after the fork and leaves the socket to the daemon.
 
 The checks cover: the status line format; five clients at once; a client that sends data before reading; feeds arriving on the timer; exit status 0 and a final `V` after SIGTERM and after SIGINT; no `V` after `kill -9`; daemon mode (the caller gets 0, the daemon is a session leader and answers); `watchdog=disabled` and `watchdog=unavailable`; a second instance on the same port failing to start; and a feed interval that isn't below the timeout being rejected.
 
 ## Still to do
 
-1. **Valgrind (DoD 6).** In WSL, once `sudo apt-get install -y valgrind` has been run:
-
-   ```bash
-   make -C gwmon clean && make -C gwmon valgrind 2>&1 | tee docs/logs/issue6-gwmon-valgrind.log
-   ```
-
-   Expect `RESULT: all checks passed under Valgrind`, and in each Valgrind log `All heap blocks were freed -- no leaks are possible` and `ERROR SUMMARY: 0 errors`.
-2. **Optional: a full reflash** with the new `sdcard.img`, to boot the image as built rather than the issue #4 card with two files added. The AWS credential files have to be copied to the boot partition again afterwards (README, "Flash and first boot").
-3. **Session link:** replace `TODO(issue-6-session-link)` (`git grep -l 'TODO(issue-6-session-link)'`).
+1. **Optional: a full reflash** with the new `sdcard.img`, to boot the image as built rather than the issue #4 card with two files added. The AWS credential files have to be copied to the boot partition again afterwards (README, "Flash and first boot").
+2. **Session link:** replace `TODO(issue-6-session-link)` (`git grep -l 'TODO(issue-6-session-link)'`).
 
 ## How to repeat the bench tests
 
