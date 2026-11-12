@@ -48,6 +48,22 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
 - The Pi 5 has no RTC battery here, so the clock is wrong after a cold boot. `chronyd` sets it from `pool.ntp.org`. A udhcpc hook (`/usr/share/udhcpc/default.script.d/50-chrony`) tells chronyd when an interface gets a lease, and logs the uptime of the lease and of the first sync: `grep ntp-hook /var/log/messages`. `chronyc tracking` shows the current state, and `chronyc waitsync` blocks until the clock is set.
 - The `ca-certificates` bundle is `/etc/ssl/certs/ca-certificates.crt`.
 
+## gwmon
+
+`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. Version 1 is a TCP status server that owns the hardware watchdog. **Tested on the build host only so far**: the Buildroot package and everything on the Pi are still to be checked, see [docs/issue6-gwmon.md](docs/issue6-gwmon.md).
+
+- **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d`. `/etc/init.d/S99gwmon stop|restart` also work. Options go in `GWMON_ARGS` in `/etc/default/gwmon`.
+- **Status:** `nc <pi-address> 9000` prints one line and closes:
+
+  ```
+  gwmon 1.0.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=600 wd_last_feed_age=1s
+  ```
+
+  `uptime` is the time since boot and `daemon_uptime` the time since gwmon started. `watchdog` is `active`, `disabled` (`-w none`), `unavailable` (the device could not be opened), `error` (the last feed failed) or `fake` (host test).
+- **Watchdog:** gwmon opens `/dev/watchdog`, sets a 10 s timeout and feeds it every 2 s from its main loop. If gwmon is killed or hangs, the Pi resets about 10 s later. On SIGTERM or SIGINT it writes the magic close character first, so `S99gwmon stop` and a normal shutdown don't reset the Pi.
+- **If the Pi ever resets in a loop:** put an empty file named `gwmon.disable` on the SD card's boot partition. `S99gwmon` then leaves gwmon and the watchdog off.
+- **Options:** `gwmon [-d] [-p port] [-w device] [-t timeout] [-i interval]`. `make -C gwmon check` builds it for the host and tests it against a fake watchdog file. `make -C gwmon valgrind` does the same under Valgrind.
+
 ## AI use
 
 Code written with LLM help carries a comment linking the shared chat sessions, following the course [HOWTO](https://github.com/cu-ecen-aeld/aesd-assignments/wiki/HOWTO-Reference-Use-of-ChatGPT-or-Other-Web-Content-in-Source-Code).
@@ -58,3 +74,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #2 SPI, I2C and WM1302 reset | https://claude.ai/code/cshk_01CSAPnvczn7U1rhz8Wn7mvALHP1X5aHUucnKHJGvS8E1v |
 | #3 sx1302_hal package and lora_pkt_fwd | https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9 |
 | #5 Network, time and credential provisioning | https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg |
+| #6 gwmon v1: TCP status server and hardware watchdog | TODO(issue-6-session-link) |
