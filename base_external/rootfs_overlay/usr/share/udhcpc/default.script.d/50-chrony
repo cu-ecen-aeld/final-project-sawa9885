@@ -1,0 +1,37 @@
+#!/bin/sh
+#
+# udhcpc hook: /usr/share/udhcpc/default.script runs this after every DHCP event on eth0 or wlan0,
+# with the event name in $1 and the interface in $interface.
+#
+# When an interface gets a lease, tell chronyd that the network is up. chronyd then resolves the
+# NTP pool again and sends its first burst now, instead of at its next retry (28 s, then 56 s, ...).
+# This is what keeps "clock set within 1 minute of the network coming up" true when the lease
+# arrives after chronyd has started, which is the normal case on Wi-Fi.
+#
+# Both moments are logged with the uptime, because the wall clock jumps when it is set.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #5): TODO(issue-5-session-link): add the public link when the session is shared
+
+[ "$1" = bound ] || exit 0
+[ -x /usr/bin/chronyc ] || exit 0
+
+uptime_s() {
+	cut -d' ' -f1 /proc/uptime
+}
+
+logger -t ntp-hook "$interface has a DHCP lease, uptime $(uptime_s) s"
+
+# Fails harmlessly if chronyd is not running yet (the eth0 lease arrives before S49chronyd).
+chronyc -n online >/dev/null 2>&1
+
+# Up to 30 checks, 2 s apart, for chronyd to report a synchronised clock.
+(
+	if chronyc -n waitsync 30 0 0 2 >/dev/null 2>&1; then
+		logger -t ntp-hook "clock synchronised by NTP, uptime $(uptime_s) s"
+	else
+		logger -t ntp-hook "clock NOT synchronised 60 s after the $interface lease"
+	fi
+) </dev/null >/dev/null 2>&1 &
+
+exit 0
