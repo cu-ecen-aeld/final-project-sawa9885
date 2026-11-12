@@ -28,8 +28,21 @@ AWS console → **IoT Core** → **LPWAN devices** → **Gateways** → **Add ga
 4. **Add gateway**. The console moves on to **Configure your gateway**.
 5. **Gateway certificate** → **Create certificate** → **Download certificate files**. You get `<id>.cert.pem` and `<id>.private.key`. The private key can't be downloaded again later.
 6. **Provisioning credentials** → **Copy** the **CUPS endpoint** (`https://<id>.cups.lorawan.<region>.amazonaws.com:443`) → **Download server trust certificates**. You get `cups.trust` and `lns.trust`.
-7. **Gateway permissions**: choose the role **IoTWirelessGatewayCertManager**, or **Create role** if the account doesn't have it yet.
+7. **Gateway permissions**: choose the role **IoTWirelessGatewayCertManagerRole**, or **Create role** if the account doesn't have it yet. It lets CUPS hand the gateway its LNS credentials.
 8. **Submit**.
+
+### The same with the AWS CLI
+
+This board was registered with the AWS CLI instead of the console (signed in with `aws login`). The certificate and key go straight into files, so they are never shown on screen. The `--query` on the second command matters: without it the CLI prints the private key.
+
+```sh
+aws iotwireless create-wireless-gateway --lorawan GatewayEui=0016c001f1135844,RfRegion=US915 --name aesd-pi5 --query Id --output text
+aws iot create-keys-and-certificate --set-as-active --certificate-pem-outfile cups.crt --private-key-outfile cups.key --query certificateId --output text
+aws iotwireless associate-wireless-gateway-with-certificate --id <gateway Id> --iot-certificate-id <certificateId>
+aws iotwireless get-service-endpoint --service-type CUPS      # ServiceEndpoint -> cups.uri, ServerTrust -> cups.trust
+aws iam get-role --role-name IoTWirelessGatewayCertManagerRole   # must exist; the docs say how to create it
+aws iotwireless get-wireless-gateway-statistics --wireless-gateway-id <gateway Id>   # ConnectionStatus
+```
 
 ## 3. Put the four files on the boot partition
 

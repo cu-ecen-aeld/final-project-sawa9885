@@ -1,0 +1,95 @@
+2026-11-12 17:11:44.218 [SYS:INFO] Logging     : /var/log/station.log (maxsize=2000000, rotate=2)
+2026-11-12 17:11:44.218 [SYS:INFO] Station Ver : 2.0.6(corecell/std) 2026-11-12 16:50:47
+2026-11-12 17:11:44.218 [SYS:INFO] Package Ver : 2.0.6
+2026-11-12 17:11:44.218 [SYS:INFO] mbedTLS Ver : 2.28.10
+2026-11-12 17:11:44.218 [SYS:INFO] proto EUI   : 16:c001:f113:5844	(station.conf file /var/run/station.eui)
+2026-11-12 17:11:44.218 [SYS:INFO] prefix EUI  : ::1	(builtin)
+2026-11-12 17:11:44.218 [SYS:INFO] Station EUI : 16:c001:f113:5844
+2026-11-12 17:11:44.218 [SYS:INFO] Station home: /etc/station/	(--home)
+2026-11-12 17:11:44.218 [SYS:INFO] Station temp: /var/tmp/	(builtin)
+2026-11-12 17:11:44.218 [SYS:INFO] DAEMON: Station process 337 started...
+2026-11-12 17:11:44.418 [TCE:INFO] Starting TC engine
+2026-11-12 17:11:44.420 [TCE:ERRO] No TC URI configured
+2026-11-12 17:11:44.420 [CUP:INFO] Starting a CUPS session in 0 seconds.
+2026-11-12 17:11:44.420 [TCE:INFO] Router rejected or retry limit reached. Invoking CUPS.
+2026-11-12 17:11:44.420 [TCE:INFO] Terminating TC engine
+2026-11-12 17:11:44.420 [CUP:INFO] Starting a CUPS session now.
+2026-11-12 17:11:44.420 [CUP:INFO] Connecting to CUPS ... https://<id>.cups.lorawan.us-east-1.amazonaws.com:443 (try #1)
+2026-11-12 17:11:44.420 [AIO:INFO] /etc/station/cups.trust: (certificate details omitted)
+2026-11-12 17:11:50.596 [CUP:INFO] [Segment] TC Credentials (3228 bytes)
+2026-11-12 17:11:50.596 [SYS:INFO]  credComplete - trust_off=   0, trust_len=1174
+2026-11-12 17:11:50.596 [SYS:INFO]  credComplete - cert_off =1174, cert_len = 861
+2026-11-12 17:11:50.596 [SYS:INFO]  credComplete - key_off  =2035, key_len  =1193
+2026-11-12 17:11:50.596 [CUP:INFO] [Segment] TC Credentials update completed (3228 bytes)
+2026-11-12 17:11:50.620 [CUP:INFO] CUPS provided TC updates (uri) - restarting TC engine
+2026-11-12 17:11:50.620 [CUP:INFO] Interaction with CUPS done - next regular check in 1d
+2026-11-12 17:11:50.620 [TCE:INFO] Starting TC engine
+2026-11-12 17:11:50.620 [AIO:INFO] /etc/station/tc.trust: (certificate details omitted)
+2026-11-12 17:11:50.620 [TCE:INFO] Connecting to INFOS: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-12 17:11:51.083 [TCE:INFO] Infos: 0016:c001:f113:5844 0016:c001:f113:5844 wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443/gateway/0016c001f1135844
+2026-11-12 17:11:51.083 [AIO:INFO] /etc/station/tc.trust: (certificate details omitted)
+2026-11-12 17:11:51.458 [S2E:WARN] Unknown field in router_config - ignored: protocol (0xFD309030)
+2026-11-12 17:11:51.458 [S2E:WARN] Unknown field in router_config - ignored: regionid (0xE6FFB211)
+2026-11-12 17:11:51.661 [SYS:INFO] Process /usr/bin/wm1302-reset.sh (pid=355) completed
+2026-11-12 17:11:51.661 [RAL:INFO] Lora gateway library version: Version: 2.1.0;
+2026-11-12 17:11:51.662 [RAL:INFO] [LGW sx1302] full_duplex=0 clksrc=0 lorawan_public=1
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  0:  rf_power=12 pa_gain=0 pwr_idx=15
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  1:  rf_power=13 pa_gain=0 pwr_idx=16
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  2:  rf_power=14 pa_gain=0 pwr_idx=17
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  3:  rf_power=15 pa_gain=0 pwr_idx=19
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  4:  rf_power=16 pa_gain=0 pwr_idx=20
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  5:  rf_power=17 pa_gain=0 pwr_idx=22
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  6:  rf_power=18 pa_gain=1 pwr_idx=1
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  7:  rf_power=19 pa_gain=1 pwr_idx=2
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  8:  rf_power=20 pa_gain=1 pwr_idx=3
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut  9:  rf_power=21 pa_gain=1 pwr_idx=4
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 10:  rf_power=22 pa_gain=1 pwr_idx=5
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 11:  rf_power=23 pa_gain=1 pwr_idx=6
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 12:  rf_power=24 pa_gain=1 pwr_idx=7
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 13:  rf_power=25 pa_gain=1 pwr_idx=9
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 14:  rf_power=26 pa_gain=1 pwr_idx=11
+2026-11-12 17:11:51.662 [RAL:INFO] SX1302 txlut 15:  rf_power=27 pa_gain=1 pwr_idx=14
+2026-11-12 17:11:51.662 [RAL:INFO]  RX/TX RF0:    904.3MHz rssi_offset=-215.4 type=5 rssi_tcomp=0.000 0.000 20.410 2162.560 0.000
+2026-11-12 17:11:51.662 [RAL:INFO]  RX    RF1:    905.3MHz rssi_offset=-215.4 type=5 rssi_tcomp=0.000 0.000 20.410 2162.560 0.000
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   0:    903.9MHz rf=0 freq=-400.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   1:    904.1MHz rf=0 freq=-200.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   2:    904.3MHz rf=0 freq=  +0.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   3:    904.5MHz rf=0 freq=+200.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   4:    904.7MHz rf=0 freq=+400.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   5:    904.9MHz rf=1 freq=-400.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   6:    905.1MHz rf=1 freq=-200.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [mSF]   7:    905.3MHz rf=1 freq=  +0.0 datarate=0
+2026-11-12 17:11:51.662 [RAL:INFO]  [STD]   8:    904.6MHz rf=0 freq=+300.0 datarate=8 bw=6 Explicit header
+2026-11-12 17:11:51.662 [RAL:INFO]  channel 9 disabled
+2026-11-12 17:11:51.662 [RAL:INFO] Station device: spi:/dev/spidev0.0 (PPS capture disabled)
+2026-11-12 17:11:51.662 [HAL:INFO] [lgw_com_open:84] Opening SPI communication interface
+2026-11-12 17:11:51.662 [HAL:INFO] [lgw_spi_open:88] Setting SPI speed to 2000000
+2026-11-12 17:11:51.663 [HAL:INFO] [lgw_connect:1192] chip version is 0x10 (v1.0)
+2026-11-12 17:11:53.872 [HAL:INFO] [timestamp_counter_mode:431] using legacy timestamp
+2026-11-12 17:11:54.025 [HAL:INFO] [lgw_start:1115] found temperature sensor on port 0x39
+2026-11-12 17:11:54.025 [RAL:INFO] Concentrator started (2s363ms)
+2026-11-12 17:11:54.025 [S2E:INFO] Configuring for region: US915 -- 902.0MHz..928.0MHz
+2026-11-12 17:11:54.026 [S2E:INFO]   DR0  SF10/BW125 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR1  SF9/BW125 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR2  SF8/BW125 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR3  SF7/BW125 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR4  SF8/BW500 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR5  undefined
+2026-11-12 17:11:54.026 [S2E:INFO]   DR6  undefined
+2026-11-12 17:11:54.026 [S2E:INFO]   DR7  undefined
+2026-11-12 17:11:54.026 [S2E:INFO]   DR8  SF12/BW500 (DN only)
+2026-11-12 17:11:54.026 [S2E:INFO]   DR9  SF11/BW500 (DN only)
+2026-11-12 17:11:54.026 [S2E:INFO]   DR10 SF10/BW500 (DN only)
+2026-11-12 17:11:54.026 [S2E:INFO]   DR11 SF9/BW500 (DN only)
+2026-11-12 17:11:54.026 [S2E:INFO]   DR12 SF8/BW500 
+2026-11-12 17:11:54.026 [S2E:INFO]   DR13 SF7/BW500 (DN only)
+2026-11-12 17:11:54.026 [S2E:INFO]   DR14 undefined
+2026-11-12 17:11:54.026 [S2E:INFO]   DR15 undefined
+2026-11-12 17:11:54.026 [S2E:INFO]   TX power: 26.0 dBm EIRP
+2026-11-12 17:11:54.026 [S2E:INFO]   JoinEUI list: 0 entries
+2026-11-12 17:11:54.026 [S2E:INFO]   NetID filter: FFFFFFFF-FFFFFFFF-FFFFFFFF-FFFFFFFF
+2026-11-12 17:11:54.026 [S2E:INFO]   Dev/test settings: nocca=0 nodc=0 nodwell=0
+2026-11-12 17:11:54.026 [___:INFO] wm1302-reset: resetting the SX1302 (GPIO17) and SX1261 (GPIO5) on gpiochip0
+wm1302-reset: done
+2026-11-12 17:12:36.030 [SYN:INFO] MCU/SX130X drift stats: min: +7.1ppm  q50: +8.1ppm  q80: +8.6ppm  max: +9.0ppm - threshold q90: +9.0ppm
+2026-11-12 17:12:36.030 [SYN:INFO] Mean MCU drift vs SX130X#0: 8.3ppm
