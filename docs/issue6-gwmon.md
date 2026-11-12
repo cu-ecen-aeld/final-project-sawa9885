@@ -50,7 +50,7 @@ After a watchdog reset, sysfs `bootstatus` is 0: this driver does not report tha
 
 Full output: [logs/issue6-bench-pi.log](logs/issue6-bench-pi.log). Package build: [logs/issue6-gwmon-buildroot-pkg.log](logs/issue6-gwmon-buildroot-pkg.log).
 
-**Build.** `make -C buildroot gwmon` cross-compiled `gwmon.c` with `aarch64-linux-gcc` and installed both files; the full `make` then built `sdcard.img` (SHA-256 `4e1f6279…6a32`). The binary is an `ELF 64-bit LSB pie executable, ARM aarch64`, 18 kB stripped.
+**Build.** `make -C buildroot gwmon` cross-compiled `gwmon.c` with `aarch64-linux-gcc` and installed both files; the full `make` then built `sdcard.img`. The image now in the build tree is from commit `e10b233` (SHA-256 `68222ce5…e8e6`); its `gwmon` binary is byte for byte the one tested here (SHA-256 `5f937cca…8569`). The binary is an `ELF 64-bit LSB pie executable, ARM aarch64`, 18 kB stripped.
 
 **Boot start.** After a clean `reboot`, `S99gwmon` had started `/usr/bin/gwmon -d`, and syslog showed:
 
