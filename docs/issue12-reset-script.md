@@ -40,3 +40,5 @@ make                                         # root filesystem and sdcard.img
 The risk is small: the script on the card is the same file at the same path. The gateway that is running now already boots with this exact script and reads the EUI through it at each start of Station ([issue7-gwmon-v2.md](issue7-gwmon-v2.md)). The only installed file that differs from the card is `reset_lgw.sh`, and only in its comment lines.
 
 The build was also not a clean one: only the `sx1302-hal` package was rebuilt, and the rest of the output tree was reused.
+
+The log is from commit `94eeaf2`. After the session link was added to the file headers (commit `941d381`), the same three steps were run again with the same results. That image is `sdcard.img` with SHA-256 `ea7a66e7c1c1b21678adfa091cf65d8b4f0a09c9949f416dcf69f867e2dafc73`. It was not flashed either.
