@@ -1,6 +1,7 @@
 # Secrets that go on the microSD boot partition, never in the repo (see README, "Flash and first boot").
 # This file was partially generated using Claude Code using the chat session at:
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
+# Link to chat session (issue #10): ISSUE10_SESSION_LINK
 
 # Wi-Fi settings. wpa_supplicant.conf.example is the template and stays tracked.
 wpa_supplicant.conf
@@ -20,3 +21,11 @@ tc.key
 *.key
 *.crt
 *.trust
+
+# The per-gateway provisioning secret and the address that flash-gateway.ps1 writes to a card (issue #10).
+provision.secret
+provision.url
+
+# Build output of provisioning/deploy.sh and Python caches.
+provisioning/build/
+__pycache__/

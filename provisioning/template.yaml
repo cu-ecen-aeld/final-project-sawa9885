@@ -1,0 +1,165 @@
+# CloudFormation template for the gateway provisioning function (issue #10).
+#
+# One stack holds everything, and deleting the stack removes it all:
+#   - the Lambda function and its public HTTPS address (a function URL, no API Gateway)
+#   - the function's IAM role, limited to the actions listed below
+#   - the DynamoDB table that stands in for the allow-list until the SoilData API has it
+#   - the function's log group
+#
+# The stack does not create gateways or certificates. The function creates those at run time,
+# one per provisioned gateway, and they stay when the stack is deleted.
+#
+# The function's code is not in this template. deploy.sh creates the stack with the placeholder
+# below and then uploads provisioning/src as the real code, so no S3 bucket is needed.
+#
+# The account must already have the role IoTWirelessGatewayCertManagerRole, which lets AWS's
+# CUPS server hand a gateway its LNS credentials (docs/aws-iot-core-setup.md, step 2.7).
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #10): ISSUE10_SESSION_LINK
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Zero-touch provisioning for LoRaWAN gateways (ECEN 5713 final project, issue 10)
+
+Parameters:
+  RfRegion:
+    Type: String
+    Default: US915
+    Description: LoRaWAN region that new gateways are registered with.
+
+Resources:
+  # The stand-in allow-list: one item per flashed card, keyed by the SHA-256 fingerprint of the
+  # card's secret. The secrets themselves are never stored anywhere but on the cards.
+  AllowListTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-allowlist'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: fingerprint
+          AttributeType: S
+      KeySchema:
+        - AttributeName: fingerprint
+          KeyType: HASH
+
+  FunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/lambda/${AWS::StackName}'
+      RetentionInDays: 90
+
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Description: Role of the gateway provisioning function
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: provisioning
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: WriteItsOwnLog
+                Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                # The log group's Arn attribute already ends in ":*", which covers its streams.
+                Resource: !GetAtt FunctionLogGroup.Arn
+              # Mark a fingerprint used, or unused again. It cannot add, read or delete items.
+              - Sid: ConsumeAllowListEntries
+                Effect: Allow
+                Action: dynamodb:UpdateItem
+                Resource: !GetAtt AllowListTable.Arn
+              # GetServiceEndpoint has no resource to name.
+              - Sid: ReadTheCupsEndpoint
+                Effect: Allow
+                Action: iotwireless:GetServiceEndpoint
+                Resource: '*'
+              # Find or create a gateway and set its certificate. No delete, update or list.
+              - Sid: RegisterGateways
+                Effect: Allow
+                Action:
+                  - iotwireless:CreateWirelessGateway
+                  - iotwireless:GetWirelessGateway
+                  - iotwireless:GetWirelessGatewayCertificate
+                  - iotwireless:AssociateWirelessGatewayWithCertificate
+                  - iotwireless:DisassociateWirelessGatewayFromCertificate
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:iotwireless:${AWS::Region}:${AWS::AccountId}:WirelessGateway/*'
+                  - !Sub 'arn:${AWS::Partition}:iot:${AWS::Region}:${AWS::AccountId}:cert/*'
+              # CreateKeysAndCertificate has no resource to name.
+              - Sid: CreateGatewayCertificates
+                Effect: Allow
+                Action: iot:CreateKeysAndCertificate
+                Resource: '*'
+              # Revoke and delete: the certificate of a failed registration, and the one that
+              # a re-flashed gateway had before.
+              - Sid: RevokeGatewayCertificates
+                Effect: Allow
+                Action:
+                  - iot:UpdateCertificate
+                  - iot:DeleteCertificate
+                Resource: !Sub 'arn:${AWS::Partition}:iot:${AWS::Region}:${AWS::AccountId}:cert/*'
+
+  Function:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref AWS::StackName
+      Description: Registers a flashed gateway in AWS IoT Core for LoRaWAN and returns its credentials
+      Runtime: python3.13
+      Handler: handler.lambda_handler
+      Role: !GetAtt FunctionRole.Arn
+      Timeout: 30
+      MemorySize: 256
+      LoggingConfig:
+        LogGroup: !Ref FunctionLogGroup
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref AllowListTable
+          RF_REGION: !Ref RfRegion
+      Code:
+        # Placeholder until deploy.sh uploads provisioning/src. It refuses every request.
+        ZipFile: |
+          def lambda_handler(event, context):
+              return {"statusCode": 503, "body": "{\"error\": \"try_again\"}"}
+
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt Function.Arn
+      # Public: a gateway has no AWS identity before it is provisioned. The per-gateway secret
+      # in the request is what the function checks.
+      AuthType: NONE
+
+  # A public function URL needs both of these statements in the function's policy.
+  UrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+  UrlInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Function
+      Action: lambda:InvokeFunction
+      Principal: '*'
+      InvokedViaFunctionUrl: true
+
+Outputs:
+  ProvisionUrl:
+    Description: The address a gateway posts to. flash-gateway.ps1 writes it to each card.
+    Value: !Sub '${FunctionUrl.FunctionUrl}provision'
+  AllowListTableName:
+    Description: The stand-in allow-list table. flash-gateway.ps1 records fingerprints in it.
+    Value: !Ref AllowListTable
+  FunctionName:
+    Value: !Ref Function

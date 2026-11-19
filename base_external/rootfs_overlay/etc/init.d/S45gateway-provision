@@ -1,0 +1,56 @@
+#!/bin/sh
+#
+# Start zero-touch provisioning in the background (issue #10).
+#
+# /usr/sbin/gateway-provision asks the provisioning function for this gateway's Basics Station
+# credentials when there are none yet, and retries until it gets them. It exits at once on a
+# gateway that already has credentials, so on every boot after the first this does nothing.
+#
+# It runs in the background because it may wait a long time for a network. The rest of the
+# boot goes on: gwmon starts, reports station=unconfigured and keeps the watchdog fed, and
+# SSH works. When the credentials arrive, gateway-provision restarts gwmon.
+#
+# Boot order: S35provision (moves the secret from the boot partition), S40network, S41ifplugd,
+# this script, S49chronyd, S50dropbear, S99gwmon.
+#
+# Log: grep gateway-provision /var/log/messages
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #10): ISSUE10_SESSION_LINK
+
+NAME=gateway-provision
+DAEMON=/usr/sbin/gateway-provision
+PIDFILE=/var/run/$NAME.pid
+
+start() {
+	printf "Starting %s: " "$NAME"
+	# -b: in the background. -m: write the PID file, since the script does not.
+	start-stop-daemon -S -q -b -m -p "$PIDFILE" -x "$DAEMON"
+	ret=$?
+	[ $ret = 0 ] && echo "OK" || echo "FAIL"
+	return $ret
+}
+
+stop() {
+	printf "Stopping %s: " "$NAME"
+	# Usually it has finished long ago, and that is not an error.
+	start-stop-daemon -K -q -p "$PIDFILE" 2>/dev/null
+	rm -f "$PIDFILE"
+	echo "OK"
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

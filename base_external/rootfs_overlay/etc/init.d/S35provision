@@ -4,6 +4,11 @@
 #
 #   /boot/wpa_supplicant.conf            -> /etc/wpa_supplicant.conf   (optional, Wi-Fi)
 #   /boot/{cups,tc}.{uri,trust,crt,key}  -> /etc/station/              (Basics Station)
+#   /boot/provision.{secret,url}         -> /etc/gateway-provision/    (zero-touch provisioning)
+#
+# provision.secret and provision.url are written by scripts/flash-gateway.ps1 (issue #10). With
+# them, a gateway needs no cups.* files on the card: /usr/sbin/gateway-provision, started by
+# S45gateway-provision, uses the secret once to fetch them from the provisioning function.
 #
 # Each file is installed with mode 0600 and then deleted from the boot partition, so the secret is
 # kept in one place only. Files that are not on the boot partition are left as they are in /etc,
@@ -11,13 +16,15 @@
 #
 # Runs before S40network and S41wifi, so Wi-Fi and Basics Station find their files in place.
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
+# Link to chat session (issue #10): ISSUE10_SESSION_LINK
 
 BOOT=/boot
 WIFI_CONF=/etc/wpa_supplicant.conf
 STATION_DIR=/etc/station
 STATION_FILES="cups.uri cups.trust cups.crt cups.key tc.uri tc.trust tc.crt tc.key"
+PROVISION_DIR=/etc/gateway-provision
 
 log() {
 	echo "provision: $*"
@@ -68,6 +75,15 @@ start() {
 			*) install_secret "$BOOT/$f" "$STATION_DIR/$f" ;;
 		esac
 	done
+
+	# The per-gateway provisioning secret and the address of the provisioning function.
+	if [ -f "$BOOT/provision.secret" ] || [ -f "$BOOT/provision.url" ]; then
+		mkdir -p "$PROVISION_DIR"
+		chmod 700 "$PROVISION_DIR"
+		for f in secret url; do
+			[ -f "$BOOT/provision.$f" ] && install_secret "$BOOT/provision.$f" "$PROVISION_DIR/$f" text
+		done
+	fi
 	sync
 	return 0
 }

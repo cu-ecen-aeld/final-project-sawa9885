@@ -1,0 +1,230 @@
+#!/bin/sh
+#
+# Zero-touch provisioning, the gateway's side (issue #10). S45gateway-provision starts this
+# script in the background at every boot.
+#
+# A gateway that already has Basics Station credentials makes no request: the script logs one
+# line and exits. Otherwise, if the flash script left a provisioning secret and address on the
+# card (S35provision moved them to /etc/gateway-provision), it:
+#
+#   1. reads the SX1302's EUI with util_chip_id, as station-run.sh does. Station is not
+#      running at this point, because it has no credentials (gwmon: station=unconfigured).
+#   2. waits up to 60 s for chronyd to set the clock. TLS rejects the server when the date is wrong.
+#   3. sends {"gateway_eui": ..., "secret": ...} over HTTPS to the provisioning function.
+#      The server certificate is checked against /etc/ssl/certs/ca-certificates.crt.
+#   4. on success, installs cups.uri, cups.trust, cups.crt and cups.key in /etc/station with
+#      mode 0600, as S35provision does, deletes the used secret, and restarts gwmon, which
+#      then finds the credentials and starts Station.
+#
+# Retry: when the network, the clock or the function is not available, it tries again after
+# 5 s, then 10, 20, 40, ... up to 5 minutes between tries, plus up to a quarter of that at
+# random so that a batch of gateways powered together does not ask in step. It never gives up
+# on those. It does give up, until the next boot, when the function itself refuses the secret
+# (unknown, or already used): asking again cannot change that answer.
+#
+# The secret is never logged and never on a command line: it goes to curl on standard input.
+# The log (syslog, tag "gateway-provision") shows the first 8 characters of its SHA-256
+# fingerprint, which is how the allow-list and the function's log name it.
+#
+# Exit status: 0 credentials are in place, or there was nothing to do. 1 refused, or bad files.
+#
+# The GWPROV_* variables exist for the host test (provisioning/test/test_first_boot.py), which
+# runs this script against a local fake of the function. The gateway sets none of them.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #10): ISSUE10_SESSION_LINK
+
+STATION_DIR=${GWPROV_STATION_DIR:-/etc/station}
+PROV_DIR=${GWPROV_DIR:-/etc/gateway-provision}
+SECRET_FILE=$PROV_DIR/secret
+URL_FILE=$PROV_DIR/url
+SPI_DEV=/dev/spidev0.0
+FIRST_DELAY=${GWPROV_FIRST_DELAY:-5}
+MAX_DELAY=${GWPROV_MAX_DELAY:-300}
+# The same wait as station-run.sh: up to 30 checks, 2 s apart.
+CLOCK_TRIES=30
+RESTART_CMD=${GWPROV_RESTART_CMD:-/etc/init.d/S99gwmon restart}
+# curl refuses any other protocol, also in a redirect.
+PROTO='=https'
+[ -n "${GWPROV_TEST_ALLOW_HTTP:-}" ] && PROTO='=http,https'
+
+log() {
+	if [ -n "${GWPROV_LOG:-}" ]; then
+		echo "$*" >> "$GWPROV_LOG"
+	else
+		logger -t gateway-provision "$*"
+	fi
+}
+
+# The names Station looks for (station-run.sh, have_uri).
+have_credentials() {
+	for f in cups cups-bak cups-boot tc tc-bak tc-boot; do
+		[ -s "$STATION_DIR/$f.uri" ] && return 0
+	done
+	return 1
+}
+
+# util_chip_id prints "INFO: concentrator EUI: 0x0016c001f1135844".
+read_eui() {
+	if [ -n "${GWPROV_EUI:-}" ]; then
+		echo "$GWPROV_EUI"
+		return 0
+	fi
+	e=$(util_chip_id -d "$SPI_DEV" 2>/dev/null |
+		sed -n 's/.*concentrator EUI: 0x\([0-9a-fA-F]\{16\}\).*/\1/p')
+	[ -n "$e" ] && echo "$e"
+}
+
+# Take the four files out of the function's answer and install them. Returns 1 if the answer
+# is not complete, and then nothing in /etc/station has changed.
+install_credentials() {
+	for f in cups.uri cups.trust cups.crt cups.key; do
+		# -j writes the string as it is, without adding a line end.
+		if ! jq -e -j --arg f "$f" '.[$f] | strings' "$TMP/response" > "$TMP/$f" 2>/dev/null ||
+			[ ! -s "$TMP/$f" ]; then
+			log "the function's answer has no $f"
+			return 1
+		fi
+	done
+	grep -q '^https://' "$TMP/cups.uri" || { log "cups.uri is not an https address"; return 1; }
+	grep -q 'BEGIN CERTIFICATE' "$TMP/cups.trust" || { log "cups.trust is not a certificate"; return 1; }
+	grep -q 'BEGIN CERTIFICATE' "$TMP/cups.crt" || { log "cups.crt is not a certificate"; return 1; }
+	grep -q 'PRIVATE KEY' "$TMP/cups.key" || { log "cups.key is not a private key"; return 1; }
+
+	mkdir -p "$STATION_DIR" && chmod 700 "$STATION_DIR" || return 1
+	# cups.uri goes in last: it is the file that tells station-run.sh there is something to run.
+	for f in cups.trust cups.crt cups.key cups.uri; do
+		chmod 600 "$TMP/$f" && mv "$TMP/$f" "$STATION_DIR/$f" || {
+			log "FAILED to install $STATION_DIR/$f"
+			return 1
+		}
+		log "installed $STATION_DIR/$f"
+	done
+	sync
+}
+
+# One request. Returns 0 when the credentials are installed, 1 to try again later, 2 when the
+# function refused the secret.
+attempt() {
+	if [ -z "$eui" ]; then
+		eui=$(read_eui | tr 'A-F' 'a-f')
+		if [ -z "$eui" ]; then
+			log "could not read the SX1302 EUI on $SPI_DEV"
+			return 1
+		fi
+		log "gateway EUI $eui, secret fingerprint $fingerprint..., asking the provisioning function"
+	fi
+
+	rm -f "$TMP/response"
+	code=$(printf '{"gateway_eui":"%s","secret":"%s"}' "$eui" "$secret" |
+		curl -sS --proto "$PROTO" --connect-timeout 20 --max-time 60 \
+			-H 'Content-Type: application/json' --data-binary @- \
+			-o "$TMP/response" -w '%{http_code}' "$url" 2> "$TMP/curl.err")
+	if [ $? -ne 0 ]; then
+		log "no answer: $(head -n 1 "$TMP/curl.err" | cut -c 1-160)"
+		return 1
+	fi
+
+	if [ "$code" = 200 ]; then
+		if install_credentials; then
+			return 0
+		fi
+		return 1
+	fi
+	# The function's own refusals carry one of these words. Anything else (a 503 from the
+	# function, an error page from AWS in front of it) is worth another try.
+	error=$(jq -r '.error | strings' "$TMP/response" 2>/dev/null)
+	case "$error" in
+		unknown_secret|secret_already_used|bad_request)
+			log "refused by the provisioning function: HTTP $code $error"
+			return 2
+			;;
+	esac
+	log "HTTP $code ${error:-(no error field)}"
+	return 1
+}
+
+# Up to a quarter of $1, at random.
+jitter() {
+	r=$(od -An -N2 -tu2 /dev/urandom 2>/dev/null | tr -d ' ')
+	echo $(( ${r:-0} % ($1 / 4 + 1) ))
+}
+
+if have_credentials; then
+	log "Basics Station credentials are in place, no provisioning request"
+	exit 0
+fi
+if [ ! -s "$SECRET_FILE" ] || [ ! -s "$URL_FILE" ]; then
+	log "no credentials and no provisioning secret in $PROV_DIR: nothing to do (see the README, \"Flash and first boot\")"
+	exit 0
+fi
+
+read -r secret < "$SECRET_FILE"
+read -r url < "$URL_FILE"
+# Exactly what flash-gateway.ps1 writes. This also keeps anything else out of the JSON below.
+case "$secret" in
+	*[!0-9a-f]* | "")
+		log "$SECRET_FILE is not a provisioning secret, giving up"
+		exit 1
+		;;
+esac
+if [ ${#secret} -ne 64 ]; then
+	log "$SECRET_FILE is not a provisioning secret, giving up"
+	exit 1
+fi
+case "$url" in
+	https://*) ;;
+	http://*)
+		[ -n "${GWPROV_TEST_ALLOW_HTTP:-}" ] || { log "$URL_FILE is not an https address, giving up"; exit 1; }
+		;;
+	*)
+		log "$URL_FILE is not an https address, giving up"
+		exit 1
+		;;
+esac
+fingerprint=$(printf '%s' "$secret" | sha256sum | cut -c 1-8)
+
+# Everything this script writes is private, and its work files (the function's answer holds
+# the private key) are deleted however it ends.
+umask 077
+TMP=$(mktemp -d "$PROV_DIR/work.XXXXXX") || { log "cannot create a work directory in $PROV_DIR"; exit 1; }
+trap 'rm -rf "$TMP"' EXIT
+trap 'exit 1' INT TERM
+
+if command -v chronyc >/dev/null 2>&1 && ! chronyc -n waitsync $CLOCK_TRIES 0 0 2 >/dev/null 2>&1; then
+	log "clock not synchronised after $((CLOCK_TRIES * 2)) s, trying anyway"
+fi
+
+eui=
+tries=0
+delay=$FIRST_DELAY
+while :; do
+	tries=$((tries + 1))
+	attempt
+	case $? in
+		0)
+			break
+			;;
+		2)
+			log "giving up until the next boot. Flash the card again to get a new secret."
+			exit 1
+			;;
+	esac
+	wait_s=$((delay + $(jitter "$delay")))
+	log "try $tries failed, next try in $wait_s s"
+	sleep "$wait_s"
+	delay=$((delay * 2))
+	[ "$delay" -gt "$MAX_DELAY" ] && delay=$MAX_DELAY
+done
+
+# The secret is used up: the function will refuse it from now on.
+rm -f "$SECRET_FILE" "$URL_FILE"
+log "provisioned after $tries tries, uptime $(cut -d' ' -f1 /proc/uptime) s"
+
+# gwmon does not start a Station that had nothing to run (station=unconfigured) again by itself.
+# If gwmon is not up yet, it will find the credentials when S99gwmon starts it.
+if [ -n "${GWPROV_RESTART_CMD:-}" ] || pidof gwmon >/dev/null; then
+	log "restarting gwmon so that it starts Basics Station"
+	$RESTART_CMD >/dev/null 2>&1 || log "FAILED: $RESTART_CMD"
+fi
+exit 0
