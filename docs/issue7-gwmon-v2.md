@@ -182,7 +182,7 @@ Station's log has exactly three `RX` lines for the same boot, each followed by a
 01:12:16.514 [S2E:VERB] RX 904.7MHz DR3 SF7/BW125 snr=13.5 rssi=-78 ... - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=7 ... (13 bytes)
 ```
 
-- **Uplinks received:** 3 in the status line, 3 `RX` lines in the log, frame counters 5, 6 and 7.
+- **Uplinks received:** 3 in the status line, 3 `RX` lines in the log, frame counters 5, 6 and 7. On the node's side the three transmissions were at about 01:11:18, 01:11:47 and 01:12:16, and the node received a downlink in its first receive window each time.
 - **Time since the last uplink:** the last frame was logged at 01:12:16.5, and at 01:12:48 the status line read `last_uplink_age=32s`. The line read at 01:11:22 shows `1s` for a frame logged at 01:11:19.2: gwmon reads the log every 2 s, so the age starts up to 2 s late.
 - **Restart count:** 0 before the `kill -9` above and 1 after it, and it counted to 5 in the five-failures test.
 - **Temperature:** 29.1 to 30.0 °C during the tests, with the board in open air on the bench. Read by hand with `i2cget`, the sensor's two registers gave 0x1d and 0xc0, which is 29.75 °C. Station's log has `found temperature sensor on port 0x39` at each start, so both programs were reading the sensor at the same time.
