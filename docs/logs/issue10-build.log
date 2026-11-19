@@ -1,0 +1,61 @@
+# Incremental Buildroot build for issue #10 (the packages that the defconfig change added, and the image).
+>>> host-jq 1.8.1 Downloading
+>>> host-jq 1.8.1 Extracting
+>>> host-jq 1.8.1 Patching
+>>> host-jq 1.8.1 Updating config.sub and config.guess
+>>> host-jq 1.8.1 Patching libtool
+>>> host-jq 1.8.1 Configuring
+>>> host-jq 1.8.1 Building
+>>> host-jq 1.8.1 Installing to host directory
+>>> jq 1.8.1 Extracting
+>>> jq 1.8.1 Patching
+>>> jq 1.8.1 Updating config.sub and config.guess
+>>> jq 1.8.1 Patching libtool
+>>> jq 1.8.1 Configuring
+>>> jq 1.8.1 Building
+>>> jq 1.8.1 Installing to staging directory
+>>> jq 1.8.1 Fixing libtool files
+>>> jq 1.8.1 Installing to target
+>>> libcurl 8.20.0 Downloading
+>>> libcurl 8.20.0 Extracting
+>>> libcurl 8.20.0 Patching
+>>> libcurl 8.20.0 Updating config.sub and config.guess
+>>> libcurl 8.20.0 Patching libtool
+>>> libcurl 8.20.0 Configuring
+>>> libcurl 8.20.0 Building
+>>> libcurl 8.20.0 Installing to staging directory
+>>> libcurl 8.20.0 Fixing package configuration files
+>>> libcurl 8.20.0 Fixing libtool files
+>>> libcurl 8.20.0 Installing to target
+>>>   Finalizing host directory
+>>>   Finalizing target directory
+>>>   Sanitizing RPATH in target tree
+>>>   Executing post-build script board/raspberrypi5/post-build.sh
+>>>   Executing post-build script <repo>/base_external/board/pi5/post-build.sh
+>>>   Generating root filesystems common tables
+>>>   Generating filesystem image rootfs.ext2
+printf '   	rm -f <repo>/buildroot/output/images/rootfs.ext2\n	<repo>/buildroot/output/host/sbin/mkfs.ext4 -d <repo>/buildroot/output/build/buildroot-fs/ext2/target -N 0 -m 5 -L "rootfs" -I 256 -O ^64
+Creating regular file <repo>/buildroot/output/images/rootfs.ext2
+ln -sf rootfs.ext2 <repo>/buildroot/output/images/rootfs.ext4
+>>>   Executing post-image script <repo>/base_external/board/pi5/post-image.sh
+INFO: hdimage(sdcard.img): adding primary partition 'boot' (in MBR) from 'boot.vfat' ...
+INFO: hdimage(sdcard.img): adding primary partition 'rootfs' (in MBR) from 'rootfs.ext4' ...
+INFO: hdimage(sdcard.img): adding primary partition '[MBR]' ...
+INFO: hdimage(sdcard.img): writing MBR
+>>>   Finalizing host directory
+>>>   Finalizing target directory
+>>>   Sanitizing RPATH in target tree
+>>>   Executing post-build script board/raspberrypi5/post-build.sh
+>>>   Executing post-build script <repo>/base_external/board/pi5/post-build.sh
+>>>   Generating root filesystems common tables
+>>>   Generating filesystem image rootfs.ext2
+printf '   	rm -f <repo>/buildroot/output/images/rootfs.ext2\n	<repo>/buildroot/output/host/sbin/mkfs.ext4 -d <repo>/buildroot/output/build/buildroot-fs/ext2/target -N 0 -m 5 -L "rootfs" -I 256 -O ^64
+Creating regular file <repo>/buildroot/output/images/rootfs.ext2
+ln -sf rootfs.ext2 <repo>/buildroot/output/images/rootfs.ext4
+>>>   Executing post-image script <repo>/base_external/board/pi5/post-image.sh
+INFO: hdimage(sdcard.img): adding primary partition 'boot' (in MBR) from 'boot.vfat' ...
+INFO: hdimage(sdcard.img): adding primary partition 'rootfs' (in MBR) from 'rootfs.ext4' ...
+INFO: hdimage(sdcard.img): adding primary partition '[MBR]' ...
+INFO: hdimage(sdcard.img): writing MBR
+>>>   Finalizing host directory
+>>>   Finalizing target directory

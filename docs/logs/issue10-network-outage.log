@@ -1,0 +1,104 @@
+# Simulated first boot without a network, on the Pi (netdown-test.sh, started over SSH).
+# AWS before: before: gateways=2 certificates=7 gateway-cert=aa1a8ff7 lns-cert=56ef4a42
+
+# The test script's own log: gwmon's status every 10 s (uptime, watchdog, feeds, station)
+02:36:08 taking the network away for 100 s: ifplugd stop, ifdown eth0
+02:36:09 removing the Station credentials, restarting gwmon, starting gateway-provision
+02:36:20 uptime 90.62 s, eth0 down: uptime=90s watchdog=active wd_feeds=6 station=unconfigured
+02:36:30 uptime 100.63 s, eth0 down: uptime=100s watchdog=active wd_feeds=11 station=unconfigured
+02:36:40 uptime 110.64 s, eth0 down: uptime=110s watchdog=active wd_feeds=16 station=unconfigured
+02:36:50 uptime 120.65 s, eth0 down: uptime=120s watchdog=active wd_feeds=21 station=unconfigured
+02:37:00 uptime 130.66 s, eth0 down: uptime=130s watchdog=active wd_feeds=26 station=unconfigured
+02:37:10 uptime 140.67 s, eth0 down: uptime=140s watchdog=active wd_feeds=31 station=unconfigured
+02:37:20 uptime 150.68 s, eth0 down: uptime=150s watchdog=active wd_feeds=36 station=unconfigured
+02:37:30 uptime 160.69 s, eth0 down: uptime=160s watchdog=active wd_feeds=41 station=unconfigured
+02:37:40 uptime 170.69 s, eth0 down: uptime=170s watchdog=active wd_feeds=46 station=unconfigured
+02:37:50 uptime 180.70 s, eth0 down: uptime=180s watchdog=active wd_feeds=51 station=unconfigured
+02:38:00 uptime 190.71 s, eth0 up: uptime=190s watchdog=active wd_feeds=56 station=unconfigured
+02:38:10 uptime 200.72 s, eth0 up: uptime=200s watchdog=active wd_feeds=61 station=unconfigured
+02:38:20 uptime 210.73 s, eth0 up: uptime=210s watchdog=active wd_feeds=66 station=unconfigured
+02:38:30 uptime 220.74 s, eth0 up: uptime=220s watchdog=active wd_feeds=71 station=unconfigured
+02:38:40 uptime 230.75 s, eth0 up: uptime=230s watchdog=active wd_feeds=76 station=unconfigured
+02:38:50 uptime 240.76 s, eth0 up: uptime=240s watchdog=active wd_feeds=2 station=running
+02:39:00 uptime 250.77 s, eth0 up: uptime=250s watchdog=active wd_feeds=7 station=running
+02:39:10 uptime 260.78 s, eth0 up: uptime=260s watchdog=active wd_feeds=12 station=running
+02:39:20 uptime 270.79 s, eth0 up: uptime=270s watchdog=active wd_feeds=17 station=running
+02:39:30 uptime 280.80 s, eth0 up: uptime=280s watchdog=active wd_feeds=22 station=running
+02:39:30 end of the test script
+
+# Syslog of the Pi
+Nov 19 02:36:08 aesd-pi5 user.notice netdown-test: taking the network away for 100 s: ifplugd stop, ifdown eth0
+Nov 19 02:36:08 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 down'
+Nov 19 02:36:08 aesd-pi5 user.notice ifplugd.action: eth0 link down, uptime 79.55 s: ifdown
+Nov 19 02:36:09 aesd-pi5 user.notice netdown-test: removing the Station credentials, restarting gwmon, starting gateway-provision
+Nov 19 02:36:09 aesd-pi5 daemon.info gwmon[256]: Caught signal 15, exiting
+Nov 19 02:36:09 aesd-pi5 daemon.info gwmon[256]: watchdog closed with the magic close after 39 feeds
+Nov 19 02:36:09 aesd-pi5 daemon.info gwmon[256]: station (pid 259) stopped
+Nov 19 02:36:10 aesd-pi5 daemon.info gwmon[444]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 02:36:10 aesd-pi5 daemon.info gwmon[444]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 02:36:10 aesd-pi5 daemon.info gwmon[444]: station started: /usr/bin/station-run.sh, pid 449
+Nov 19 02:36:10 aesd-pi5 user.notice station: no cups.uri or tc.uri in /etc/station, not starting (see the README, "Flash and first boot")
+Nov 19 02:36:10 aesd-pi5 daemon.warn gwmon[444]: station (pid 449) exited with status 78 after 0 s
+Nov 19 02:36:10 aesd-pi5 daemon.notice gwmon[444]: station has nothing to run (exit status 78): not restarting it, the watchdog is still fed
+Nov 19 02:36:11 aesd-pi5 user.notice gateway-provision: gateway EUI 0016c001f1135844, secret fingerprint da65712c..., asking the provisioning function
+Nov 19 02:36:11 aesd-pi5 user.notice gateway-provision: no answer: curl: (6) Could not resolve host: <function-url>.lambda-url.us-east-1.on.aws
+Nov 19 02:36:11 aesd-pi5 user.notice gateway-provision: try 1 failed, next try in 6 s
+Nov 19 02:36:17 aesd-pi5 user.notice gateway-provision: no answer: curl: (6) Could not resolve host: <function-url>.lambda-url.us-east-1.on.aws
+Nov 19 02:36:17 aesd-pi5 user.notice gateway-provision: try 2 failed, next try in 11 s
+Nov 19 02:36:28 aesd-pi5 user.notice gateway-provision: no answer: curl: (6) Could not resolve host: <function-url>.lambda-url.us-east-1.on.aws
+Nov 19 02:36:28 aesd-pi5 user.notice gateway-provision: try 3 failed, next try in 24 s
+Nov 19 02:36:52 aesd-pi5 user.notice gateway-provision: no answer: curl: (6) Could not resolve host: <function-url>.lambda-url.us-east-1.on.aws
+Nov 19 02:36:52 aesd-pi5 user.notice gateway-provision: try 4 failed, next try in 44 s
+Nov 19 02:37:36 aesd-pi5 user.notice gateway-provision: no answer: curl: (6) Could not resolve host: <function-url>.lambda-url.us-east-1.on.aws
+Nov 19 02:37:36 aesd-pi5 user.notice gateway-provision: try 5 failed, next try in 70 s
+Nov 19 02:37:48 aesd-pi5 user.notice netdown-test: ifplugd started again: network back
+Nov 19 02:37:52 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 19 02:37:52 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 183.59 s: ifup
+Nov 19 02:37:59 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 190.10 s
+Nov 19 02:37:59 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 190.10 s
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.trust
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.crt
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.key
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.uri
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: provisioned after 6 tries, uptime 238.43 s
+Nov 19 02:38:47 aesd-pi5 user.notice gateway-provision: restarting gwmon so that it starts Basics Station
+Nov 19 02:38:47 aesd-pi5 daemon.info gwmon[444]: Caught signal 15, exiting
+Nov 19 02:38:47 aesd-pi5 daemon.info gwmon[444]: watchdog closed with the magic close after 79 feeds
+Nov 19 02:38:47 aesd-pi5 daemon.info gwmon[787]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 02:38:47 aesd-pi5 daemon.info gwmon[787]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 02:38:47 aesd-pi5 daemon.info gwmon[787]: station started: /usr/bin/station-run.sh, pid 789
+Nov 19 02:38:49 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 02:38:49 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 239.92 s
+
+# Station's log after the credentials arrived
+2026-11-19 02:38:49.509 [TCE:INFO] Terminating TC engine
+2026-11-19 02:38:49.509 [CUP:INFO] Starting a CUPS session now.
+2026-11-19 02:38:49.509 [CUP:INFO] Connecting to CUPS ... https://<id>.cups.lorawan.us-east-1.amazonaws.com:443 (try #1)
+2026-11-19 02:38:55.333 [CUP:INFO] [Segment] TC URI: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-19 02:38:55.333 [CUP:INFO] [Segment] TC Credentials (3226 bytes)
+2026-11-19 02:38:55.333 [CUP:INFO] [Segment] TC Credentials update completed (3226 bytes)
+2026-11-19 02:38:55.357 [CUP:INFO] CUPS provided TC updates (uri) - restarting TC engine
+2026-11-19 02:38:55.357 [CUP:INFO] Interaction with CUPS done - next regular check in 1d
+2026-11-19 02:38:55.357 [TCE:INFO] Starting TC engine
+2026-11-19 02:38:55.357 [TCE:INFO] Connecting to INFOS: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-19 02:38:55.686 [TCE:INFO] Infos: 0016:c001:f113:5844 0016:c001:f113:5844 wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443/gateway/0016c001f1135844
+2026-11-19 02:38:55.687 [TCE:VERB] Connecting to MUXS...
+2026-11-19 02:38:55.968 [TCE:VERB] Connected to MUXS.
+2026-11-19 02:38:58.626 [RAL:INFO] Concentrator started (2s365ms)
+
+# The function's log since the test started (CloudWatch)
+{"certificate_replaced": true, "event": "provisioned", "fingerprint": "da65712c", "gateway_created": false, "gateway_eui": "0016c001f1135844", "gateway_id": "ae8306e1-46c0-4467-89c8-334985a906ae"}
+
+# AWS after, at 2026-11-19T02:39:37Z
+ae8306e1-46c0-4467-89c8-334985a906ae	Connected	2026-11-19T02:38:56.029998986Z
+gateways=2 certificates=8 gateway-cert=6e6e1bc4 lns-cert=0e6b8c90
+certificates by creation time (time, status, first 8 characters of the ID):
+  2026-11-12T10:11:50.307000-07:00 ACTIVE 861d25cb
+  2026-11-18T19:33:21.666000-07:00 ACTIVE 4f217cb2
+  2026-11-18T19:38:47.254000-07:00 ACTIVE 6e6e1bc4
+  2026-11-18T19:38:54.955000-07:00 ACTIVE 15b6a3b3
+  2026-11-18T19:38:55.186000-07:00 ACTIVE 0e6b8c90
+
+# The allow-list (fingerprint, state, created, used, by, label)
+36e2e205e5ed9d0b8217fe68efdd094ba558da6e67fcf808e98c0d7d1fb76176	used	2026-11-19T02:31:10Z	2026-11-19T02:33:18Z	0016c001f1135844	issue10-e2e-pi5
+da65712c60c91a2428738da525a7363d1637e8f884efff8cb7d2cebce14b244f	used	2026-11-19T02:28:48Z	2026-11-19T02:38:46Z	0016c001f1135844	issue10 re-provision test

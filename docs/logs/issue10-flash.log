@@ -1,0 +1,18 @@
+flash-gateway: image C:\Users\sammy\AppData\Local\Temp\claude\bf4e2bb9a0e5b8f2\078b7847-8979-420b-bc02-9ea9259d5c59\scratchpad\sdcard.img
+flash-gateway: image SHA-256 5179b1d49234984ba9e287040c21f5feb68d7e3f9d203d5954ceaed628554917, 411041792 bytes
+flash-gateway: target disk 2: Generic STORAGE DEVICE, 58.6 GB
+flash-gateway: written 10 %
+flash-gateway: written 20 %
+flash-gateway: written 30 %
+flash-gateway: written 40 %
+flash-gateway: written 50 %
+flash-gateway: written 60 %
+flash-gateway: written 70 %
+flash-gateway: written 80 %
+flash-gateway: written 90 %
+flash-gateway: written 100 %
+flash-gateway: image written and read back
+flash-gateway: provision.secret and provision.url written to the boot partition
+flash-gateway: fingerprint 36e2e205e5ed9d0b8217fe68efdd094ba558da6e67fcf808e98c0d7d1fb76176 recorded as unused (dynamodb allow-list, table aesd-gateway-provisioning-allowlist)
+flash-gateway: done. The card can be taken out.
+RESULT ok fingerprint=36e2e205e5ed9d0b8217fe68efdd094ba558da6e67fcf808e98c0d7d1fb76176 image_sha256=5179b1d49234984ba9e287040c21f5feb68d7e3f9d203d5954ceaed628554917

@@ -1,0 +1,64 @@
+# python3 -m unittest discover -s provisioning/test -v   (WSL2 Ubuntu 24.04, curl from Ubuntu, jq 1.8.1 from Buildroot's host-jq, commit f198564)
+test_first_boot_fetches_and_installs_the_four_files (test_first_boot.FirstBootTest.test_first_boot_fetches_and_installs_the_four_files) ... ok
+test_function_unavailable_is_retried_with_growing_delays (test_first_boot.FirstBootTest.test_function_unavailable_is_retried_with_growing_delays) ... ok
+test_gateway_with_credentials_makes_no_request (test_first_boot.FirstBootTest.test_gateway_with_credentials_makes_no_request) ... ok
+test_gateway_without_a_secret_does_nothing (test_first_boot.FirstBootTest.test_gateway_without_a_secret_does_nothing) ... ok
+test_incomplete_answer_installs_nothing (test_first_boot.FirstBootTest.test_incomplete_answer_installs_nothing) ... ok
+test_malformed_secret_file_makes_no_request (test_first_boot.FirstBootTest.test_malformed_secret_file_makes_no_request) ... ok
+test_network_unavailable_is_retried (test_first_boot.FirstBootTest.test_network_unavailable_is_retried) ... ok
+test_unknown_secret_is_refused_and_not_retried (test_first_boot.FirstBootTest.test_unknown_secret_is_refused_and_not_retried) ... ok
+test_used_secret_is_refused_and_not_retried (test_first_boot.FirstBootTest.test_used_secret_is_refused_and_not_retried) ... ok
+test_consume_does_not_create_an_unlisted_fingerprint (test_handler.DynamoDbAllowListTest.test_consume_does_not_create_an_unlisted_fingerprint) ... ok
+test_consume_marks_a_listed_fingerprint_used_once (test_handler.DynamoDbAllowListTest.test_consume_marks_a_listed_fingerprint_used_once) ... ok
+test_other_dynamodb_errors_are_raised (test_handler.DynamoDbAllowListTest.test_other_dynamodb_errors_are_raised) ... ok
+test_release_makes_a_consumed_fingerprint_usable_again (test_handler.DynamoDbAllowListTest.test_release_makes_a_consumed_fingerprint_usable_again) ... ok
+test_release_of_an_unused_or_unlisted_fingerprint_changes_nothing (test_handler.DynamoDbAllowListTest.test_release_of_an_unused_or_unlisted_fingerprint_changes_nothing) ... ok
+test_allow_list_failure_creates_nothing (test_handler.HandlerTest.test_allow_list_failure_creates_nothing) ... ok
+test_aws_failure_associating_the_certificate (test_handler.HandlerTest.test_aws_failure_associating_the_certificate) ... ok
+test_aws_failure_creating_the_certificate (test_handler.HandlerTest.test_aws_failure_creating_the_certificate) ... ok
+test_aws_failure_creating_the_gateway (test_handler.HandlerTest.test_aws_failure_creating_the_gateway) ... ok
+test_aws_failure_reading_the_endpoint (test_handler.HandlerTest.test_aws_failure_reading_the_endpoint) ... ok
+test_eui_is_accepted_in_upper_case (test_handler.HandlerTest.test_eui_is_accepted_in_upper_case) ... ok
+test_malformed_requests_are_refused_and_create_nothing (test_handler.HandlerTest.test_malformed_requests_are_refused_and_create_nothing) ... ok
+test_old_certificate_that_cannot_be_deleted_does_not_fail_the_request (test_handler.HandlerTest.test_old_certificate_that_cannot_be_deleted_does_not_fail_the_request) ... ok
+test_other_paths_and_methods (test_handler.HandlerTest.test_other_paths_and_methods) ... ok
+test_registered_eui_gets_its_old_certificate_back_when_the_new_one_cannot_be_set (test_handler.HandlerTest.test_registered_eui_gets_its_old_certificate_back_when_the_new_one_cannot_be_set) ... ok
+test_registered_eui_keeps_its_gateway_and_gets_a_new_certificate (test_handler.HandlerTest.test_registered_eui_keeps_its_gateway_and_gets_a_new_certificate) ... ok
+test_registered_eui_keeps_its_old_certificate_when_the_new_one_fails (test_handler.HandlerTest.test_registered_eui_keeps_its_old_certificate_when_the_new_one_fails) ... ok
+test_registered_eui_with_unknown_secret_is_left_alone (test_handler.HandlerTest.test_registered_eui_with_unknown_secret_is_left_alone) ... ok
+test_reused_secret_is_refused_for_another_gateway_too (test_handler.HandlerTest.test_reused_secret_is_refused_for_another_gateway_too) ... ok
+test_reused_secret_is_refused_logged_and_creates_nothing (test_handler.HandlerTest.test_reused_secret_is_refused_logged_and_creates_nothing) ... ok
+test_unknown_secret_is_refused_and_creates_nothing (test_handler.HandlerTest.test_unknown_secret_is_refused_and_creates_nothing) ... ok
+test_valid_secret_registers_the_gateway_and_returns_four_files (test_handler.HandlerTest.test_valid_secret_registers_the_gateway_and_returns_four_files) ... ok
+test_lambda_handler_uses_the_injected_dependencies_and_hides_errors (test_handler.LambdaEntryTest.test_lambda_handler_uses_the_injected_dependencies_and_hides_errors) ... ok
+
+----------------------------------------------------------------------
+Ran 32 tests in 14.113s
+
+OK
+
+# powershell -ExecutionPolicy Bypass -File scripts\test\flash-gateway-test.ps1   (Windows 11, Windows PowerShell 5.1, not elevated)
+ok    three-chunks: exit code 0 (got 0)
+ok    three-chunks: the target equals the image
+ok    three-chunks: provision.secret is 64 hex characters and a line end
+ok    three-chunks: provision.url holds the address
+ok    three-chunks: the allow-list has the secret's SHA-256 fingerprint, unused
+ok    three-chunks: the last line reports the fingerprint
+ok    three-chunks: the secret is not in the output, the log or the allow-list
+ok    one-short-chunk: exit code 0 (got 0)
+ok    one-short-chunk: the target equals the image
+ok    one-short-chunk: provision.secret is 64 hex characters and a line end
+ok    one-short-chunk: provision.url holds the address
+ok    one-short-chunk: the allow-list has the secret's SHA-256 fingerprint, unused
+ok    one-short-chunk: the last line reports the fingerprint
+ok    one-short-chunk: the secret is not in the output, the log or the allow-list
+ok    a second card gets a different secret
+ok    a missing image gives exit code 3
+ok    a missing image writes nothing
+ok    an image that is not a multiple of 512 bytes gives exit code 3
+ok    an allow-list that cannot be written gives exit code 8 (got 8)
+ok    and the secret is deleted from the card again
+ok    no disk number gives exit code 1
+ok    an address that is not https gives exit code 1 and writes nothing
+ok    a disk without administrator rights gives exit code 2
+all checks passed

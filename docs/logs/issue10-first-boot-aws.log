@@ -1,0 +1,45 @@
+# AWS as seen from the PC, polled every 3 s (scratch script watch_aws.sh)
+2026-11-19T02:31:36Z not registered
+2026-11-19T02:33:23Z registered: ae8306e1-46c0-4467-89c8-334985a906ae gateway-0016c001f1135844, Connected 2026-11-19T02:33:22.675108383Z
+
+# The function's log for this request (CloudWatch)
+2026-11-19T02:33:19Z {"certificate_replaced": false, "event": "provisioned", "fingerprint": "36e2e205", "gateway_created": true, "gateway_eui": "0016c001f1135844", "gateway_id": "ae8306e1-46c0-4467-89c8-334985a906ae"}
+
+# The allow-list (fingerprint, state, created, used, by, label)
+36e2e205e5ed9d0b8217fe68efdd094ba558da6e67fcf808e98c0d7d1fb76176	used	2026-11-19T02:31:10Z	2026-11-19T02:33:18Z	0016c001f1135844	issue10-e2e-pi5
+da65712c60c91a2428738da525a7363d1637e8f884efff8cb7d2cebce14b244f	unused	2026-11-19T02:28:48Z	None	None	issue10 re-provision test
+
+# Counts
+gateways=2 certificates=7
+
+# On the gateway after the first boot
+/etc/station:
+total 32
+-rw-------          1220 Nov 19 02:33 cups-bak.crt
+-rw-------             0 Nov 19 02:33 cups-bak.done
+-rw-------          1679 Nov 19 02:33 cups-bak.key
+-rw-------          1647 Nov 19 02:33 cups-bak.trust
+-rw-------            63 Nov 19 02:33 cups-bak.uri
+-rw-------          1220 Nov 19 02:33 cups.crt
+-rw-------          1679 Nov 19 02:33 cups.key
+-rw-------          1647 Nov 19 02:33 cups.trust
+-rw-------            63 Nov 19 02:33 cups.uri
+-rw-r--r--          4351 Nov 19 01:22 station.conf
+-rw-------           861 Nov 19 02:33 tc-bak.crt
+-rw-------             0 Nov 19 02:33 tc-bak.done
+-rw-------          1193 Nov 19 02:33 tc-bak.key
+-rw-------          1174 Nov 19 02:33 tc-bak.trust
+-rw-------            60 Nov 19 02:33 tc-bak.uri
+-rw-------           861 Nov 19 02:33 tc.crt
+-rw-------          1193 Nov 19 02:33 tc.key
+-rw-------          1174 Nov 19 02:33 tc.trust
+-rw-------            60 Nov 19 02:33 tc.uri
+-rw-r--r--             6 Nov 19 01:22 version.txt
+/etc/gateway-provision:
+total 2
+drwx------          1024 Nov 19 02:33 .
+drwxr-xr-x          1024 Nov 19 02:32 ..
+provisioning files left on /boot: 0
+processes:
+  392 root     /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /de
+  394 root     /usr/bin/station --home /etc/station

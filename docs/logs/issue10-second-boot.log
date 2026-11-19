@@ -1,0 +1,27 @@
+# Reboot requested from the PC at 2026-11-19T02:34:38Z. Syslog of the second boot:
+Nov 19 02:34:52 aesd-pi5 user.notice gateway-provision: Basics Station credentials are in place, no provisioning request
+Nov 19 02:34:52 aesd-pi5 daemon.info gwmon[256]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 02:34:52 aesd-pi5 daemon.info gwmon[256]: station started: /usr/bin/station-run.sh, pid 259
+Nov 19 02:34:54 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 02:35:02 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 13.56 s
+Nov 19 02:35:08 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 18.65 s
+Nov 19 02:35:08 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 19.57 s
+
+# Station's log of the second boot:
+2026-11-19 02:35:08.265 [TCE:INFO] Starting TC engine
+2026-11-19 02:35:08.269 [TCE:INFO] Connecting to INFOS: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-19 02:35:08.329 [CUP:INFO] Starting a CUPS session in 0 seconds.
+2026-11-19 02:35:08.329 [CUP:INFO] Starting a CUPS session now.
+2026-11-19 02:35:08.329 [CUP:INFO] Connecting to CUPS ... https://<id>.cups.lorawan.us-east-1.amazonaws.com:443 (try #1)
+2026-11-19 02:35:08.643 [TCE:INFO] Infos: 0016:c001:f113:5844 0016:c001:f113:5844 wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443/gateway/0016c001f1135844
+2026-11-19 02:35:08.643 [TCE:VERB] Connecting to MUXS...
+2026-11-19 02:35:08.714 [CUP:INFO] Interaction with CUPS done (no updates) - next regular check in 1d
+2026-11-19 02:35:08.944 [TCE:VERB] Connected to MUXS.
+2026-11-19 02:35:11.633 [RAL:INFO] Concentrator started (2s428ms)
+
+# Requests that reached the provisioning function since the reboot (CloudWatch, all events):
+events=0
+
+# AWS at 2026-11-19T02:35:17Z:
+ae8306e1-46c0-4467-89c8-334985a906ae	Connected	2026-11-19T02:35:09.225381854Z
+gateways=2 certificates=7
