@@ -42,7 +42,7 @@ SPI_DEV=/dev/spidev0.0
 FIRST_DELAY=${GWPROV_FIRST_DELAY:-5}
 MAX_DELAY=${GWPROV_MAX_DELAY:-300}
 # The same wait as station-run.sh: up to 30 checks, 2 s apart.
-CLOCK_TRIES=30
+CLOCK_TRIES=${GWPROV_CLOCK_TRIES:-30}
 RESTART_CMD=${GWPROV_RESTART_CMD:-/etc/init.d/S99gwmon restart}
 # curl refuses any other protocol, also in a redirect.
 PROTO='=https'
@@ -144,10 +144,11 @@ attempt() {
 	return 1
 }
 
-# Up to a quarter of $1, at random.
+# Up to a quarter of $1, at random. The 1 in front keeps the four random digits from being
+# read as an octal number.
 jitter() {
-	r=$(od -An -N2 -tu2 /dev/urandom 2>/dev/null | tr -d ' ')
-	echo $(( ${r:-0} % ($1 / 4 + 1) ))
+	r=$(tr -dc 0-9 < /dev/urandom 2>/dev/null | head -c 4)
+	echo $(( 1${r:-0000} % ($1 / 4 + 1) ))
 }
 
 if have_credentials; then
@@ -191,8 +192,18 @@ TMP=$(mktemp -d "$PROV_DIR/work.XXXXXX") || { log "cannot create a work director
 trap 'rm -rf "$TMP"' EXIT
 trap 'exit 1' INT TERM
 
-if command -v chronyc >/dev/null 2>&1 && ! chronyc -n waitsync $CLOCK_TRIES 0 0 2 >/dev/null 2>&1; then
-	log "clock not synchronised after $((CLOCK_TRIES * 2)) s, trying anyway"
+# This script starts before chronyd (S49chronyd), so a chronyc that cannot reach chronyd yet
+# counts as "not synchronised yet": one check per pass, instead of chronyc's own waiting.
+if command -v chronyc >/dev/null 2>&1; then
+	n=0
+	until chronyc -n waitsync 1 0 0 1 >/dev/null 2>&1; do
+		n=$((n + 1))
+		if [ "$n" -ge "$CLOCK_TRIES" ]; then
+			log "clock not synchronised after $((CLOCK_TRIES * 2)) s, trying anyway"
+			break
+		fi
+		sleep 2
+	done
 fi
 
 eui=

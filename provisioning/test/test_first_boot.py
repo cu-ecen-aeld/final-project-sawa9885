@@ -35,7 +35,7 @@ GOOD_ANSWER = {
     "cups.crt": "-----BEGIN CERTIFICATE-----\ncert\n-----END CERTIFICATE-----\n",
     "cups.key": "-----BEGIN FAKE " + "PRIVATE KEY-----\nkey\n-----END FAKE " + "PRIVATE KEY-----\n",
 }
-TOOLS = ["sh", "curl", "jq", "sha256sum", "od"]
+TOOLS = ["sh", "curl", "jq", "sha256sum"]
 MISSING = [tool for tool in TOOLS if shutil.which(tool) is None]
 
 
@@ -91,7 +91,7 @@ class FirstBootTest(unittest.TestCase):
         env = dict(os.environ,
                    GWPROV_STATION_DIR=self.station, GWPROV_DIR=self.prov,
                    GWPROV_LOG=self.log_file, GWPROV_EUI=EUI.upper(),
-                   GWPROV_FIRST_DELAY="1", GWPROV_MAX_DELAY="2",
+                   GWPROV_FIRST_DELAY="1", GWPROV_MAX_DELAY="2", GWPROV_CLOCK_TRIES="1",
                    GWPROV_TEST_ALLOW_HTTP="1",
                    GWPROV_RESTART_CMD="touch " + self.restarted)
         done = subprocess.run(["sh", SCRIPT], env=env, timeout=timeout,
