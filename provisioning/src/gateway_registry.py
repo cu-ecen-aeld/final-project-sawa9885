@@ -8,8 +8,12 @@
 #   4. iotwireless AssociateWirelessGatewayWithCertificate
 #
 # A gateway whose EUI is already registered (a card that was flashed again) keeps its gateway
-# record. It gets a new certificate, and the certificate it had is revoked and deleted, so a
-# gateway has one working certificate at a time: the one on its newest card.
+# record. It gets a new certificate, and the certificates it had are revoked and deleted, so a
+# gateway has one working set of credentials at a time: the one on its newest card. "The
+# certificates it had" are two: the gateway certificate (cups.crt), and the LNS certificate
+# that AWS's CUPS server made for it when it first connected (tc.crt on the gateway).
+# Disassociating the first one drops the second from the gateway record too, and AWS makes a
+# new LNS certificate when the gateway next asks CUPS.
 #
 # If a step fails, the certificate made in this call is deleted again and RegistrationError is
 # raised. A gateway record made in this call is left in place: it holds no secret, and the next
@@ -51,19 +55,19 @@ class GatewayRegistry:
         try:
             endpoint = self._wireless.get_service_endpoint(ServiceType="CUPS")
             gateway_id, created = self._find_or_create(gateway_eui)
-            old_cert_id = None if created else self._current_certificate(gateway_id)
+            old_cert_ids = [] if created else self._current_certificates(gateway_id)
 
             cert = self._iot.create_keys_and_certificate(setAsActive=True)
             new_cert_id = cert["certificateId"]
 
-            if old_cert_id:
+            if old_cert_ids:
                 self._wireless.disassociate_wireless_gateway_from_certificate(Id=gateway_id)
             try:
                 self._wireless.associate_wireless_gateway_with_certificate(
                     Id=gateway_id, IotCertificateId=new_cert_id)
             except Exception:
-                if old_cert_id:
-                    self._restore(gateway_id, old_cert_id)
+                if old_cert_ids:
+                    self._restore(gateway_id, old_cert_ids[0])
                 raise
         except Exception as exc:
             if new_cert_id:
@@ -72,8 +76,8 @@ class GatewayRegistry:
 
         # From here on the gateway works with its new certificate, so nothing below may fail
         # the request.
-        if old_cert_id:
-            self._delete_certificate(old_cert_id, "replaced")
+        for cert_id in old_cert_ids:
+            self._delete_certificate(cert_id, "replaced")
 
         uri = endpoint["ServiceEndpoint"]
         if "://" not in uri:
@@ -85,7 +89,7 @@ class GatewayRegistry:
             "cups.key": cert["keyPair"]["PrivateKey"],
             "gateway_id": gateway_id,
             "gateway_created": created,
-            "certificate_replaced": bool(old_cert_id),
+            "certificate_replaced": bool(old_cert_ids),
         }
 
     def _find_or_create(self, gateway_eui):
@@ -103,14 +107,20 @@ class GatewayRegistry:
         )
         return made["Id"], True
 
-    def _current_certificate(self, gateway_id):
+    def _current_certificates(self, gateway_id):
+        """The gateway's certificate and, after it, its LNS certificate. Empty if it has none."""
         try:
             found = self._wireless.get_wireless_gateway_certificate(Id=gateway_id)
-            return found.get("IotCertificateId") or None
         except Exception as exc:
             if _error_code(exc) != "ResourceNotFoundException":
                 raise
-            return None
+            return []
+        if not found.get("IotCertificateId"):
+            return []
+        ids = [found["IotCertificateId"]]
+        if found.get("LoRaWANNetworkServerCertificateId"):
+            ids.append(found["LoRaWANNetworkServerCertificateId"])
+        return ids
 
     def _restore(self, gateway_id, old_cert_id):
         """Give the gateway its old certificate back after the new one could not be associated."""

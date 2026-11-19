@@ -68,7 +68,8 @@ class FakeAws:
     a switch to make one operation fail."""
 
     def __init__(self):
-        self.gateways = {}      # gateway id -> {"eui": ..., "cert": certificate id or None}
+        # gateway id -> {"eui": ..., "cert": certificate id or None, "lns_cert": the same}
+        self.gateways = {}
         self.certificates = {}  # certificate id -> "ACTIVE" or "INACTIVE"
         self.writes = []
         self.fail_on = None
@@ -109,15 +110,19 @@ class FakeIotWireless:
         self.aws.call("create_wireless_gateway", write=True)
         assert LoRaWAN["RfRegion"] == "US915"
         gateway_id = self.aws.new_id("gw")
-        self.aws.gateways[gateway_id] = {"eui": LoRaWAN["GatewayEui"], "cert": None}
+        self.aws.gateways[gateway_id] = {"eui": LoRaWAN["GatewayEui"], "cert": None,
+                                         "lns_cert": None}
         return {"Id": gateway_id}
 
     def get_wireless_gateway_certificate(self, Id):
         self.aws.call("get_wireless_gateway_certificate")
-        cert = self.aws.gateways[Id]["cert"]
-        if cert is None:
+        gateway = self.aws.gateways[Id]
+        if gateway["cert"] is None:
             raise FakeClientError("ResourceNotFoundException")
-        return {"IotCertificateId": cert}
+        found = {"IotCertificateId": gateway["cert"]}
+        if gateway["lns_cert"]:
+            found["LoRaWANNetworkServerCertificateId"] = gateway["lns_cert"]
+        return found
 
     def associate_wireless_gateway_with_certificate(self, Id, IotCertificateId):
         self.aws.call("associate_wireless_gateway_with_certificate", write=True)
@@ -128,7 +133,10 @@ class FakeIotWireless:
 
     def disassociate_wireless_gateway_from_certificate(self, Id):
         self.aws.call("disassociate_wireless_gateway_from_certificate", write=True)
+        # As observed on AWS: this drops the LNS certificate from the gateway as well, and
+        # leaves both certificates in the account.
         self.aws.gateways[Id]["cert"] = None
+        self.aws.gateways[Id]["lns_cert"] = None
         return {}
 
 
@@ -290,9 +298,11 @@ class HandlerTest(unittest.TestCase):
     # --- an EUI that is already registered ----------------------------------------------
 
     def register_by_hand(self):
-        """A gateway registered earlier, as in issue #4."""
-        self.aws.gateways["gw-old"] = {"eui": EUI, "cert": "cert-old"}
+        """A gateway registered earlier, as in issue #4, that has connected: it has its own
+        certificate and the LNS certificate that AWS made for it."""
+        self.aws.gateways["gw-old"] = {"eui": EUI, "cert": "cert-old", "lns_cert": "cert-old-lns"}
         self.aws.certificates["cert-old"] = "ACTIVE"
+        self.aws.certificates["cert-old-lns"] = "ACTIVE"
 
     def test_registered_eui_keeps_its_gateway_and_gets_a_new_certificate(self):
         self.register_by_hand()
@@ -301,7 +311,7 @@ class HandlerTest(unittest.TestCase):
         self.assertEqual(list(self.aws.gateways), ["gw-old"])
         new_cert = self.aws.gateways["gw-old"]["cert"]
         self.assertNotEqual(new_cert, "cert-old")
-        # The old certificate is gone, the new one is the only one.
+        # Both old certificates are gone, the new one is the only one.
         self.assertEqual(self.aws.certificates, {new_cert: "ACTIVE"})
         self.assertNotIn("create_wireless_gateway", self.aws.writes)
         self.assertIn('"certificate_replaced": true', self.logged)
@@ -312,7 +322,8 @@ class HandlerTest(unittest.TestCase):
         self.aws.fail_on = "create_keys_and_certificate"
         self.assertEqual(self.provision()[0], 503)
         self.assertEqual(self.aws.gateways["gw-old"]["cert"], "cert-old")
-        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE"})
+        self.assertEqual(self.aws.gateways["gw-old"]["lns_cert"], "cert-old-lns")
+        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE", "cert-old-lns": "ACTIVE"})
 
     def test_registered_eui_gets_its_old_certificate_back_when_the_new_one_cannot_be_set(self):
         self.register_by_hand()
@@ -320,14 +331,15 @@ class HandlerTest(unittest.TestCase):
         self.aws.fail_times = 1
         self.assertEqual(self.provision()[0], 503)
         self.assertEqual(self.aws.gateways["gw-old"]["cert"], "cert-old")
-        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE"})
+        # Nothing is deleted when the replacement fails.
+        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE", "cert-old-lns": "ACTIVE"})
         self.assertEqual(self.allow.state[handler.fingerprint_of(SECRET)], allowlist.STATE_UNUSED)
 
     def test_registered_eui_with_unknown_secret_is_left_alone(self):
         self.register_by_hand()
         self.assertEqual(self.provision(secret=OTHER_SECRET)[0], 403)
         self.assertEqual(self.aws.writes, [])
-        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE"})
+        self.assertEqual(self.aws.certificates, {"cert-old": "ACTIVE", "cert-old-lns": "ACTIVE"})
 
     def test_old_certificate_that_cannot_be_deleted_does_not_fail_the_request(self):
         self.register_by_hand()

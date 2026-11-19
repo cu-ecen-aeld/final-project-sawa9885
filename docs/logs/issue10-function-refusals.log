@@ -1,0 +1,28 @@
+UTC 2026-11-19T02:24:29Z
+stack resources:
+AWS::DynamoDB::Table	CREATE_COMPLETE
+AWS::IAM::Role	CREATE_COMPLETE
+AWS::Lambda::Function	CREATE_COMPLETE
+AWS::Lambda::Permission	CREATE_COMPLETE
+AWS::Lambda::Permission	CREATE_COMPLETE
+AWS::Lambda::Url	CREATE_COMPLETE
+AWS::Logs::LogGroup	CREATE_COMPLETE
+
+before: gateways=2 certificates=6 allow-list items=0
+unknown secret, this Pi's EUI                {"error": "unknown_secret"} -> HTTP 403
+unknown secret, an unregistered EUI          {"error": "unknown_secret"} -> HTTP 403
+secret too short                             {"error": "bad_request"} -> HTTP 400
+no secret                                    {"error": "bad_request"} -> HTTP 400
+not JSON                                     {"error": "bad_request"} -> HTTP 400
+GET instead of POST                          {"error": "method_not_allowed"} -> HTTP 405
+another path (Station's /update-info)        {"error": "not_found"} -> HTTP 404
+after:  gateways=2 certificates=6 allow-list items=0
+
+the function's log for these requests (CloudWatch):
+{"event": "refused", "fingerprint": "7e2878b7", "gateway_eui": "0016c001f1135844", "reason": "unknown_secret"}
+{"event": "refused", "fingerprint": "7e2878b7", "gateway_eui": "00000000000000aa", "reason": "unknown_secret"}
+{"event": "refused", "reason": "bad_request"}
+{"event": "refused", "reason": "bad_request"}
+{"event": "refused", "reason": "bad_request"}
+
+secret in the log: 0
