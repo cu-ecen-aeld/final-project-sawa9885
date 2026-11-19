@@ -1,0 +1,82 @@
+# Issue #12 check build, WSL2 Ubuntu 24.04, 2026-11-18. Branch issue-12-reset-script at 94eeaf2, checked out as
+# a git worktree and passed as BR2_EXTERNAL to the existing Buildroot output tree. Only the tail of each
+# make is kept. The commands are in docs/issue12-reset-script.md.
+no other build is running
+== 1. fetch the branch and check it out in a worktree of its own
+94eeaf2 docs: boot order, concentrator reset and Buildroot version (issue #12)
+overlay copies of the script in the branch: 0
+total 32
+-rw-r--r-- 1 sammy sammy 2592 Nov 18 18:52 0001-Run-reset_lgw.sh-from-PATH-instead-of-the-current-di.patch
+-rw-r--r-- 1 sammy sammy  869 Nov 18 18:52 Config.in
+-rw-r--r-- 1 sammy sammy 5999 Nov 18 18:52 global_conf.json
+-rwxr-xr-x 1 sammy sammy  911 Nov 18 18:52 reset_lgw.sh
+-rw-r--r-- 1 sammy sammy  204 Nov 18 18:52 sx1302-hal.hash
+-rw-r--r-- 1 sammy sammy 3269 Nov 18 18:52 sx1302-hal.mk
+-rwxr-xr-x 1 sammy sammy 1804 Nov 18 18:52 wm1302-reset.sh
+== 2. keep the issue #7 image, and the external tree setting
+f9d33c57666da21357b0dab8a30296ca005165247e22e9975e669573fa8907c6  sdcard.img
+== 3. the file in the target directory before the build (from the overlay), then remove it
+e4d2df669962881002efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d  /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/wm1302-reset.sh
+ls: cannot access '/home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/wm1302-reset.sh': No such file or directory
+== 4. make sx1302-hal-rebuild with BR2_EXTERNAL = the worktree
+		-e "s:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot:@STAGING_DIR@:g" \
+		 -e "s:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/opt/ext-toolchain:@TOOLCHAIN_EXTERNAL_INSTALL_DIR@:g" \
+		-e "s:\(['= ]\)/usr:\\1@STAGING_DIR@/usr:g" \
+		-e "s:\(['= ]\)/lib:\\1@STAGING_DIR@/lib:g" \
+		 -e "s:@TOOLCHAIN_EXTERNAL_INSTALL_DIR@:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/opt/ext-toolchain:g" \
+		-e "s:@STAGING_DIR@:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot:g" \
+		-e "s:@BASE_DIR@:/home/sammy/aesd/final-project-sawa9885/buildroot/output:g" \
+		"${la}.fixed" && \
+	if cmp -s "${la}" "${la}.fixed"; then \
+		rm -f "${la}.fixed"; \
+	else \
+		mv "${la}.fixed" "${la}"; \
+	fi || exit 1; \
+done
+>>> sx1302-hal V2.1.0 Installing to target
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/packet_forwarder/lora_pkt_fwd /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/lora_pkt_fwd
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/util_chip_id/chip_id /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/util_chip_id
+/usr/bin/install -D -m 0755 /home/sammy/aesd/issue-12-worktree/base_external/package/sx1302-hal/reset_lgw.sh /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/reset_lgw.sh
+/usr/bin/install -D -m 0755 /home/sammy/aesd/issue-12-worktree/base_external/package/sx1302-hal/wm1302-reset.sh /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/wm1302-reset.sh
+/usr/bin/install -D -m 0644 /home/sammy/aesd/issue-12-worktree/base_external/package/sx1302-hal/global_conf.json /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/etc/lora_pkt_fwd/global_conf.json
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/.files-list.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/.files-list-staging.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/.files-list-images.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/sx1302-hal-V2.1.0/.files-list-host.before: No such file or directory
+make: Leaving directory '/home/sammy/aesd/final-project-sawa9885/buildroot'
+-- installed by the package, before the overlay is applied:
+-rwxr-xr-x 1 sammy sammy  911 Nov 18 18:52 /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/reset_lgw.sh
+-rwxr-xr-x 1 sammy sammy 1804 Nov 18 18:52 /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/wm1302-reset.sh
+e4d2df669962881002efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d  /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/wm1302-reset.sh
+sx1302-hal,./usr/bin/reset_lgw.sh
+== 5. make (target-finalize, rootfs.ext2, sdcard.img)
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/boot.vfat' '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/bcm2712d0-rpi-5-b.dtb' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/cmdline.txt' as 'rpi-firmware/cmdline.txt' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/boot.vfat' '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/rpi-firmware/cmdline.txt' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/config.txt' as 'rpi-firmware/config.txt' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/boot.vfat' '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/rpi-firmware/config.txt' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/overlays' as 'rpi-firmware/overlays' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/boot.vfat' '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/rpi-firmware/overlays' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'Image' as 'Image' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/boot.vfat' '/home/sammy/aesd/final-project-sawa9885/buildroot/output/images/Image' '::'" (stderr):
+INFO: hdimage(sdcard.img): adding primary partition 'boot' (in MBR) from 'boot.vfat' ...
+INFO: hdimage(sdcard.img): adding primary partition 'rootfs' (in MBR) from 'rootfs.ext4' ...
+INFO: hdimage(sdcard.img): adding primary partition '[MBR]' ...
+INFO: hdimage(sdcard.img): writing MBR
+INFO: cmd: "rm -rf "/home/sammy/aesd/final-project-sawa9885/buildroot/output/build/genimage.tmp/"" (stderr):
+make: Leaving directory '/home/sammy/aesd/final-project-sawa9885/buildroot'
+-rw-r--r-- 1 sammy sammy 268435456 Nov 18 18:52 /home/sammy/aesd/final-project-sawa9885/buildroot/output/images/rootfs.ext2
+-rw-r--r-- 1 sammy sammy 411041792 Nov 18 18:52 /home/sammy/aesd/final-project-sawa9885/buildroot/output/images/sdcard.img
+f9d33c57666da21357b0dab8a30296ca005165247e22e9975e669573fa8907c6  sdcard.img
+-- /usr/bin/wm1302-reset.sh inside rootfs.ext2:
+Inode: 3143   Type: regular    Mode:  0755   Flags: 0x80000
+Generation: 0    Version: 0x00000000:00000000
+User:     0   Group:     0   Project:     0   Size: 1804
+e4d2df669962881002efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d  -
+7:# wm1302-reset.sh, which uses libgpiod. This package installs both scripts in /usr/bin
+8:# (wm1302-reset.sh was in the rootfs overlay until issue #12).
+15:	exec /usr/bin/wm1302-reset.sh
+== 6. point the output tree back at the main checkout's external tree
+BR2_EXTERNAL_project_base_PATH=/home/sammy/aesd/final-project-sawa9885/base_external
+.br2-external.mk is as before
+## issue-7-gwmon-v2
