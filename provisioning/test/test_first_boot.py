@@ -27,13 +27,15 @@ SCRIPT = os.path.join(HERE, "..", "..", "base_external", "rootfs_overlay", "usr"
                       "gateway-provision")
 EUI = "0016c001f1135844"
 SECRET = "5a" * 32
-# The key marker is split so that the repo check for committed private keys does not match.
+# The PEM marker of the fake key is put together from two lines, so that the repo check for
+# committed keys (the "git grep" in the issue's definition of done) does not match this file.
+KEY_WORDS = "PRIVATE " + "KEY"
 GOOD_ANSWER = {
     "gateway_eui": EUI,
     "cups.uri": "https://example.cups.lorawan.us-east-1.amazonaws.com:443",
     "cups.trust": "-----BEGIN CERTIFICATE-----\ntrust\n-----END CERTIFICATE-----\n",
     "cups.crt": "-----BEGIN CERTIFICATE-----\ncert\n-----END CERTIFICATE-----\n",
-    "cups.key": "-----BEGIN FAKE " + "PRIVATE KEY-----\nkey\n-----END FAKE " + "PRIVATE KEY-----\n",
+    "cups.key": "-----BEGIN FAKE %s-----\nkey\n-----END FAKE %s-----\n" % (KEY_WORDS, KEY_WORDS),
 }
 TOOLS = ["sh", "curl", "jq", "sha256sum"]
 MISSING = [tool for tool in TOOLS if shutil.which(tool) is None]

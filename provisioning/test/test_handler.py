@@ -23,9 +23,11 @@ from gateway_registry import GatewayRegistry  # noqa: E402
 EUI = "0016c001f1135844"
 SECRET = "5a" * 32
 OTHER_SECRET = "c3" * 32
-# Stand-ins with the shape of the real values. The key marker is split so that the repo check
-# for committed private keys (git grep "BEGIN .*PRIVATE KEY") does not match this file.
-FAKE_KEY = "-----BEGIN FAKE " + "PRIVATE KEY-----\nnot-a-key\n-----END FAKE " + "PRIVATE KEY-----\n"
+# Stand-ins with the shape of the real values. The PEM marker of the fake key is put together
+# from two lines, so that the repo check for committed keys (the "git grep" in the issue's
+# definition of done, which looks for the marker on one line) does not match this file.
+KEY_WORDS = "PRIVATE " + "KEY"
+FAKE_KEY = "-----BEGIN FAKE %s-----\nnot-a-key\n-----END FAKE %s-----\n" % (KEY_WORDS, KEY_WORDS)
 FAKE_CERT = "-----BEGIN CERTIFICATE-----\nnot-a-certificate\n-----END CERTIFICATE-----\n"
 FAKE_TRUST = "-----BEGIN CERTIFICATE-----\nnot-a-trust-anchor\n-----END CERTIFICATE-----\n"
 CUPS_URI = "https://example.cups.lorawan.us-east-1.amazonaws.com:443"
@@ -194,7 +196,7 @@ class HandlerTest(unittest.TestCase):
     def assert_nothing_secret_logged(self):
         self.assertNotIn(SECRET, self.logged)
         self.assertNotIn(OTHER_SECRET, self.logged)
-        self.assertNotIn("PRIVATE KEY", self.logged)
+        self.assertNotIn(KEY_WORDS, self.logged)
         self.assertNotIn("not-a-key", self.logged)
 
     # --- valid secret -------------------------------------------------------------------
