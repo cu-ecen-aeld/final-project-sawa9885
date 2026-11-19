@@ -1,0 +1,43 @@
+$ git log --oneline -1
+ab08d87 gwmon: report station_fails as 0 once a run has lasted 30 s (issue #7)
+$ make gwmon-dirclean gwmon basicstation-reinstall
+rm -Rf /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0
+>>> gwmon 2.0.0 Syncing from source dir /home/sammy/aesd/final-project-sawa9885/base_external/../gwmon
+rsync -au --chmod=u=rwX,go=rX --exclude=/gwmon --exclude='*.o' --exclude .svn --exclude .git --exclude .hg --exclude .bzr --exclude CVS /home/sammy/aesd/final-project-sawa9885/base_external/../gwmon/ /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0
+>>> gwmon 2.0.0 Configuring
+>>> gwmon 2.0.0 Building
+GIT_DIR=. PATH="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" /usr/bin/make -j17 GIT_DIR=. PATH="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin:/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/sbin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" AR="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc-ar" AS="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-as" LD="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-ld" NM="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc-nm" CC="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc" GCC="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc" CPP="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-cpp" CXX="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-g++" FC="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gfortran" F77="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gfortran" RANLIB="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc-ranlib" READELF="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-readelf" STRIP="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-strip" OBJCOPY="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-objcopy" OBJDUMP="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-objdump" AR_FOR_BUILD="/usr/bin/ar" AS_FOR_BUILD="/usr/bin/as" CC_FOR_BUILD="/usr/bin/gcc" GCC_FOR_BUILD="/usr/bin/gcc" CXX_FOR_BUILD="/usr/bin/g++" LD_FOR_BUILD="/usr/bin/ld" CPPFLAGS_FOR_BUILD="-I/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/include" CFLAGS_FOR_BUILD="-O2 -I/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/include" CXXFLAGS_FOR_BUILD="-O2 -I/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/include" LDFLAGS_FOR_BUILD="-L/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/lib -Wl,-rpath,/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/lib" FCFLAGS_FOR_BUILD="" DEFAULT_ASSEMBLER="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-as" DEFAULT_LINKER="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-ld" CPPFLAGS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64" CFLAGS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1" CXXFLAGS="-D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1" LDFLAGS="" FCFLAGS=" -O2 -g0" FFLAGS=" -O2 -g0" PKG_CONFIG="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/pkg-config" STAGING_DIR="/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot" INTLTOOL_PERL=/usr/bin/perl -C /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0 all
+make[1]: Entering directory '/home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0'
+/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1 -std=gnu11 -pthread -c -o gwmon.o gwmon.c
+/home/sammy/aesd/final-project-sawa9885/buildroot/output/host/bin/aarch64-linux-gcc -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64  -O2 -g0 -D_FORTIFY_SOURCE=1 -std=gnu11 -pthread  -o gwmon gwmon.o 
+make[1]: Leaving directory '/home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0'
+>>> gwmon 2.0.0 Installing to target
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0/gwmon /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/gwmon
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/base_external/package/gwmon/S99gwmon /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/etc/init.d/S99gwmon
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.stamp_installed
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.stamp_staging_installed
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.stamp_target_installed
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.stamp_images_installed
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.stamp_host_installed
+>>> basicstation v2.0.6 Installing to target
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/build-corecell-std/bin/station /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/station
+/usr/bin/install -D -m 0755 /home/sammy/aesd/final-project-sawa9885/base_external/package/basicstation/station-run.sh /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/usr/bin/station-run.sh
+rm -f /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/etc/init.d/S60station
+/usr/bin/install -D -m 0644 /home/sammy/aesd/final-project-sawa9885/base_external/package/basicstation/station.conf /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/etc/station/station.conf
+echo "2.0.6" > /home/sammy/aesd/final-project-sawa9885/buildroot/output/target/etc/station/version.txt
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.files-list.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.files-list-staging.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.files-list-images.before: No such file or directory
+comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstation-v2.0.6/.files-list-host.before: No such file or directory
+
+== The image built from this commit (full make after the two package targets)
+$ sha256sum sdcard.img
+3115d14cf0883648f67360ab9aca2815778c71d9ebab93855153f93fa6a2b005  sdcard.img
+$ debugfs -R "ls -l /etc/init.d" rootfs.ext2   (names only)
+S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S49chronyd S50crond S50dropbear S99gwmon rcK rcS  
+$ sha256sum of the files dumped from rootfs.ext2
+192e8d24d283ceae55c83a33379b0bb2ed91055c3b6c8f1d5e0cd3e00a603523  gwmon
+ffdba9ea35f6ebc408583a7293121e50c613bef0d35ab57ae5221cfaa80ba2ff  station-run.sh
+3d3ccb94aa342c1979aa7f045be6b8ad8e81e85ae2ada6687c7abceea56291cd  station
+89587a446dcca26366085d39fa31516362e1bebf989fce22541d3f2bb1598be2  S99gwmon
+e310843dd8ecf632cb526b3e80888590511fcf6e6e35975ca0efac18bc8f2e14  station.conf

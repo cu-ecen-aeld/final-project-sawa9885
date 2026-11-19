@@ -1,0 +1,255 @@
+# Issue #7 bench run on the Pi 5, 2026-11-19 UTC (the evening of 2026-11-18 local time). Branch issue-7-gwmon-v2 at ab08d87.
+# The card was not reflashed. It holds the issue #4 image (a611da7) with the issue #6 files, plus four files from this
+# branch's Buildroot build, copied over SSH; /etc/init.d/S60station was deleted by hand. SHA-256 on the Pi and inside
+# the new rootfs.ext2 (sdcard.img 3115d14cf0883648f67360ab9aca2815778c71d9ebab93855153f93fa6a2b005):
+#   192e8d24d283ceae55c83a33379b0bb2ed91055c3b6c8f1d5e0cd3e00a603523  /usr/bin/gwmon
+#   ffdba9ea35f6ebc408583a7293121e50c613bef0d35ab57ae5221cfaa80ba2ff  /usr/bin/station-run.sh
+#   89587a446dcca26366085d39fa31516362e1bebf989fce22541d3f2bb1598be2  /etc/init.d/S99gwmon
+#   e310843dd8ecf632cb526b3e80888590511fcf6e6e35975ca0efac18bc8f2e14  /etc/station/station.conf
+#   3d3ccb94aa342c1979aa7f045be6b8ad8e81e85ae2ada6687c7abceea56291cd  /usr/bin/station (unchanged since issue #4)
+# 192.168.0.123 is the Pi and 192.168.0.107 the PC. Each section is the output of one small script run on the Pi over
+# SSH as root; docs/issue7-gwmon-v2.md ("How to repeat the bench tests") has the commands. "Status line, read
+# from the PC" is what `nc 192.168.0.123 9000` prints. In Station's log the account-specific endpoint IDs are replaced
+# by <id>. Times in syslog and station.log are UTC.
+
+== 1. Start with the init script: /etc/init.d/S99gwmon stop, then start
+== before
+  372     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  374   372 /usr/bin/station --home /etc/station
+== /etc/init.d/S99gwmon stop  (uptime 551.98 s)
+Stopping gwmon: OK
+stop took 0.11 s
+(no gwmon, no station)
+== /etc/init.d/S99gwmon start
+Starting gwmon: OK
+Connected to MUXS 2.45 s after the start
+Concentrator started 5.00 s after the start
+  420     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  424   420 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== syslog
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[372]: Caught signal 15, exiting
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[372]: watchdog closed with the magic close after 1 feeds
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[372]: station (pid 374) stopped
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[420]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[420]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[420]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 01:02:29 aesd-pi5 daemon.info gwmon[420]: station started: /usr/bin/station-run.sh, pid 424
+Nov 19 01:02:30 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:02:30 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 553.57 s
+== status line, read from the PC
+gwmon 2.0.0 uptime=557s daemon_uptime=5s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=3 wd_last_feed_age=1s station=running station_pid=424 station_uptime=5s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.8C
+
+== 2. DoD 1 and 2: kill -9 of Station; gwmon restarts it and it connects to AWS again
+== status line before, read from the PC
+gwmon 2.0.0 uptime=587s daemon_uptime=35s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=18 wd_last_feed_age=1s station=running station_pid=424 station_uptime=35s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.6C
+before: 2026-11-19 01:03:05 UTC, uptime 587.74 s
+  420     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  424   420 /usr/bin/station --home /etc/station
+== kill -9 424 (station) at uptime 587.74 s
+a new station process (pid 660) is running 2.50 s after the kill
+"Connected to MUXS." in station.log 3.42 s after the kill
+"Concentrator started" in station.log 5.97 s after the kill
+  420     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  660   420 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== syslog since the kill
+Nov 19 01:03:05 aesd-pi5 daemon.warn gwmon[420]: station (pid 424) was killed by signal 9 after 35 s
+Nov 19 01:03:05 aesd-pi5 daemon.notice gwmon[420]: restarting station in 1 s
+Nov 19 01:03:06 aesd-pi5 daemon.notice gwmon[420]: station restart 1: started /usr/bin/station-run.sh, pid 660
+Nov 19 01:03:07 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:03:07 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 590.22 s
+== station.log since the kill (selected lines)
+2026-11-19 01:03:07.609 [SYS:INFO] Station Ver : 2.0.6(corecell/std) 2026-11-12 16:50:47
+2026-11-19 01:03:07.809 [TCE:INFO] Connecting to INFOS: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-19 01:03:08.147 [TCE:VERB] Connecting to MUXS...
+2026-11-19 01:03:08.432 [TCE:VERB] Connected to MUXS.
+2026-11-19 01:03:11.049 [RAL:INFO] Concentrator started (2s365ms)
+== status line after, read from the PC
+gwmon 2.0.0 uptime=593s daemon_uptime=41s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=21 wd_last_feed_age=1s station=running station_pid=660 station_uptime=5s station_restarts=1 station_fails=0 uplinks=0 last_uplink_age=never temp=29.6C
+
+== 3. The gwmon.disable safety file, and a gateway with no credentials
+== 1. gwmon.disable on the boot partition (uptime 594.06 s)
+Stopping gwmon: OK
+gwmon: /boot/gwmon.disable exists, not starting
+exit status of start: 0
+(no gwmon, no station)
+watchdog state: inactive, timeout 10 s
+== 2. No credentials: an empty directory is mounted over /etc/station (the real files are not touched)
+files in /etc/station now: 0
+Starting gwmon: OK
+  872     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+watchdog state: active, timeout 10 s
+== status line, read from the PC
+gwmon 2.0.0 uptime=597s daemon_uptime=3s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=2 wd_last_feed_age=1s station=unconfigured station_pid=0 station_uptime=0s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.5C
+== status line 60 s after the start
+gwmon 2.0.0 uptime=653s daemon_uptime=59s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=30 wd_last_feed_age=1s station=unconfigured station_pid=0 station_uptime=0s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.8C
+== 60 s later (uptime 653.65 s)
+  872     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+watchdog state: active, timeout 10 s
+== syslog since the start
+Nov 19 01:03:11 aesd-pi5 daemon.info gwmon[872]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 19 01:03:11 aesd-pi5 daemon.info gwmon[872]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 01:03:11 aesd-pi5 daemon.info gwmon[872]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 01:03:11 aesd-pi5 daemon.info gwmon[872]: station started: /usr/bin/station-run.sh, pid 874
+Nov 19 01:03:11 aesd-pi5 user.notice station: no cups.uri or tc.uri in /etc/station, not starting (see the README, "Flash and first boot")
+Nov 19 01:03:11 aesd-pi5 daemon.warn gwmon[872]: station (pid 874) exited with status 78 after 0 s
+Nov 19 01:03:11 aesd-pi5 daemon.notice gwmon[872]: station has nothing to run (exit status 78): not restarting it, the watchdog is still fed
+Nov 19 01:03:14 aesd-pi5 daemon.info gwmon[872]: Accepted connection from 192.168.0.107
+Nov 19 01:04:10 aesd-pi5 daemon.info gwmon[872]: Accepted connection from 192.168.0.107
+== back to normal: unmount, restart
+Stopping gwmon: OK
+files in /etc/station now: 20
+Starting gwmon: OK
+Concentrator started 4.99 s after the start
+  906     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  910   906 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== status line, read from the PC
+gwmon 2.0.0 uptime=658s daemon_uptime=5s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=3 wd_last_feed_age=1s station=running station_pid=910 station_uptime=5s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.7C
+
+== 4. DoD 3: Station cannot be restarted; after 5 failed starts gwmon stops feeding the watchdog and the Pi resets
+#    The PC read the status line once a second during this test. The "Accepted connection" lines that this
+#    caused in syslog are left out here, and only every 4th uptime line is kept (they are 0.5 s apart).
+/usr/bin/station is now a script that exits with status 1 (a bind mount: gone after a reboot)
+  906     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  910   906 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== kill -9 910 (station) at uptime 689.43 s
+uptime 689.43 s (+0.00 s), watchdog active
+Nov 19 01:04:46 aesd-pi5 daemon.warn gwmon[906]: station (pid 910) was killed by signal 9 after 35 s
+Nov 19 01:04:46 aesd-pi5 daemon.notice gwmon[906]: restarting station in 1 s
+Nov 19 01:04:47 aesd-pi5 daemon.notice gwmon[906]: station restart 1: started /usr/bin/station-run.sh, pid 1139
+uptime 691.45 s (+2.02 s), watchdog active
+Nov 19 01:04:49 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:04:49 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 691.91 s
+Nov 19 01:04:49 aesd-pi5 daemon.warn gwmon[906]: station (pid 1139) exited with status 1 after 1 s
+Nov 19 01:04:49 aesd-pi5 daemon.notice gwmon[906]: restarting station in 2 s (failed start 1 of 5)
+uptime 693.47 s (+4.04 s), watchdog active
+Nov 19 01:04:51 aesd-pi5 daemon.notice gwmon[906]: station restart 2: started /usr/bin/station-run.sh, pid 1216
+uptime 695.48 s (+6.06 s), watchdog active
+Nov 19 01:04:52 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:04:52 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 695.38 s
+Nov 19 01:04:52 aesd-pi5 daemon.warn gwmon[906]: station (pid 1216) exited with status 1 after 1 s
+Nov 19 01:04:52 aesd-pi5 daemon.notice gwmon[906]: restarting station in 4 s (failed start 2 of 5)
+uptime 697.50 s (+8.08 s), watchdog active
+uptime 699.52 s (+10.10 s), watchdog active
+Nov 19 01:04:56 aesd-pi5 daemon.notice gwmon[906]: station restart 3: started /usr/bin/station-run.sh, pid 1327
+Nov 19 01:04:58 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:04:58 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 700.86 s
+Nov 19 01:04:58 aesd-pi5 daemon.warn gwmon[906]: station (pid 1327) exited with status 1 after 1 s
+Nov 19 01:04:58 aesd-pi5 daemon.notice gwmon[906]: restarting station in 8 s (failed start 3 of 5)
+uptime 701.54 s (+12.11 s), watchdog active
+uptime 703.56 s (+14.13 s), watchdog active
+uptime 705.58 s (+16.15 s), watchdog active
+uptime 707.60 s (+18.17 s), watchdog active
+Nov 19 01:05:06 aesd-pi5 daemon.notice gwmon[906]: station restart 4: started /usr/bin/station-run.sh, pid 1505
+uptime 709.62 s (+20.19 s), watchdog active
+Nov 19 01:05:07 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:05:07 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 710.34 s
+Nov 19 01:05:07 aesd-pi5 daemon.warn gwmon[906]: station (pid 1505) exited with status 1 after 1 s
+Nov 19 01:05:07 aesd-pi5 daemon.notice gwmon[906]: restarting station in 16 s (failed start 4 of 5)
+uptime 711.64 s (+22.21 s), watchdog active
+uptime 713.66 s (+24.23 s), watchdog active
+uptime 715.68 s (+26.25 s), watchdog active
+uptime 717.70 s (+28.27 s), watchdog active
+uptime 719.72 s (+30.29 s), watchdog active
+uptime 721.74 s (+32.31 s), watchdog active
+uptime 723.76 s (+34.33 s), watchdog active
+uptime 725.78 s (+36.35 s), watchdog active
+Nov 19 01:05:23 aesd-pi5 daemon.notice gwmon[906]: station restart 5: started /usr/bin/station-run.sh, pid 1819
+uptime 727.80 s (+38.37 s), watchdog active
+Nov 19 01:05:25 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:05:25 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 727.82 s
+Nov 19 01:05:25 aesd-pi5 daemon.warn gwmon[906]: station (pid 1819) exited with status 1 after 1 s
+Nov 19 01:05:25 aesd-pi5 daemon.crit gwmon[906]: station failed 5 starts in a row: giving up. The watchdog is no longer fed and resets the board within 10 s
+uptime 729.82 s (+40.39 s), watchdog active
+uptime 731.84 s (+42.41 s), watchdog active
+uptime 733.85 s (+44.43 s), watchdog active
+uptime 735.87 s (+46.45 s), watchdog active
+uptime 737.89 s (+48.46 s), watchdog active
+Timeout, server 192.168.0.123 not responding.
+# The last uptime line the Pi printed before the reset:
+uptime 737.89 s (+48.46 s), watchdog active
+
+-- the status line during the test, read from the PC once a second (PC clock, UTC; only lines where a state changed)
+01:04:45  gwmon 2.0.0 uptime=688s daemon_uptime=35s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=18 wd_last_feed_age=1s station=running station_pid=910 station_uptime=35s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.7C
+01:04:46  gwmon 2.0.0 uptime=689s daemon_uptime=36s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=19 wd_last_feed_age=0s station=backoff station_pid=0 station_uptime=0s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.7C
+01:04:48  gwmon 2.0.0 uptime=691s daemon_uptime=37s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=19 wd_last_feed_age=1s station=running station_pid=1139 station_uptime=0s station_restarts=1 station_fails=0 uplinks=0 last_uplink_age=never temp=29.7C
+01:04:49  gwmon 2.0.0 uptime=692s daemon_uptime=38s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=20 wd_last_feed_age=0s station=backoff station_pid=0 station_uptime=0s station_restarts=1 station_fails=1 uplinks=0 last_uplink_age=never temp=29.7C
+01:04:51  gwmon 2.0.0 uptime=694s daemon_uptime=41s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=21 wd_last_feed_age=1s station=running station_pid=1216 station_uptime=0s station_restarts=2 station_fails=1 uplinks=0 last_uplink_age=never temp=29.7C
+01:04:52  gwmon 2.0.0 uptime=695s daemon_uptime=42s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=22 wd_last_feed_age=0s station=backoff station_pid=0 station_uptime=0s station_restarts=2 station_fails=2 uplinks=0 last_uplink_age=never temp=29.6C
+01:04:57  gwmon 2.0.0 uptime=700s daemon_uptime=46s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=24 wd_last_feed_age=0s station=running station_pid=1327 station_uptime=1s station_restarts=3 station_fails=2 uplinks=0 last_uplink_age=never temp=29.5C
+01:04:58  gwmon 2.0.0 uptime=701s daemon_uptime=47s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=24 wd_last_feed_age=1s station=backoff station_pid=0 station_uptime=0s station_restarts=3 station_fails=3 uplinks=0 last_uplink_age=never temp=29.5C
+01:05:06  gwmon 2.0.0 uptime=709s daemon_uptime=56s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=29 wd_last_feed_age=0s station=running station_pid=1505 station_uptime=0s station_restarts=4 station_fails=3 uplinks=0 last_uplink_age=never temp=29.4C
+01:05:07  gwmon 2.0.0 uptime=710s daemon_uptime=57s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=29 wd_last_feed_age=1s station=backoff station_pid=0 station_uptime=0s station_restarts=4 station_fails=4 uplinks=0 last_uplink_age=never temp=29.4C
+01:05:24  gwmon 2.0.0 uptime=727s daemon_uptime=73s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=37 wd_last_feed_age=1s station=running station_pid=1819 station_uptime=0s station_restarts=5 station_fails=4 uplinks=0 last_uplink_age=never temp=29.2C
+01:05:25  gwmon 2.0.0 uptime=728s daemon_uptime=74s watchdog=starving wd_timeout=10s wd_interval=2s wd_feeds=38 wd_last_feed_age=0s station=failed station_pid=0 station_uptime=0s station_restarts=5 station_fails=5 uplinks=0 last_uplink_age=never temp=29.2C
+01:05:35  (no answer on port 9000)
+01:05:56  gwmon 2.0.0 uptime=14s daemon_uptime=11s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=6 wd_last_feed_age=1s station=running station_pid=253 station_uptime=11s station_restarts=0 station_fails=0 uplinks=unavailable last_uplink_age=never temp=29.1C
+
+-- after the reset
+uptime 17.48 s, 2026-11-19 01:05:59 UTC
+init scripts: S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S49chronyd S50crond S50dropbear S99gwmon rcK rcS 
+bind mounts on /usr/bin/station or /etc/station: 0
+Concentrator started, uptime 22.26 s
+  250     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  253   250 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== syslog of this boot (provision, network, clock, station, gwmon)
+Nov 19 01:05:44 aesd-pi5 kern.notice kernel: [    1.648636] Key type fscrypt-provisioning registered
+Nov 19 01:05:45 aesd-pi5 daemon.info gwmon[250]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 19 01:05:45 aesd-pi5 daemon.info gwmon[250]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 01:05:45 aesd-pi5 daemon.info gwmon[250]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 01:05:45 aesd-pi5 daemon.info gwmon[250]: station started: /usr/bin/station-run.sh, pid 253
+Nov 19 01:05:47 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 01:05:49 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 19 01:05:49 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 7.17 s: ifup
+Nov 19 01:05:55 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 13.45 s
+Nov 19 01:06:01 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 18.74 s
+Nov 19 01:06:01 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 19.46 s
+== station.log of this boot (selected lines)
+2026-11-19 01:06:01.144 [SYS:INFO] Station Ver : 2.0.6(corecell/std) 2026-11-12 16:50:47
+2026-11-19 01:06:01.348 [TCE:INFO] Connecting to INFOS: wss://<id>.lns.lorawan.us-east-1.amazonaws.com:443
+2026-11-19 01:06:01.686 [TCE:VERB] Connecting to MUXS...
+2026-11-19 01:06:01.984 [TCE:VERB] Connected to MUXS.
+2026-11-19 01:06:04.596 [RAL:INFO] Concentrator started (2s363ms)
+== status line, read from the PC
+gwmon 2.0.0 uptime=22s daemon_uptime=19s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=10 wd_last_feed_age=1s station=running station_pid=253 station_uptime=19s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.1C
+
+== 5. Version 1's watchdog property with the supervision in place
+-- 5a. kill -STOP of gwmon: the main loop stops, Station keeps running, the Pi resets
+  250     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  253   250 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== kill -STOP 250 at uptime 24.83 s
+uptime 24.83 s (+0.00 s), station: 253
+uptime 26.85 s (+2.02 s), station: 253
+uptime 28.87 s (+4.04 s), station: 253
+uptime 30.90 s (+6.07 s), station: 253
+uptime 32.92 s (+8.09 s), station: 253
+Timeout, server 192.168.0.123 not responding.
+# The last uptime line before the reset:
+uptime 33.42 s (+8.59 s), station: 253
+== after the reset: status line, read from the PC
+gwmon 2.0.0 uptime=13s daemon_uptime=10s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=6 wd_last_feed_age=0s station=running station_pid=259 station_uptime=10s station_restarts=0 station_fails=0 uplinks=unavailable last_uplink_age=never temp=29.2C
+uptime 13.90 s
+-- 5b. kill -9 of gwmon: Station gets SIGTERM from the kernel (PR_SET_PDEATHSIG) and the Pi resets
+  256     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  259   256 /usr/bin/station --home /etc/station
+watchdog state: active, timeout 10 s
+== kill -KILL 256 at uptime 24.46 s
+[   25.268693] watchdog: watchdog0: watchdog left running
+uptime 24.47 s (+0.01 s), station: 259
+uptime 26.49 s (+2.03 s), station: gone
+uptime 28.51 s (+4.05 s), station: gone
+uptime 30.53 s (+6.07 s), station: gone
+uptime 32.55 s (+8.09 s), station: gone
+uptime 34.57 s (+10.11 s), station: gone
+Timeout, server 192.168.0.123 not responding.
+# The first uptime line without Station, and the last one before the reset:
+uptime 25.48 s (+1.02 s), station: gone
+uptime 34.57 s (+10.11 s), station: gone
+== after the reset: status line, read from the PC
+gwmon 2.0.0 uptime=14s daemon_uptime=11s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=6 wd_last_feed_age=1s station=running station_pid=251 station_uptime=11s station_restarts=0 station_fails=0 uplinks=unavailable last_uplink_age=never temp=29.2C
+uptime 14.41 s
