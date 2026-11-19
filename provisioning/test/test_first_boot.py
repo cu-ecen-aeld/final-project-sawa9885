@@ -77,6 +77,7 @@ class FirstBootTest(unittest.TestCase):
         self.server.answers = list(answers)
         self.server.requests = []
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.addCleanup(self.server.server_close)
         self.addCleanup(self.server.shutdown)
         return "http://127.0.0.1:%d/provision" % self.server.server_address[1]
 
@@ -176,7 +177,7 @@ class FirstBootTest(unittest.TestCase):
 
         timer = threading.Timer(2.0, start_later)
         timer.start()
-        self.addCleanup(lambda: self.server and self.server.shutdown())
+        self.addCleanup(lambda: self.server and (self.server.shutdown(), self.server.server_close()))
         self.assertEqual(self.run_script(), 0)
         self.assert_installed()
         self.assertIn("no answer: curl:", self.log())
