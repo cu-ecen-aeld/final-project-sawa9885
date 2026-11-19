@@ -19,11 +19,21 @@ Under WSL2, build in the Linux filesystem (not `/mnt/c`) and drop the Windows en
 
 The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the build output, and `./save_config.sh` saves `menuconfig` changes to `base_external/configs/aesd_pi5_defconfig`.
 
-- Buildroot is a submodule pinned to the 2026.02.3 LTS release. The image starts from Buildroot's `raspberrypi5_defconfig`.
-- `base_external/` is the `BR2_EXTERNAL` tree: the defconfig, board scripts and the rootfs overlay.
-- On top of `raspberrypi5_defconfig`, the defconfig installs `bcm2712-d-rpi-5-b.dtb` and the firmware overlays. Current Pi 5 firmware loads that device tree on D-stepping boards, and without it our Pi 5 never started Linux. `base_external/board/pi5/genimage.cfg.in` lays the card out like Raspberry Pi OS: a 128 MB FAT32 boot partition at 8 MiB.
+- `base_external/` is the `BR2_EXTERNAL` tree: the defconfig, board scripts, the packages (`sx1302-hal`, `basicstation`, `gwmon`) and the rootfs overlay.
+- `base_external/board/pi5/genimage.cfg.in` lays the card out like Raspberry Pi OS: a 128 MB FAT32 boot partition at 8 MiB. With Buildroot's stock layout (a 32 MB FAT16 partition at sector 1) our Pi 5 did not start Linux.
 - `base_external/board/pi5/config.txt` replaces Buildroot's `config_5.txt`. It adds `dtparam=spi=on` and `dtparam=i2c_arm=on` for the WM1302 HAT: the SX1302 is on `/dev/spidev0.0` and its temperature sensor is at 0x39 on `/dev/i2c-1`. `/etc/modules-load.d/wm1302.conf` loads `i2c-dev` at boot.
-- `/usr/bin/wm1302-reset.sh` resets the WM1302 (GPIO17 for the SX1302, GPIO5 for the SX1261) with libgpiod's `gpioset` on the RP1 chip (`pinctrl-rp1`, `gpiochip0`), not sysfs GPIO. The image has libgpiod 1.6 rather than 2.x, because the Bootlin stable toolchain has 5.4 kernel headers and `libgpiod2` needs 5.10. The kernel still has the v1 GPIO uAPI (`CONFIG_GPIO_CDEV_V1=y`).
+- `/usr/bin/wm1302-reset.sh` resets the WM1302 (GPIO17 for the SX1302, GPIO5 for the SX1261) with libgpiod's `gpioset` on the RP1 chip (`pinctrl-rp1`, `gpiochip0`), not sysfs GPIO. The `sx1302-hal` package installs it, next to the `reset_lgw.sh` that the HAL tools call, because those tools are what need it (it was in the rootfs overlay until issue #12). [Boot order](#boot-order) says when it runs. The image has libgpiod 1.6 rather than 2.x, because the Bootlin stable toolchain has 5.4 kernel headers and `libgpiod2` needs 5.10. The kernel still has the v1 GPIO uAPI (`CONFIG_GPIO_CDEV_V1=y`).
+
+### Buildroot version
+
+Buildroot is the `buildroot/` submodule, pinned to commit [`679b9ead7620bbf193620d1ebf56f53c1764d37a`](https://gitlab.com/buildroot.org/buildroot/-/commit/679b9ead7620bbf193620d1ebf56f53c1764d37a). That commit is the tag `2026.02.3`, on the `2026.02.x` long-term support branch. `git -C buildroot describe --tags` prints the tag, and `git submodule status` prints the commit.
+
+The image starts from that release's `raspberrypi5_defconfig`. Two changes to it were needed before our board, a Pi 5 Rev 1.1 with the bootloader EEPROM of 2026-05-11, started Linux at all (issue #1):
+
+- **`bcm2712-d-rpi-5-b.dtb`.** The first Pi 5 boards have the C1 stepping of the BCM2712, and newer ones have the D0 stepping, which needs a device tree of its own. The stock defconfig builds `bcm2712-rpi-5-b.dtb`, `bcm2712d0-rpi-5-b.dtb` and `bcm2712-rpi-500.dtb`. The firmware on our board asks for the D0 device tree under the name `bcm2712-d-rpi-5-b.dtb`, which is not in that list. So it found no device tree and Linux never started: the root filesystem's mount count stayed 0. The same kernel booted from a Raspberry Pi OS card, which has that file. `BR2_LINUX_KERNEL_INTREE_DTS_NAME` in `aesd_pi5_defconfig` now adds `broadcom/bcm2712-d-rpi-5-b`, and `post-image.sh` copies every built `.dtb` to the boot partition, so the image has the device tree for either stepping.
+- **The firmware overlays.** `BR2_PACKAGE_RPI_FIRMWARE_INSTALL_DTB_OVERLAYS=y` puts the `overlays/` directory of the Raspberry Pi firmware on the boot partition; the stock defconfig leaves it out. It holds `overlay_map.dtb`, which the Pi 5 firmware reads to choose the overlay variant for the BCM2712, and the overlays that `dtoverlay=` lines in `config.txt` load. This was added in the same debugging session, right after the device tree, to give the firmware everything it looks for on a Raspberry Pi OS card. `config.txt` uses only `dtparam=` lines today, which the base device tree handles. The history has no boot test with the device tree but without the overlays, so they are part of the configuration that works, not a proven requirement.
+
+The commits are `206ef0e` (card layout), `d78c27d` (device tree) and `36a9f8e` (overlays).
 
 ## Flash and first boot
 
@@ -50,12 +60,57 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
 - The Pi 5 has no RTC battery here, so the clock is wrong after a cold boot. `chronyd` sets it from `pool.ntp.org`. A udhcpc hook (`/usr/share/udhcpc/default.script.d/50-chrony`) tells chronyd when an interface gets a lease, and logs the uptime of the lease and of the first sync: `grep ntp-hook /var/log/messages`. `chronyc tracking` shows the current state, and `chronyc waitsync` blocks until the clock is set.
 - The `ca-certificates` bundle is `/etc/ssl/certs/ca-certificates.crt`.
 
+## Boot order
+
+1. **Firmware.** The Pi 5 bootloader reads `config.txt` from the boot partition, loads the device tree for the board (see [Buildroot version](#buildroot-version)), turns on SPI and I2C in it (`dtparam=spi=on`, `dtparam=i2c_arm=on`) and starts the kernel `Image` with `root=/dev/mmcblk0p2`.
+2. **Kernel and init.** The kernel mounts the root filesystem and starts BusyBox `init`. `/etc/inittab` mounts `/proc` and everything in `/etc/fstab`, which includes the boot partition on `/boot`, and then runs `/etc/init.d/rcS`.
+3. **Init scripts.** `rcS` runs every `/etc/init.d/S*` script with `start`, in the order of their names, one at a time: a script starts only when the one before it has returned.
+
+| Script | From | What it does at boot |
+|---|---|---|
+| `S01seedrng` | Buildroot (`urandom-scripts`) | Seeds the kernel's random number generator. |
+| `S01syslogd`, `S02klogd` | Buildroot (BusyBox) | Start logging to `/var/log/messages`. |
+| `S02sysctl` | Buildroot (BusyBox) | Applies `/etc/sysctl.conf`. |
+| `S10udevd` | Buildroot (`eudev`) | Creates the device nodes and loads the drivers named in the device tree. After it, `/dev/spidev0.0` and the RP1 `gpiochip0` exist. |
+| `S11modules` | Buildroot (`initscripts`) | Loads the modules in `/etc/modules-load.d/wm1302.conf`: `i2c-dev`, for `/dev/i2c-1`, and `spidev`. |
+| `S35provision` | this repo, rootfs overlay | Installs the Wi-Fi and Basics Station credentials it finds on the boot partition, then deletes them there. |
+| `S40network` | Buildroot (`ifupdown-scripts`) | `ifup -a`: only the loopback interface, since `eth0` is not `auto`. |
+| `S41ifplugd` | this repo, rootfs overlay | Starts `ifplugd`, which brings `eth0` up with DHCP when the cable has a link. |
+| `S41wifi` | this repo, rootfs overlay | Starts Wi-Fi if `/etc/wpa_supplicant.conf` exists. |
+| `S49chronyd` | Buildroot (`chrony`) | Starts `chronyd`, which sets the clock once an interface has a lease. |
+| `S50crond` | Buildroot (BusyBox) | Starts `crond`. No cron jobs are installed. |
+| `S50dropbear` | Buildroot (`dropbear`) | Starts the SSH server. |
+| `S99gwmon` | this repo, `gwmon` package | Starts [gwmon](#gwmon), which arms the watchdog and starts Basics Station through `/usr/bin/station-run.sh`. |
+
+The network scripts only start daemons. The DHCP lease and the clock arrive later, in the background, so `S99gwmon` runs about 3 s after the kernel starts, before either is there.
+
+### When the concentrator is reset
+
+No init script resets the WM1302 on its own, and nothing before `S99gwmon` touches its reset pins. Until the first reset the pins sit at the Pi's default pulls: GPIO17 low, so the SX1302 is not held in reset, and GPIO5 high. The reset is done by the programs that open the concentrator, each time just before they open it, always with `/usr/bin/wm1302-reset.sh`. It holds both chips in reset for 100 ms and then waits another 100 ms.
+
+At boot that happens twice, both times below `S99gwmon`:
+
+1. **`util_chip_id`, about 3 to 5 s after the kernel starts.** `S99gwmon` starts `gwmon`, gwmon starts `station-run.sh`, and that script reads the SX1302's EUI with `util_chip_id`. Like all the sx1302-hal tools, `util_chip_id` runs `reset_lgw.sh start` first, and `reset_lgw.sh` runs `wm1302-reset.sh`. This needs only what `S10udevd` and `S11modules` set up (the GPIO chip and `/dev/spidev0.0`), not the network or the clock. It is skipped on a gateway with no `cups.uri` or `tc.uri`: `station-run.sh` exits before it, since there is nothing to start.
+2. **Basics Station, just before it starts the radio.** `station-run.sh` then waits up to 60 s for the clock and execs `station`. Station runs its `radio_init` program, which `station.conf` sets to `/usr/bin/wm1302-reset.sh`, before each start of the concentrator. That is after it has connected to the network server and received the channel plan.
+
+The times of one boot, from [docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md):
+
+| Uptime | Event |
+|---|---|
+| about 3 s | `S99gwmon` starts gwmon, and gwmon starts `station-run.sh` |
+| about 5 s | first reset done, EUI read: `station: gateway EUI ..., starting when the clock is set` |
+| 13.5 s | `eth0` has a DHCP lease; chronyd then sets the clock |
+| 18.7 s | `station-run.sh` execs `station` |
+| 22.3 s | Station has connected to AWS, reset the concentrator again and started it |
+
+When gwmon restarts Station later, both resets run again in the same order. `lora_pkt_fwd`, the test forwarder from issue #3, is not started at boot. Run by hand, it resets the concentrator through `reset_lgw.sh` as `util_chip_id` does.
+
 ## Basics Station
 
 `base_external/package/basicstation` builds [LoRa Basics Station](https://github.com/lorabasics/basicstation) v2.0.6 for its `corecell` platform (SX1302), `std` variant. `station` is linked statically with Station's own patched copy of sx1302_hal V2.1.0 and with mbedtls 2.28.10. Buildroot downloads both and checks their hashes, in place of the `git clone` that upstream's makefiles run. The comments in `basicstation.mk` say why the Buildroot `mbedtls` and our `sx1302-hal` library can't be used.
 
 - **Start at boot:** `gwmon` starts Station and restarts it when it exits (see [gwmon](#gwmon)). Station has no init script of its own. gwmon runs `/usr/bin/station-run.sh`, which reads the SX1302's EUI with `util_chip_id` (which also resets the WM1302), writes it to `/var/run/station.eui`, waits up to 60 s for chronyd to set the clock, then execs `station --home /etc/station` in the foreground. With no `cups.uri` or `tc.uri` in `/etc/station` it logs one line and exits with status 78, which tells gwmon that there is nothing to run.
-- **Boot order:** `S35provision` (credentials), `S40network`, `S41ifplugd`, `S49chronyd`, `S50dropbear`, then `S99gwmon`, which starts gwmon and, through it, Station.
+- **Boot order:** `S99gwmon` is the last init script, after the credentials, the network daemons, chronyd and SSH. [Boot order](#boot-order) has the whole sequence and the concentrator resets.
 - **Gateway EUI:** the concentrator's EUI. `station.conf` names `/var/run/station.eui` as its `routerid`, so the image isn't tied to one board. `grep 'gateway EUI' /var/log/messages` shows it.
 - **Configuration:** `/etc/station/station.conf` (radio settings for the WM1302, no secrets). The channel plan comes from the network server. The credentials are the `cups.*` files from "Flash and first boot"; Station fetches the LNS address and credentials from CUPS and saves them as `tc.*` in the same directory.
 - **Log:** `/var/log/station.log` (tmpfs, 3 x 2 MB at most). The log level is `INFO`, with the `S2E` and `TCE` modules at `VERBOSE`: one `RX` line per received frame, which gwmon counts, and `Connected to MUXS.` when the network server connection is up.
