@@ -17,7 +17,7 @@
 #      then finds the credentials and starts Station.
 #
 # Retry: when the network, the clock or the function is not available, it tries again after
-# 5 s, then 10, 20, 40, ... up to 5 minutes between tries, plus up to a quarter of that at
+# 5 s, then 10, 20, 40 and from then on 60 s between tries, plus up to a quarter of that at
 # random so that a batch of gateways powered together does not ask in step. It never gives up
 # on those. It does give up, until the next boot, when the function itself refuses the secret
 # (unknown, or already used): asking again cannot change that answer.
@@ -40,7 +40,9 @@ SECRET_FILE=$PROV_DIR/secret
 URL_FILE=$PROV_DIR/url
 SPI_DEV=/dev/spidev0.0
 FIRST_DELAY=${GWPROV_FIRST_DELAY:-5}
-MAX_DELAY=${GWPROV_MAX_DELAY:-300}
+# 60 s at most, as in Station's own reconnect backoff: however long the network was away, the
+# next try comes within about a minute of its return.
+MAX_DELAY=${GWPROV_MAX_DELAY:-60}
 # The same wait as station-run.sh: up to 30 checks, 2 s apart.
 CLOCK_TRIES=${GWPROV_CLOCK_TRIES:-30}
 RESTART_CMD=${GWPROV_RESTART_CMD:-/etc/init.d/S99gwmon restart}
