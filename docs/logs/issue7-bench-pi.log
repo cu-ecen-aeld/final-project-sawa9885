@@ -253,3 +253,24 @@ uptime 34.57 s (+10.11 s), station: gone
 == after the reset: status line, read from the PC
 gwmon 2.0.0 uptime=14s daemon_uptime=11s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=6 wd_last_feed_age=1s station=running station_pid=251 station_uptime=11s station_restarts=0 station_fails=0 uplinks=unavailable last_uplink_age=never temp=29.2C
 uptime 14.41 s
+
+== 6. DoD 4: uplinks from the test node, counted from Station's log
+# Three confirmed, empty uplinks from aesd-test-node (DevAddr 00BC32BD), which the coordinating session triggered on request.
+# gwmon and Station were not touched: this is the boot that followed test 5b.
+-- the status line, read from the PC every 10 s (PC clock, UTC; only lines where the uplink count changed, and the last one)
+01:10:51  gwmon 2.0.0 uptime=226s daemon_uptime=223s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=112 wd_last_feed_age=1s station=running station_pid=251 station_uptime=223s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.9C
+01:11:22  gwmon 2.0.0 uptime=257s daemon_uptime=253s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=127 wd_last_feed_age=1s station=running station_pid=251 station_uptime=253s station_restarts=0 station_fails=0 uplinks=1 last_uplink_age=1s temp=29.9C
+01:11:52  gwmon 2.0.0 uptime=287s daemon_uptime=284s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=143 wd_last_feed_age=0s station=running station_pid=251 station_uptime=284s station_restarts=0 station_fails=0 uplinks=2 last_uplink_age=4s temp=29.9C
+01:12:23  gwmon 2.0.0 uptime=318s daemon_uptime=315s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=158 wd_last_feed_age=1s station=running station_pid=251 station_uptime=315s station_restarts=0 station_fails=0 uplinks=3 last_uplink_age=7s temp=30.0C
+01:12:35  gwmon 2.0.0 uptime=330s daemon_uptime=327s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=164 wd_last_feed_age=1s station=running station_pid=251 station_uptime=327s station_restarts=0 station_fails=0 uplinks=3 last_uplink_age=19s temp=29.9C
+-- Station's log on the Pi at 01:12:48 UTC: every RX line (frames received) and TX line (the downlinks that acknowledge them)
+$ grep -c "\] RX " /var/log/station.log
+3
+2026-11-19 01:11:19.240 [S2E:VERB] RX 904.5MHz DR3 SF7/BW125 snr=13.8 rssi=-79 xtime=0xE700000DDA111C - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=5 FOpts=[] 0D mic=-143699474 (13 bytes)
+2026-11-19 01:11:20.241 [S2E:INFO] TX ::1 diid=40565 [ant#0] - dntxed: 925.1MHz 26.0dBm ant#0(0) DR13 SF7/BW500 (12 bytes)
+2026-11-19 01:11:47.876 [S2E:VERB] RX 905.1MHz DR3 SF7/BW125 snr=13.8 rssi=-80 xtime=0xE700000F8F03E2 - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=6 FOpts=[] 0D mic=2119984924 (13 bytes)
+2026-11-19 01:11:48.877 [S2E:INFO] TX ::1 diid=21994 [ant#0] - dntxed: 926.9MHz 26.0dBm ant#0(0) DR13 SF7/BW500 (12 bytes)
+2026-11-19 01:12:16.514 [S2E:VERB] RX 904.7MHz DR3 SF7/BW125 snr=13.5 rssi=-78 xtime=0xE700001143EEF3 - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=7 FOpts=[] 0D mic=-1651551338 (13 bytes)
+2026-11-19 01:12:17.511 [S2E:INFO] TX ::1 diid=29898 [ant#0] - dntxed: 925.7MHz 26.0dBm ant#0(0) DR13 SF7/BW500 (12 bytes)
+-- the status line 32 s after the last frame
+01:12:48  gwmon 2.0.0 uptime=343s daemon_uptime=340s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=171 wd_last_feed_age=0s station=running station_pid=251 station_uptime=340s station_restarts=0 station_fails=0 uplinks=3 last_uplink_age=32s temp=30.0C

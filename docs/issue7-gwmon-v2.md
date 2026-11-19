@@ -10,7 +10,7 @@
 | gwmon starts `station`, sees it exit within 5 s, and restarts it with backoff. After `kill -9 $(pidof station)`, Station is back and connected to AWS within 60 s | **Pass.** gwmon logged the exit in the same second, started Station again 1 s later, and Station logged `Connected to MUXS.` 3.4 s after the kill. The backoff delays measured on the Pi were 1, 2, 4, 8 and 16 s |
 | Each restart is logged to syslog | **Pass.** One line for the exit, one for the delay and one for the restart, with its number |
 | If Station can't be restarted after 5 tries, gwmon stops feeding the watchdog and the Pi reboots | **Pass.** After the 5th failed start gwmon logged that it gives up, 38 s after the kill. The Pi reset 10 s later and came back by itself with Station connected |
-| `nc <pi-address> 9000` also reports uplinks received, time since the last uplink, concentrator temperature and the Station restart count | **Partly.** All four fields are in the status line on the Pi. The temperature and the restart count were seen working there. No LoRaWAN frame reached the gateway during the tests, so `uplinks` stayed 0 and `last_uplink_age` stayed `never` on the Pi. Counting is covered by the host test only, with lines copied from a real Station log |
+| `nc <pi-address> 9000` also reports uplinks received, time since the last uplink, concentrator temperature and the Station restart count | **Pass.** Three uplinks from the test node: `uplinks` went 0, 1, 2, 3, the same as the `RX` lines in Station's log, with `last_uplink_age` counting from each one. `temp=29.9C`, and `station_restarts` went from 0 to 1 at the `kill -9` |
 | Only gwmon's init script starts Station. Station's own init script is removed | **Pass.** `S60station` is gone from the package, from the built image and from the Pi. Station's parent process is gwmon, at boot and after every restart |
 
 Two things to know about these results:
@@ -163,15 +163,31 @@ Nobody ran `reboot`: the reset came from the watchdog, 10 s after the last feed.
 
 ### Status fields (DoD 4)
 
-The status line on the Pi, read from a PC on the LAN with `nc 192.168.0.123 9000`:
+The test node (`aesd-test-node`, DevAddr `00BC32BD`) sent three confirmed, empty uplinks, about 28 s apart. It only transmits when it is triggered, which the session that coordinates the project did on request. gwmon and Station had been running untouched since the last boot. The PC read the status line every 10 s. These are the lines where the count changed, shortened to the new fields:
 
 ```
-gwmon 2.0.0 uptime=587s daemon_uptime=35s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=18 wd_last_feed_age=1s station=running station_pid=424 station_uptime=35s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.6C
+01:10:51  ... station=running station_pid=251 station_uptime=223s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=29.9C
+01:11:22  ... station=running station_pid=251 station_uptime=253s station_restarts=0 station_fails=0 uplinks=1 last_uplink_age=1s temp=29.9C
+01:11:52  ... station=running station_pid=251 station_uptime=284s station_restarts=0 station_fails=0 uplinks=2 last_uplink_age=4s temp=29.9C
+01:12:23  ... station=running station_pid=251 station_uptime=315s station_restarts=0 station_fails=0 uplinks=3 last_uplink_age=7s temp=30.0C
+01:12:48  ... station=running station_pid=251 station_uptime=340s station_restarts=0 station_fails=0 uplinks=3 last_uplink_age=32s temp=30.0C
 ```
 
+Station's log has exactly three `RX` lines for the same boot, each followed by a downlink that acknowledges the frame (the first one is shown):
+
+```
+01:11:19.240 [S2E:VERB] RX 904.5MHz DR3 SF7/BW125 snr=13.8 rssi=-79 ... - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=5 ... (13 bytes)
+01:11:20.241 [S2E:INFO] TX ::1 diid=40565 [ant#0] - dntxed: 925.1MHz 26.0dBm ant#0(0) DR13 SF7/BW500 (12 bytes)
+01:11:47.876 [S2E:VERB] RX 905.1MHz DR3 SF7/BW125 snr=13.8 rssi=-80 ... - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=6 ... (13 bytes)
+01:12:16.514 [S2E:VERB] RX 904.7MHz DR3 SF7/BW125 snr=13.5 rssi=-78 ... - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=7 ... (13 bytes)
+```
+
+- **Uplinks received:** 3 in the status line, 3 `RX` lines in the log, frame counters 5, 6 and 7.
+- **Time since the last uplink:** the last frame was logged at 01:12:16.5, and at 01:12:48 the status line read `last_uplink_age=32s`. The line read at 01:11:22 shows `1s` for a frame logged at 01:11:19.2: gwmon reads the log every 2 s, so the age starts up to 2 s late.
 - **Restart count:** 0 before the `kill -9` above and 1 after it, and it counted to 5 in the five-failures test.
-- **Temperature:** 29.1 to 29.8 °C during the tests, with the board in open air on the bench. Read by hand with `i2cget`, the sensor's two registers gave 0x1d and 0xc0, which is 29.75 °C. Station's log has `found temperature sensor on port 0x39` at each start, so both programs were reading the sensor at the same time.
-- **Uplinks and time since the last uplink: not verified with a real frame.** The gateway received no LoRaWAN frame while these tests ran: the test node only sends when it is triggered, and there were no `RX` lines in Station's log. So on the Pi the two fields only showed `uplinks=0 last_uplink_age=never`, and `uplinks=unavailable` in the first seconds of a boot, before Station has created its log. The counting itself is tested on the host with lines in the format of the `RX` lines that this same Station binary wrote in issue #4 ([logs/issue4-uplink-station.log](logs/issue4-uplink-station.log)).
+- **Temperature:** 29.1 to 30.0 °C during the tests, with the board in open air on the bench. Read by hand with `i2cget`, the sensor's two registers gave 0x1d and 0xc0, which is 29.75 °C. Station's log has `found temperature sensor on port 0x39` at each start, so both programs were reading the sensor at the same time.
+
+Before the node was triggered the fields showed `uplinks=0 last_uplink_age=never`, and `uplinks=unavailable` in the first seconds of a boot, before Station has created its log.
 
 ### No credentials, and the safety file
 
