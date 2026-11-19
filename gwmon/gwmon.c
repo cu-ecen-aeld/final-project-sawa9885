@@ -873,13 +873,20 @@ static size_t format_status(char *buf, size_t size)
 			   wd.timeout_s, g_cfg.wd_interval_s, wd.feeds,
 			   seconds_between(&wd.last_feed, &now));
 
-	if (g_cfg.station_cmd != NULL)
+	if (g_cfg.station_cmd != NULL) {
+		long long run_s = sup.state == ST_RUNNING ? seconds_between(&sup.started, &now) : 0;
+		/*
+		 * The supervisor resets its count of failed starts when a run of stable_s or more
+		 * ends. The status shows 0 as soon as the current run has reached stable_s, so a
+		 * Station that has recovered is not reported with an old count.
+		 */
+		int fails = (sup.state == ST_RUNNING && run_s >= g_cfg.stable_s) ? 0 : sup.fails;
+
 		status_add(buf, size - 1, &len,
 			   " station=%s station_pid=%d station_uptime=%llds station_restarts=%lu"
 			   " station_fails=%d",
-			   st_state_name(sup.state), (int)sup.pid,
-			   sup.state == ST_RUNNING ? seconds_between(&sup.started, &now) : 0LL,
-			   sup.restarts, sup.fails);
+			   st_state_name(sup.state), (int)sup.pid, run_s, sup.restarts, fails);
+	}
 
 	if (g_cfg.log_path != NULL) {
 		if (health.log_seen)

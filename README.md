@@ -82,7 +82,7 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
   | `station` | `running`, `backoff` (it exited; gwmon is waiting before the next start), `failed` (5 failed starts in a row), `unconfigured` (no `cups.uri` or `tc.uri`: nothing to run) or `off`. |
   | `station_pid`, `station_uptime` | The running Station process and how long ago gwmon started it. |
   | `station_restarts` | How many times gwmon has started Station again since gwmon itself started. |
-  | `station_fails` | Starts in a row that ended within 30 s. It goes back to 0 at the next exit after a longer run. |
+  | `station_fails` | Failed starts in a row: starts that ended within 30 s. It is 0 again once Station has run for 30 s. |
   | `uplinks` | Frames that Station received and passed on to the network server since gwmon started, counted from the `RX` lines in `/var/log/station.log`. |
   | `last_uplink_age` | Time since the last of those lines was read, or `never`. |
   | `temp` | Temperature of the WM1302 board, from its STTS751 sensor on `/dev/i2c-1`, or `unavailable`. |

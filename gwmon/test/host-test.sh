@@ -317,6 +317,16 @@ check "the exit is in the syslog output" grep -q "station (pid $old) was killed 
 check "the delay after a run longer than -S is 1 s" grep -q "restarting station in 1 s\$" "$TMP/stderr.log"
 check "the restart is in the syslog output" grep -q "station restart 1: started $STATION, pid $new" "$TMP/stderr.log"
 
+# A run that ends before the -S limit is a failed start. The count is 0 again once a run reaches -S.
+station_ready "$new"
+kill -KILL "$new"
+check "a station killed before the -S limit is a failed start: station_fails=1" wait_status \
+	' station=running .* station_restarts=2 station_fails=1 ' 5
+check "the delay after one failed start is 2 s" grep -q "restarting station in 2 s (failed start 1 of 5)\$" "$TMP/stderr.log"
+check "station_fails is 0 again once the station has run for 3 s" wait_status \
+	' station_uptime=[3-9]s station_restarts=2 station_fails=0 ' 6
+new=$(status | field station_pid)
+
 station_ready "$new"
 stop_gwmon
 check "gwmon stopped the station with SIGTERM" grep -q TERM "$SIGNALS"
