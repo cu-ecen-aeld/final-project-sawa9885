@@ -43,10 +43,20 @@ endef
 
 # chip_id is installed as util_chip_id, the name of its upstream directory,
 # since "chip_id" is too generic for /usr/bin.
+#
+# The two reset scripts come from this package directory, not from the HAL
+# source. lora_pkt_fwd and util_chip_id run "reset_lgw.sh start", and that
+# runs wm1302-reset.sh, which pulses the WM1302 reset pins with gpioset.
+# wm1302-reset.sh was in the rootfs overlay until issue #12. It is installed
+# here because the HAL tools are what need it: an image without this package
+# has no use for it, and an image with it must not depend on the overlay.
+# The basicstation package selects this one, and Station runs the same
+# script as its "radio_init" (station.conf).
 define SX1302_HAL_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/packet_forwarder/lora_pkt_fwd $(TARGET_DIR)/usr/bin/lora_pkt_fwd
 	$(INSTALL) -D -m 0755 $(@D)/util_chip_id/chip_id $(TARGET_DIR)/usr/bin/util_chip_id
 	$(INSTALL) -D -m 0755 $(SX1302_HAL_PKGDIR)/reset_lgw.sh $(TARGET_DIR)/usr/bin/reset_lgw.sh
+	$(INSTALL) -D -m 0755 $(SX1302_HAL_PKGDIR)/wm1302-reset.sh $(TARGET_DIR)/usr/bin/wm1302-reset.sh
 	$(INSTALL) -D -m 0644 $(SX1302_HAL_PKGDIR)/global_conf.json \
 		$(TARGET_DIR)/etc/lora_pkt_fwd/global_conf.json
 endef

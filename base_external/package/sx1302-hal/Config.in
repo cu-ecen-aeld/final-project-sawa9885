@@ -9,8 +9,9 @@ config BR2_PACKAGE_SX1302_HAL
 	  Semtech's hardware abstraction layer for SX1302/SX1303
 	  LoRa concentrators (libloragw), with the lora_pkt_fwd
 	  packet forwarder and the util_chip_id tool. Also installs
-	  a reset_lgw.sh for the Seeed WM1302 Pi HAT and a US915
-	  sub-band 2 global_conf.json in /etc/lora_pkt_fwd.
+	  reset_lgw.sh and wm1302-reset.sh, which reset the Seeed
+	  WM1302 Pi HAT with gpioset, and a US915 sub-band 2
+	  global_conf.json in /etc/lora_pkt_fwd.
 
 	  https://github.com/Lora-net/sx1302_hal
 
