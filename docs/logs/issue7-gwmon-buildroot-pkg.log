@@ -1,5 +1,5 @@
 $ git log --oneline -1
-ab08d87 gwmon: report station_fails as 0 once a run has lasted 30 s (issue #7)
+578707c Link the shared chat session for issue #7
 $ make gwmon-dirclean gwmon basicstation-reinstall
 rm -Rf /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/gwmon-2.0.0
 >>> gwmon 2.0.0 Syncing from source dir /home/sammy/aesd/final-project-sawa9885/base_external/../gwmon
@@ -32,12 +32,12 @@ comm: /home/sammy/aesd/final-project-sawa9885/buildroot/output/build/basicstatio
 
 == The image built from this commit (full make after the two package targets)
 $ sha256sum sdcard.img
-3115d14cf0883648f67360ab9aca2815778c71d9ebab93855153f93fa6a2b005  sdcard.img
+f9d33c57666da21357b0dab8a30296ca005165247e22e9975e669573fa8907c6  sdcard.img
 $ debugfs -R "ls -l /etc/init.d" rootfs.ext2   (names only)
 S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S49chronyd S50crond S50dropbear S99gwmon rcK rcS  
 $ sha256sum of the files dumped from rootfs.ext2
 192e8d24d283ceae55c83a33379b0bb2ed91055c3b6c8f1d5e0cd3e00a603523  gwmon
-ffdba9ea35f6ebc408583a7293121e50c613bef0d35ab57ae5221cfaa80ba2ff  station-run.sh
+b15fbe4b9d6ecc528f1813988f4f757096bd6cccd9e9683c123fe9c092b4c4d3  station-run.sh
 3d3ccb94aa342c1979aa7f045be6b8ad8e81e85ae2ada6687c7abceea56291cd  station
-89587a446dcca26366085d39fa31516362e1bebf989fce22541d3f2bb1598be2  S99gwmon
-e310843dd8ecf632cb526b3e80888590511fcf6e6e35975ca0efac18bc8f2e14  station.conf
+bc0fb04ba117f24dbf095ff7512cd813aa6d57ed4875a147136304d8e0ac26cf  S99gwmon
+130a02962d677cc8215a0bbeae1ef590b3b3558edb505de15600244290c941f0  station.conf

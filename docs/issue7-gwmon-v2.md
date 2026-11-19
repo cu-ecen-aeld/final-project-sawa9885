@@ -15,7 +15,7 @@
 
 Two things to know about these results:
 
-- **The SD card was not reflashed.** The card holds the image flashed for issue #4 with the issue #6 files. Four files from this branch's Buildroot build were copied to it over SSH (`/usr/bin/gwmon`, `/usr/bin/station-run.sh`, `/etc/init.d/S99gwmon`, `/etc/station/station.conf`), and `/etc/init.d/S60station` was deleted by hand. The SHA-256 of each file on the Pi equals that of the same file inside the new `rootfs.ext2`, and `/usr/bin/station` is the same binary in both. The image itself (`sdcard.img`, SHA-256 `3115d14c…b005`) was built but has not been booted.
+- **The SD card was not reflashed.** The card holds the image flashed for issue #4 with the issue #6 files. Four files from this branch's Buildroot build were copied to it over SSH (`/usr/bin/gwmon`, `/usr/bin/station-run.sh`, `/etc/init.d/S99gwmon`, `/etc/station/station.conf`), and `/etc/init.d/S60station` was deleted by hand. The SHA-256 of each file on the Pi equals that of the same file inside the new `rootfs.ext2`, and `/usr/bin/station` is the same binary in both. The tests ran with the build of `ab08d87`. After the session link was added to the header comments, the image was built again from `578707c` (`sdcard.img`, SHA-256 `f9d33c57…07c6`), and the three text files were copied to the Pi once more. The `gwmon` binary is the same in both builds (SHA-256 `192e8d24…3523`). The image itself has not been booted.
 - **"Connected to AWS" is taken from Station's log**, the line `Connected to MUXS.` followed by `Concentrator started`. The AWS console was not checked.
 
 ## Design

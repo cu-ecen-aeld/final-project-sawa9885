@@ -7,6 +7,9 @@
 #   89587a446dcca26366085d39fa31516362e1bebf989fce22541d3f2bb1598be2  /etc/init.d/S99gwmon
 #   e310843dd8ecf632cb526b3e80888590511fcf6e6e35975ca0efac18bc8f2e14  /etc/station/station.conf
 #   3d3ccb94aa342c1979aa7f045be6b8ad8e81e85ae2ada6687c7abceea56291cd  /usr/bin/station (unchanged since issue #4)
+# After these tests the session link was added to the header comments (578707c). The image was built again and
+# station-run.sh (b15fbe4b...c4d3), S99gwmon (bc0fb04b...26cf) and station.conf (130a0296...41f0) were copied to the Pi
+# from that build. The gwmon binary is the same in both builds.
 # 192.168.0.123 is the Pi and 192.168.0.107 the PC. Each section is the output of one small script run on the Pi over
 # SSH as root; docs/issue7-gwmon-v2.md ("How to repeat the bench tests") has the commands. "Status line, read
 # from the PC" is what `nc 192.168.0.123 9000` prints. In Station's log the account-specific endpoint IDs are replaced
