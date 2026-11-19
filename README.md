@@ -37,21 +37,112 @@ The commits are `206ef0e` (card layout), `d78c27d` (device tree) and `36a9f8e` (
 
 ## Flash and first boot
 
-1. Write `sdcard.img` to the microSD (Raspberry Pi Imager → "Use custom", or balenaEtcher).
-2. Copy the gateway's secrets to the top level of the card's boot partition (the FAT partition that Windows and macOS mount). None of them is ever in the repo or the image, and `.gitignore` excludes their names.
+The only per-gateway step is flashing a card. Every gateway gets the same image, and a flashed gateway registers itself in AWS the first time it boots ([Zero-touch provisioning](#zero-touch-provisioning) says how).
 
-   | File on the boot partition | Installed as | Contents |
-   |---|---|---|
-   | `wpa_supplicant.conf` (optional) | `/etc/wpa_supplicant.conf` | Wi-Fi network. Start from `base_external/board/pi5/wpa_supplicant.conf.example`. |
-   | `cups.uri` | `/etc/station/cups.uri` | One line: the CUPS endpoint, `https://<id>.cups.lorawan.<region>.amazonaws.com:443`. |
-   | `cups.trust` | `/etc/station/cups.trust` | CUPS server trust certificate, as downloaded from AWS. |
-   | `cups.crt` | `/etc/station/cups.crt` | Gateway certificate (AWS names it `<id>.cert.pem`). |
-   | `cups.key` | `/etc/station/cups.key` | Gateway private key (AWS names it `<id>.private.key`). |
-   | `tc.uri`, `tc.trust`, `tc.crt`, `tc.key` (optional) | `/etc/station/tc.*` | The same four for a direct LNS connection (`wss://<id>.lns.lorawan.<region>.amazonaws.com:443`, `lns.trust`). Not needed with CUPS, which fetches them. |
+1. Put the microSD in the PC's card reader and open an elevated PowerShell (Run as administrator) in the repo. Find the card's disk number, then flash it:
 
-   At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot.
-   [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) says where each `cups.*` file comes from in the AWS console.
-3. Boot the Pi and log in over SSH as `root`. Dropbear accepts only the public key that the overlay installs in `/root/.ssh/authorized_keys`; password logins are off.
+   ```powershell
+   .\scripts\flash-gateway.ps1 -List
+   .\scripts\flash-gateway.ps1 -DiskNumber 3 -Image \\wsl.localhost\Ubuntu\home\<user>\final-project-sawa9885\buildroot\output\images\sdcard.img
+   ```
+
+   The script writes the image and reads it back, puts a new random secret on the card and records the secret's fingerprint in the allow-list. It asks before it erases the card; `-Force` skips the question. It needs the AWS CLI, signed in (`aws login`), and the provisioning function deployed once (below).
+2. Put the card in the Pi, connect Ethernet and power it on. Nothing is typed and no file is copied: about 40 s later the gateway shows as Connected in AWS IoT Core for LoRaWAN, under the name `gateway-<EUI>`.
+3. Log in over SSH as `root` if you want to look. Dropbear accepts only the public key that the overlay installs in `/root/.ssh/authorized_keys`; password logins are off. `grep gateway-provision /var/log/messages` shows what the first boot did.
+
+For Wi-Fi instead of Ethernet, copy a `wpa_supplicant.conf` to the top level of the card's boot partition after flashing (start from `base_external/board/pi5/wpa_supplicant.conf.example`).
+
+### By hand, without the provisioning function
+
+A gateway can still be given its credentials as files, as in issues #4 and #5. Write `sdcard.img` with Raspberry Pi Imager ("Use custom") or balenaEtcher, then copy the files to the top level of the card's boot partition (the FAT partition that Windows and macOS mount). None of them is ever in the repo or the image, and `.gitignore` excludes their names.
+
+| File on the boot partition | Installed as | Contents |
+|---|---|---|
+| `wpa_supplicant.conf` (optional) | `/etc/wpa_supplicant.conf` | Wi-Fi network. Start from `base_external/board/pi5/wpa_supplicant.conf.example`. |
+| `cups.uri` | `/etc/station/cups.uri` | One line: the CUPS endpoint, `https://<id>.cups.lorawan.<region>.amazonaws.com:443`. |
+| `cups.trust` | `/etc/station/cups.trust` | CUPS server trust certificate, as downloaded from AWS. |
+| `cups.crt` | `/etc/station/cups.crt` | Gateway certificate (AWS names it `<id>.cert.pem`). |
+| `cups.key` | `/etc/station/cups.key` | Gateway private key (AWS names it `<id>.private.key`). |
+| `tc.uri`, `tc.trust`, `tc.crt`, `tc.key` (optional) | `/etc/station/tc.*` | The same four for a direct LNS connection (`wss://<id>.lns.lorawan.<region>.amazonaws.com:443`, `lns.trust`). Not needed with CUPS, which fetches them. |
+
+At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot.
+
+[docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) says where each `cups.*` file comes from in the AWS console. A gateway that finds `cups.uri` or `tc.uri` in `/etc/station` never asks the provisioning function.
+
+## Zero-touch provisioning
+
+Issue #10. The design and the test results are in [docs/issue10-provisioning.md](docs/issue10-provisioning.md).
+
+1. **Flash.** `scripts/flash-gateway.ps1` writes two small files to the card's boot partition next to the image's own: `provision.secret`, 64 random hex characters made for this card, and `provision.url`, the address of the provisioning function. It records the SHA-256 fingerprint of the secret in the allow-list as unused. The secret itself is never shown or kept on the PC.
+2. **First boot.** `S35provision` moves the two files into `/etc/gateway-provision` (mode 0600). `S45gateway-provision` starts `/usr/sbin/gateway-provision` in the background. On a gateway with no Basics Station credentials it reads the concentrator's EUI, waits for the clock and posts the EUI and the secret to the function over HTTPS (`curl`, checked against the CA bundle). If the network or the function is not there, it tries again after 5 s, 10 s, 20 s and so on, up to 5 minutes between tries. Meanwhile gwmon reports `station=unconfigured` and keeps the board up.
+3. **The function** ([provisioning/](provisioning/)) is an AWS Lambda function with a public HTTPS address. It hashes the secret and asks the allow-list to consume the fingerprint. For a fingerprint that is listed and unused, it registers the gateway in AWS IoT Core for LoRaWAN (US915), creates its certificate and returns `cups.uri`, `cups.trust`, `cups.crt` and `cups.key`. An unknown secret gets HTTP 403 and a used one HTTP 409, both are logged, and neither creates anything in AWS.
+4. **Connected.** `gateway-provision` installs the four files in `/etc/station` (mode 0600), deletes the used secret and restarts gwmon, which starts Basics Station. From then on the gateway has credentials, and `gateway-provision` exits at every boot without a request.
+
+Who owns a gateway is not part of this: the function registers any gateway that shows a valid secret.
+
+### What is stored where
+
+| What | Where | Notes |
+|---|---|---|
+| The gateway's secret | On the card only: `provision.secret` on the boot partition, then `/etc/gateway-provision/secret` (0600) | Deleted when the gateway is provisioned. Never on the PC, in AWS or in a log |
+| The secret's fingerprint (SHA-256) | The allow-list: the DynamoDB table `aesd-gateway-provisioning-allowlist` | With `state` (`unused` or `used`), `created_at` and an optional `label`; after use also `used_at` and `gateway_eui`. Not secret |
+| The function's address | `provision.url` on the card, then `/etc/gateway-provision/url` | Deleted with the secret. It is an output of the CloudFormation stack |
+| The gateway's private key | `/etc/station/cups.key` (0600) on the gateway | AWS IoT creates it inside the function, which returns it once over HTTPS and neither stores nor logs it |
+| The gateway's certificate, the CUPS address and its trust certificate | `/etc/station/cups.crt`, `cups.uri`, `cups.trust` | The certificate is also in AWS IoT, associated with the gateway |
+| The LNS address and credentials | `/etc/station/tc.*` | Basics Station fetches them from CUPS, as before |
+| The function's log | CloudWatch log group `/aws/lambda/aesd-gateway-provisioning`, kept 90 days | One line per request: the outcome, the EUI and the first 8 characters of the fingerprint |
+
+The allow-list is a stand-in. It belongs in the SoilData API, the company's own backend, and sits behind a two-method interface ([provisioning/src/allowlist.py](provisioning/src/allowlist.py)) so that an HTTP implementation can replace the table.
+
+### Deploy the function
+
+Once per AWS account and region, from Git Bash or a Linux shell, with the AWS CLI signed in:
+
+```bash
+provisioning/deploy.sh
+```
+
+It runs the host tests, creates the CloudFormation stack `aesd-gateway-provisioning` from [provisioning/template.yaml](provisioning/template.yaml) and uploads `provisioning/src` as the function's code. The stack holds the function, its public address, its IAM role, the allow-list table and the log group, and nothing else. The account must already have the role `IoTWirelessGatewayCertManagerRole` ([docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md), step 2.7).
+
+The function's own role allows only what it does: write its log, `dynamodb:UpdateItem` on the allow-list table, `iotwireless:GetServiceEndpoint`, `CreateWirelessGateway`, `GetWirelessGateway`, `GetWirelessGatewayCertificate`, `AssociateWirelessGatewayWithCertificate` and `DisassociateWirelessGatewayFromCertificate`, and `iot:CreateKeysAndCertificate`, `UpdateCertificate` and `DeleteCertificate`. It cannot delete or list gateways, and it cannot add fingerprints.
+
+IAM permissions that the person who deploys needs:
+
+| For | Actions |
+|---|---|
+| The stack | `cloudformation:CreateChangeSet`, `DescribeChangeSet`, `ExecuteChangeSet`, `DescribeStacks`, `DescribeStackEvents`, `GetTemplateSummary`, and `DeleteStack` to remove it |
+| The function's role | `iam:CreateRole`, `GetRole`, `PutRolePolicy`, `GetRolePolicy`, `DeleteRolePolicy`, `DeleteRole`, and `iam:PassRole` for that role to `lambda.amazonaws.com` |
+| The function and its address | `lambda:CreateFunction`, `GetFunction`, `GetFunctionConfiguration`, `UpdateFunctionCode`, `UpdateFunctionConfiguration`, `DeleteFunction`, `CreateFunctionUrlConfig`, `GetFunctionUrlConfig`, `DeleteFunctionUrlConfig`, `AddPermission`, `RemovePermission` |
+| The table | `dynamodb:CreateTable`, `DescribeTable`, `DeleteTable` |
+| The log group | `logs:CreateLogGroup`, `PutRetentionPolicy`, `DescribeLogGroups`, `DeleteLogGroup` |
+
+Flashing needs less: `cloudformation:DescribeStacks` on the stack, and `dynamodb:DescribeTable` and `dynamodb:PutItem` on the table.
+
+### Revoke a gateway
+
+To cut a gateway off, take its certificate away. `<EUI>` is the gateway EUI, which is in the gateway's name in the console.
+
+```bash
+aws iotwireless get-wireless-gateway --identifier <EUI> --identifier-type GatewayEui --query Id --output text
+aws iotwireless get-wireless-gateway-certificate --id <gateway Id> --query IotCertificateId --output text
+aws iotwireless disassociate-wireless-gateway-from-certificate --id <gateway Id>
+aws iot update-certificate --certificate-id <certificate Id> --new-status INACTIVE
+aws iot delete-certificate --certificate-id <certificate Id>
+aws iotwireless delete-wireless-gateway --id <gateway Id>      # only to remove the gateway record as well
+```
+
+A revoked gateway cannot provision itself again: its secret is used, and the function refuses it. To bring the hardware back, flash its card again. The new card's first boot gives the same gateway record a new certificate.
+
+To cancel a card that was flashed but never booted (lost, or flashed by mistake), delete its fingerprint from the allow-list. `flash-gateway.ps1` prints the fingerprint when it flashes the card. From Git Bash:
+
+```bash
+aws dynamodb delete-item --table-name aesd-gateway-provisioning-allowlist --key '{"fingerprint":{"S":"<fingerprint>"}}'
+```
+
+### Tests
+
+- `python -m unittest discover -s provisioning/test -v` runs the function's handler against a fake AWS and a fake allow-list (valid, reused and unknown secret, AWS failures, an EUI that is already registered), and, on a Linux host with `curl` and `jq`, the gateway's `gateway-provision` script against a fake function (retry, refusal, a gateway that already has credentials).
+- `powershell -ExecutionPolicy Bypass -File scripts\test\flash-gateway-test.ps1` runs the flash script with a file in place of the card. Its header lists the exit codes of `flash-gateway.ps1`.
 
 ## Network and time
 
@@ -73,10 +164,11 @@ The commits are `206ef0e` (card layout), `d78c27d` (device tree) and `36a9f8e` (
 | `S02sysctl` | Buildroot (BusyBox) | Applies `/etc/sysctl.conf`. |
 | `S10udevd` | Buildroot (`eudev`) | Creates the device nodes and loads the drivers named in the device tree. After it, `/dev/spidev0.0` and the RP1 `gpiochip0` exist. |
 | `S11modules` | Buildroot (`initscripts`) | Loads the modules in `/etc/modules-load.d/wm1302.conf`: `i2c-dev`, for `/dev/i2c-1`, and `spidev`. |
-| `S35provision` | this repo, rootfs overlay | Installs the Wi-Fi and Basics Station credentials it finds on the boot partition, then deletes them there. |
+| `S35provision` | this repo, rootfs overlay | Installs the Wi-Fi and Basics Station credentials and the provisioning secret it finds on the boot partition, then deletes them there. |
 | `S40network` | Buildroot (`ifupdown-scripts`) | `ifup -a`: only the loopback interface, since `eth0` is not `auto`. |
 | `S41ifplugd` | this repo, rootfs overlay | Starts `ifplugd`, which brings `eth0` up with DHCP when the cable has a link. |
 | `S41wifi` | this repo, rootfs overlay | Starts Wi-Fi if `/etc/wpa_supplicant.conf` exists. |
+| `S45gateway-provision` | this repo, rootfs overlay | Starts `gateway-provision` in the background. Without Basics Station credentials it asks the provisioning function for them ([Zero-touch provisioning](#zero-touch-provisioning)); with them it exits at once. |
 | `S49chronyd` | Buildroot (`chrony`) | Starts `chronyd`, which sets the clock once an interface has a lease. |
 | `S50crond` | Buildroot (BusyBox) | Starts `crond`. No cron jobs are installed. |
 | `S50dropbear` | Buildroot (`dropbear`) | Starts the SSH server. |
@@ -92,6 +184,8 @@ At boot that happens twice, both times below `S99gwmon`:
 
 1. **`util_chip_id`, about 3 to 5 s after the kernel starts.** `S99gwmon` starts `gwmon`, gwmon starts `station-run.sh`, and that script reads the SX1302's EUI with `util_chip_id`. Like all the sx1302-hal tools, `util_chip_id` runs `reset_lgw.sh start` first, and `reset_lgw.sh` runs `wm1302-reset.sh`. This needs only what `S10udevd` and `S11modules` set up (the GPIO chip and `/dev/spidev0.0`), not the network or the clock. It is skipped on a gateway with no `cups.uri` or `tc.uri`: `station-run.sh` exits before it, since there is nothing to start.
 2. **Basics Station, just before it starts the radio.** `station-run.sh` then waits up to 60 s for the clock and execs `station`. Station runs its `radio_init` program, which `station.conf` sets to `/usr/bin/wm1302-reset.sh`, before each start of the concentrator. That is after it has connected to the network server and received the channel plan.
+
+A gateway that has no credentials yet is the one exception. There `station-run.sh` stops before either reset, and `gateway-provision` (started by `S45gateway-provision`) resets the concentrator once, through the same `util_chip_id`, to read the EUI it sends to the provisioning function. When the credentials arrive it restarts gwmon, and the two resets above follow.
 
 The times of one boot, from [docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md):
 

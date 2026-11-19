@@ -1,9 +1,10 @@
 # Register the gateway in AWS IoT Core for LoRaWAN
 
-How the Pi 5 gateway was registered, and how to do it again for another board or account. Everything here is done by hand in the AWS console. The files it produces are secrets: they go on the microSD boot partition and never into this repo (`.gitignore` excludes their names).
+Since issue #10 a flashed gateway registers itself at first boot (README, "Zero-touch provisioning"), and the provisioning function makes the API calls of section 2 for it. This page is how the Pi 5 gateway was first registered in issue #4, and how to register a gateway by hand for another board or account. Sections 4 and 5 apply either way. Everything here is done by hand in the AWS console. The files it produces are secrets: they go on the microSD boot partition and never into this repo (`.gitignore` excludes their names).
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh -->
+     Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
+     Link to chat session (issue #10): ISSUE10_SESSION_LINK -->
 
 ## 1. Gateway EUI
 
