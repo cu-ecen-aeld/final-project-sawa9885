@@ -2,19 +2,21 @@
 #
 # gwmon
 #
-# Gateway monitor daemon: TCP status server and hardware watchdog (issue #6).
+# Gateway monitor daemon: TCP status server, hardware watchdog (issue #6),
+# Basics Station supervisor and gateway health (issue #7).
 # Built from the gwmon/ directory at the top of this repository.
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
+# Link to chat session (issue #7): TODO(issue-7-session-link)
 #
 ################################################################################
 
 # With the "local" site method Buildroot rsyncs the directory into
-# output/build/gwmon-1.0.0. GWMON_VERSION only names that directory: the
+# output/build/gwmon-2.0.0. GWMON_VERSION only names that directory: the
 # version gwmon reports is GWMON_VERSION in gwmon/gwmon.c, so keep the two the
 # same. After a source change: make gwmon-rebuild.
-GWMON_VERSION = 1.0.0
+GWMON_VERSION = 2.0.0
 GWMON_SITE = $(BR2_EXTERNAL_project_base_PATH)/../gwmon
 GWMON_SITE_METHOD = local
 

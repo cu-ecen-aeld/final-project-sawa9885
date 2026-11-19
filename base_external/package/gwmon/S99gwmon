@@ -1,37 +1,56 @@
 #!/bin/sh
 #
-# Start and stop gwmon, the gateway monitor daemon (issue #6).
+# Start and stop gwmon, the gateway monitor daemon (issues #6 and #7).
 #
 # gwmon -d serves a status line on TCP port 9000 and feeds /dev/watchdog. Once it runs, the
 # hardware watchdog is armed: if gwmon is killed or hangs, the Pi resets about 10 s later.
 # "stop" sends SIGTERM, on which gwmon stops the watchdog with the magic close, so a normal
 # stop (and the stop at shutdown) does not reset the Pi.
 #
-# Options can be added in /etc/default/gwmon, for example:
+# Since issue #7 this is also the only script that starts LoRa Basics Station: gwmon runs
+# /usr/bin/station-run.sh (from the basicstation package) as its child and starts it again when
+# Station exits. After 5 failed starts in a row gwmon stops feeding the watchdog and the Pi
+# resets. "stop" stops Station too, and "restart" restarts both.
+#
+# Settings can be changed in /etc/default/gwmon, for example:
 #   GWMON_ARGS="-w none"       run without the watchdog while debugging
 #   GWMON_ARGS="-t 15 -i 3"    other watchdog timeout and feed interval
+#   GWMON_STATION=""           do not start Station (gwmon as in issue #6)
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
+# Link to chat session (issue #7): TODO(issue-7-session-link)
 
 NAME=gwmon
 DAEMON=/usr/bin/gwmon
 GWMON_ARGS=""
+# The program gwmon supervises, and the log file it counts uplinks from (station.conf, log_file).
+GWMON_STATION=/usr/bin/station-run.sh
+GWMON_STATION_LOG=/var/log/station.log
+# The I2C bus of the WM1302's temperature sensor.
+GWMON_TEMP_BUS=/dev/i2c-1
 
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 start() {
 	# Safety catch for a headless board: a file named gwmon.disable on the SD card's boot partition
-	# keeps gwmon, and with it the watchdog, off. It is the way out if a fault ever makes gwmon
-	# die at every boot, which would otherwise reset the Pi in a loop.
+	# keeps gwmon, and with it the watchdog and Station, off. It is the way out if a fault ever
+	# makes gwmon die, or Station fail, at every boot, which would otherwise reset the Pi in a loop.
 	if [ -e /boot/gwmon.disable ]; then
 		echo "$NAME: /boot/gwmon.disable exists, not starting"
 		return 0
 	fi
+	args="-d $GWMON_ARGS"
+	if [ -n "$GWMON_STATION" ] && [ -x "$GWMON_STATION" ]; then
+		args="$args -s $GWMON_STATION -l $GWMON_STATION_LOG"
+	fi
+	if [ -c "$GWMON_TEMP_BUS" ]; then
+		args="$args -T $GWMON_TEMP_BUS"
+	fi
 	printf "Starting %s: " "$NAME"
 	# gwmon forks only after its socket is bound, so a failed start shows here.
-	# shellcheck disable=SC2086 # GWMON_ARGS is a list of options
-	start-stop-daemon -S -q -x "$DAEMON" -- -d $GWMON_ARGS
+	# shellcheck disable=SC2086 # args is a list of options
+	start-stop-daemon -S -q -x "$DAEMON" -- $args
 	ret=$?
 	[ $ret = 0 ] && echo "OK" || echo "FAIL"
 	return $ret
@@ -42,9 +61,10 @@ stop() {
 	# SIGTERM is the default signal.
 	start-stop-daemon -K -q -x "$DAEMON"
 	ret=$?
-	# Wait until gwmon is gone, so the magic close is done and the port is free for a restart.
+	# Wait until gwmon is gone, so the magic close is done, Station is stopped (gwmon gives it
+	# up to 5 s) and the port is free for a restart.
 	n=0
-	while pidof "$NAME" >/dev/null && [ $n -lt 50 ]; do
+	while pidof "$NAME" >/dev/null && [ $n -lt 80 ]; do
 		sleep 0.1
 		n=$((n + 1))
 	done

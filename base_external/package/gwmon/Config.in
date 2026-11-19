@@ -1,13 +1,18 @@
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
+# Link to chat session (issue #7): TODO(issue-7-session-link)
 config BR2_PACKAGE_GWMON
 	bool "gwmon"
 	depends on BR2_USE_MMU # fork()
 	depends on BR2_TOOLCHAIN_HAS_THREADS
 	help
 	  Gateway monitor daemon for the AESD Pi 5 LoRaWAN gateway.
-	  Version 1 serves one status line per connection on TCP
-	  port 9000 and feeds the hardware watchdog (/dev/watchdog).
+	  It serves one status line per connection on TCP port 9000
+	  and feeds the hardware watchdog (/dev/watchdog). Version 2
+	  also starts LoRa Basics Station (/usr/bin/station-run.sh
+	  from the basicstation package, when it is installed),
+	  restarts it when it exits, and reports uplinks and the
+	  concentrator temperature.
 	  Installs /usr/bin/gwmon and /etc/init.d/S99gwmon. The
 	  source is in gwmon/ at the top of this repository.
 

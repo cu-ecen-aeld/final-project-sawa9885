@@ -22,8 +22,9 @@
 #     2.28 LTS release (2.28.10) instead of the 2.28.0 that upstream pins,
 #     for its security fixes. The API is the same.
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
+# Link to chat session (issue #7): TODO(issue-7-session-link)
 #
 ################################################################################
 
@@ -112,17 +113,21 @@ endef
 # partition into /etc/station, Station's home directory, at boot.
 # version.txt is the "package" version that Station reports to CUPS and
 # prints with --version, as in upstream's examples/corecell/lns-ttn.
+#
+# There is no init script: gwmon starts Station (issue #7). S99gwmon runs
+# gwmon with "-s /usr/bin/station-run.sh", the script that prepares the start
+# (gateway EUI, clock) and then execs station. An S60station left in
+# output/target by a build of an older commit is removed here, because
+# Buildroot never removes a file from the target directory by itself.
 define BASICSTATION_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/$(BASICSTATION_BUILD_DIR)/bin/station \
 		$(TARGET_DIR)/usr/bin/station
+	$(INSTALL) -D -m 0755 $(BASICSTATION_PKGDIR)/station-run.sh \
+		$(TARGET_DIR)/usr/bin/station-run.sh
+	rm -f $(TARGET_DIR)/etc/init.d/S60station
 	$(INSTALL) -D -m 0644 $(BASICSTATION_PKGDIR)/station.conf \
 		$(TARGET_DIR)/etc/station/station.conf
 	echo "$(BASICSTATION_VERSION:v%=%)" > $(TARGET_DIR)/etc/station/version.txt
-endef
-
-define BASICSTATION_INSTALL_INIT_SYSV
-	$(INSTALL) -D -m 0755 $(BASICSTATION_PKGDIR)/S60station \
-		$(TARGET_DIR)/etc/init.d/S60station
 endef
 
 $(eval $(generic-package))

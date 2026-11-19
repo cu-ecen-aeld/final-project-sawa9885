@@ -1,16 +1,18 @@
-# gwmon - gateway monitor daemon (issue #6).
+# gwmon - gateway monitor daemon (issues #6 and #7).
 #
 #   make                 build for the host
 #   make CROSS_COMPILE=aarch64-none-linux-gnu-   cross build
-#   make check           build, then run test/host-test.sh (no real watchdog is opened)
+#   make check           build, then run test/host-test.sh (no real watchdog is opened, and the
+#                        supervised program is a fake station script)
 #   make valgrind        the same test with gwmon under Valgrind
 #   make clean
 #
 # Buildroot builds this with CC, CFLAGS and LDFLAGS on the command line (see
 # base_external/package/gwmon/gwmon.mk).
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
+# Link to chat session (issue #7): TODO(issue-7-session-link)
 
 # make predefines CC as "cc", so "CC ?=" would never apply CROSS_COMPILE.
 ifeq ($(origin CC),default)

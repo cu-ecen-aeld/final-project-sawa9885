@@ -54,29 +54,44 @@ The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the buil
 
 `base_external/package/basicstation` builds [LoRa Basics Station](https://github.com/lorabasics/basicstation) v2.0.6 for its `corecell` platform (SX1302), `std` variant. `station` is linked statically with Station's own patched copy of sx1302_hal V2.1.0 and with mbedtls 2.28.10. Buildroot downloads both and checks their hashes, in place of the `git clone` that upstream's makefiles run. The comments in `basicstation.mk` say why the Buildroot `mbedtls` and our `sx1302-hal` library can't be used.
 
-- **Start at boot:** `/etc/init.d/S60station`. It reads the SX1302's EUI with `util_chip_id` (which also resets the WM1302), writes it to `/var/run/station.eui`, waits up to 60 s for chronyd to set the clock, then runs `station --daemon --home /etc/station`. With no `cups.uri` or `tc.uri` in `/etc/station` it logs one line and does nothing.
+- **Start at boot:** `gwmon` starts Station and restarts it when it exits (see [gwmon](#gwmon)). Station has no init script of its own. gwmon runs `/usr/bin/station-run.sh`, which reads the SX1302's EUI with `util_chip_id` (which also resets the WM1302), writes it to `/var/run/station.eui`, waits up to 60 s for chronyd to set the clock, then execs `station --home /etc/station` in the foreground. With no `cups.uri` or `tc.uri` in `/etc/station` it logs one line and exits with status 78, which tells gwmon that there is nothing to run.
+- **Boot order:** `S35provision` (credentials), `S40network`, `S41ifplugd`, `S49chronyd`, `S50dropbear`, then `S99gwmon`, which starts gwmon and, through it, Station.
 - **Gateway EUI:** the concentrator's EUI. `station.conf` names `/var/run/station.eui` as its `routerid`, so the image isn't tied to one board. `grep 'gateway EUI' /var/log/messages` shows it.
 - **Configuration:** `/etc/station/station.conf` (radio settings for the WM1302, no secrets). The channel plan comes from the network server. The credentials are the `cups.*` files from "Flash and first boot"; Station fetches the LNS address and credentials from CUPS and saves them as `tc.*` in the same directory.
-- **Log:** `/var/log/station.log` (tmpfs, 3 x 2 MB at most). `/etc/init.d/S60station status|stop|restart`.
+- **Log:** `/var/log/station.log` (tmpfs, 3 x 2 MB at most). The log level is `INFO`, with the `S2E` and `TCE` modules at `VERBOSE`: one `RX` line per received frame, which gwmon counts, and `Connected to MUXS.` when the network server connection is up.
+- **Stop, start, restart:** `/etc/init.d/S99gwmon stop|start|restart` acts on gwmon and Station together. To restart Station alone, `kill $(pidof station)`: gwmon starts it again after 1 s and counts the restart.
 - **AWS IoT Core for LoRaWAN:** [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) has the console steps to register the gateway and a device, and which downloaded file gets which name.
-- **Results:** [docs/issue4-basicstation-aws.md](docs/issue4-basicstation-aws.md).
+- **Results:** [docs/issue4-basicstation-aws.md](docs/issue4-basicstation-aws.md) (it describes the `S60station` init script that issue #7 replaced).
 - Station's remote shell (`rmtsh`) is compiled out. The gateway is managed over SSH.
 
 ## gwmon
 
-`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. Version 1 is a TCP status server that owns the hardware watchdog. Test results, on the build host and on the Pi, are in [docs/issue6-gwmon.md](docs/issue6-gwmon.md).
+`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. It is a TCP status server that owns the hardware watchdog (version 1, [docs/issue6-gwmon.md](docs/issue6-gwmon.md)), and since version 2 it also starts Basics Station, keeps it running and reports gateway health ([docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md)).
 
-- **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d`. `/etc/init.d/S99gwmon stop|restart` also work. Options go in `GWMON_ARGS` in `/etc/default/gwmon`.
+- **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1`. `/etc/init.d/S99gwmon stop|restart` also work, and act on Station too. Settings go in `/etc/default/gwmon`: `GWMON_ARGS` for more options, `GWMON_STATION=""` to run gwmon without Station.
 - **Status:** `nc <pi-address> 9000` prints one line and closes:
 
   ```
-  gwmon 1.0.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=600 wd_last_feed_age=1s
+  gwmon 2.0.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=600 wd_last_feed_age=1s station=running station_pid=301 station_uptime=1190s station_restarts=0 station_fails=0 uplinks=12 last_uplink_age=37s temp=31.5C
   ```
 
-  `uptime` is the time since boot and `daemon_uptime` the time since gwmon started. `watchdog` is `active`, `disabled` (`-w none`), `unavailable` (the device could not be opened), `error` (the last feed failed) or `fake` (host test).
+  | Field | Meaning |
+  |---|---|
+  | `uptime`, `daemon_uptime` | Time since boot, and since gwmon started. |
+  | `watchdog` | `active`, `disabled` (`-w none`), `unavailable` (the device could not be opened), `error` (the last feed failed), `starving` (gwmon has given up on Station and no longer feeds it) or `fake` (host test). The `wd_*` fields follow when a device is open. |
+  | `station` | `running`, `backoff` (it exited; gwmon is waiting before the next start), `failed` (5 failed starts in a row), `unconfigured` (no `cups.uri` or `tc.uri`: nothing to run) or `off`. |
+  | `station_pid`, `station_uptime` | The running Station process and how long ago gwmon started it. |
+  | `station_restarts` | How many times gwmon has started Station again since gwmon itself started. |
+  | `station_fails` | Starts in a row that ended within 30 s. It goes back to 0 at the next exit after a longer run. |
+  | `uplinks` | Frames that Station received and passed on to the network server since gwmon started, counted from the `RX` lines in `/var/log/station.log`. |
+  | `last_uplink_age` | Time since the last of those lines was read, or `never`. |
+  | `temp` | Temperature of the WM1302 board, from its STTS751 sensor on `/dev/i2c-1`, or `unavailable`. |
+
+  [docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md) says where each field comes from and what its limits are.
 - **Watchdog:** gwmon opens `/dev/watchdog`, sets a 10 s timeout and feeds it every 2 s from its main loop. If gwmon is killed or hangs, the Pi resets about 10 s later. On SIGTERM or SIGINT it writes the magic close character first, so `S99gwmon stop` and a normal shutdown don't reset the Pi.
-- **If the Pi ever resets in a loop:** put an empty file named `gwmon.disable` on the SD card's boot partition. `S99gwmon` then leaves gwmon and the watchdog off.
-- **Options:** `gwmon [-d] [-p port] [-w device] [-t timeout] [-i interval]`. `make -C gwmon check` builds it for the host and tests it against a fake watchdog file. `make -C gwmon valgrind` does the same under Valgrind.
+- **Station supervision:** gwmon starts Station as a child process and learns of its exit at once (SIGCHLD). It starts Station again after 1 s. If a start ends within 30 s, it counts as failed and the delay doubles: 2, 4, 8, 16 s. After the 5th failed start in a row gwmon logs that it gives up and stops feeding the watchdog, so the Pi resets about 10 s later. Every exit and every restart is in syslog: `grep gwmon /var/log/messages`. A gateway with no credentials is not a failure: gwmon reports `station=unconfigured` and keeps feeding the watchdog.
+- **If the Pi ever resets in a loop:** put an empty file named `gwmon.disable` on the SD card's boot partition. `S99gwmon` then leaves gwmon, the watchdog and Station off. To run Station by hand in that state: `/usr/bin/station-run.sh &`.
+- **Options:** `gwmon [-d] [-p port] [-w device] [-t timeout] [-i interval] [-s program] [-r count] [-S seconds] [-l logfile] [-T i2c-device]`. `make -C gwmon check` builds it for the host and tests it against a fake watchdog file and a fake Station script. `make -C gwmon valgrind` does the same under Valgrind.
 
 ## AI use
 
@@ -90,3 +105,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #4 Basics Station and AWS IoT Core for LoRaWAN | https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh |
 | #5 Network, time and credential provisioning | https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg |
 | #6 gwmon v1: TCP status server and hardware watchdog | https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT |
+| #7 gwmon v2: Basics Station supervision and gateway health | TODO(issue-7-session-link) |
