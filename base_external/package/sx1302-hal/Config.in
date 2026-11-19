@@ -1,5 +1,6 @@
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #3): https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9
+# Link to chat session (issue #12): https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o
 config BR2_PACKAGE_SX1302_HAL
 	bool "sx1302-hal"
 	depends on BR2_TOOLCHAIN_HAS_THREADS

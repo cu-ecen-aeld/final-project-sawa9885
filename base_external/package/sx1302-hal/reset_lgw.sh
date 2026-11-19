@@ -7,8 +7,9 @@
 # wm1302-reset.sh, which uses libgpiod. This package installs both scripts in /usr/bin
 # (wm1302-reset.sh was in the rootfs overlay until issue #12).
 #
-# This script was partially generated using Claude Code using the chat session at:
+# This script was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #3): https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9
+# Link to chat session (issue #12): https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o
 
 case "$1" in
 start)

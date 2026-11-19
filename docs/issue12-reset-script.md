@@ -1,4 +1,5 @@
 # Issue #12: the WM1302 reset script in the sx1302-hal package
+This document was partially generated using Claude Code using the chat session at: https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o
 
 From the Sprint 1 code review (Nov 11). The review asked three things:
 

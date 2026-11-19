@@ -5,8 +5,9 @@
 # Semtech's SX1302 HAL (libloragw), lora_pkt_fwd and util_chip_id for the
 # Seeed WM1302 (SX1302 + SX1250, US915) on the Pi 5.
 #
-# This file was partially generated using Claude Code using the chat session at:
+# This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #3): https://claude.ai/code/cshk_01CSAPnwU8kGpRLfK6nchbsXUG2a95em6aXdDoBJsXAhS9
+# Link to chat session (issue #12): https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o
 #
 ################################################################################
 
