@@ -120,16 +120,18 @@ Flashing needs less: `cloudformation:DescribeStacks` on the stack, and `dynamodb
 
 ### Revoke a gateway
 
-To cut a gateway off, take its certificate away. `<EUI>` is the gateway EUI, which is in the gateway's name in the console.
+To cut a gateway off, take its certificates away. It has two: its own (`cups.crt`), and the LNS certificate that AWS's CUPS server made for it when it first connected (`tc.crt`). `<EUI>` is the gateway EUI, which is in the gateway's name in the console.
 
 ```bash
 aws iotwireless get-wireless-gateway --identifier <EUI> --identifier-type GatewayEui --query Id --output text
-aws iotwireless get-wireless-gateway-certificate --id <gateway Id> --query IotCertificateId --output text
+aws iotwireless get-wireless-gateway-certificate --id <gateway Id> --query "[IotCertificateId,LoRaWANNetworkServerCertificateId]" --output text
 aws iotwireless disassociate-wireless-gateway-from-certificate --id <gateway Id>
-aws iot update-certificate --certificate-id <certificate Id> --new-status INACTIVE
-aws iot delete-certificate --certificate-id <certificate Id>
+aws iot update-certificate --certificate-id <certificate Id> --new-status INACTIVE     # for each of the two
+aws iot delete-certificate --certificate-id <certificate Id>                           # for each of the two
 aws iotwireless delete-wireless-gateway --id <gateway Id>      # only to remove the gateway record as well
 ```
+
+Read the two certificate IDs before the `disassociate` step: it drops both from the gateway record and leaves them active in the account. This was done to the issue #4 registration of our Pi while it was connected ([docs/issue10-provisioning.md](docs/issue10-provisioning.md)). The connection that was open stayed open. When Basics Station was restarted, both CUPS and the LNS refused it, so a revoked gateway is out at its next reconnect at the latest.
 
 A revoked gateway cannot provision itself again: its secret is used, and the function refuses it. To bring the hardware back, flash its card again. The new card's first boot gives the same gateway record a new certificate.
 
