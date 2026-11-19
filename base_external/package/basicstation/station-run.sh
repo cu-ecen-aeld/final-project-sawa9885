@@ -28,7 +28,7 @@
 #
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
-# Link to chat session (issue #7): TODO(issue-7-session-link)
+# Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
 
 STATION=/usr/bin/station
 STATION_HOME=/etc/station

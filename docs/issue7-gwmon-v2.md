@@ -3,7 +3,7 @@
 `gwmon` now starts LoRa Basics Station itself, restarts it when it exits, and adds gateway health to the status line on port 9000. These are the results for the issue's definition of done, measured on the Pi 5 on 2026-11-19 UTC (the evening of 2026-11-18 local time) with the code of commit `ab08d87`.
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #7): TODO(issue-7-session-link) -->
+     Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx -->
 
 | Definition of done (issue #7) | Result |
 |---|---|
