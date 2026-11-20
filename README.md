@@ -259,3 +259,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #7 gwmon v2: Basics Station supervision and gateway health | https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx |
 | #10 Zero-touch gateway provisioning | https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr |
 | #12 Reset script in the sx1302-hal package, boot order and Buildroot version | https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o |
+| #11 Sensor readings reach the SoilData API (node registration script, Station log helper) | SESSION_LINK_PLACEHOLDER_ISSUE_11 |

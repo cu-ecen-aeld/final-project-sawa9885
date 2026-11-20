@@ -1,0 +1,39 @@
+$ bash scripts/test/register-node-test.sh   # WSL2 Ubuntu 24.04, 2026-11-20
+PASS no arguments -> 2
+PASS short DevEUI -> 2
+PASS non-hex DevEUI -> 2
+PASS 17-digit JoinEUI -> 2
+PASS unknown option -> 2
+PASS bad name -> 2
+PASS missing destination -> 2
+PASS validation errors never call aws
+PASS DevEUI with ':' accepted and normalised
+PASS existing node -> 0, says so
+PASS existing node: only one read-only call
+PASS only the last 4 of the DevEUI printed
+PASS existing node: temporary files removed
+PASS existing node, other destination -> warning, 0
+PASS AWS error on lookup -> 1
+PASS unknown device profile -> 4
+PASS unknown destination -> 4
+PASS -c checks and changes nothing
+PASS stdin not a terminal -> 3, nothing created
+PASS non-tty: temporary files removed
+PASS 1.0.x register -> 0
+PASS 1.0.x request carries the key, JoinEUI and destination
+PASS request file mode 600
+PASS request file gone afterwards
+PASS 1.0.x: no key in output or aws argv
+PASS 1.0.x: temporary files removed
+PASS 1.1 register with AppKey and NwkKey -> 0
+PASS 1.1: no key in output or aws argv
+PASS 1.1: temporary files removed
+PASS malformed key -> 2, nothing sent
+PASS malformed key: temporary files removed
+PASS refused registration -> 1, key cut from AWS error
+PASS refused: no key in output or aws argv
+PASS refused: temporary files removed
+PASS Ctrl-C at the prompt: temporary files removed
+PASS no set -x, no echo of a key variable
+
+36 passed, 0 failed
