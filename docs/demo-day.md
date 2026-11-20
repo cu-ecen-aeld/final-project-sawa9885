@@ -114,12 +114,17 @@ The test node (`aesd-test-node`, DevEUI `A0F262FFFE507C7C`) does not transmit on
 
 ```powershell
 .\scripts\demo\send-uplink.ps1 -List
-.\scripts\demo\send-uplink.ps1 -Port COM<n> -Command "<NODE_UPLINK_COMMAND>"
+.\scripts\demo\send-uplink.ps1 -Port COM<n> -Help
+.\scripts\demo\send-uplink.ps1 -Port COM<n> -Command BLUETOOTH_EXIT, LORA_LINK_TEST
 ```
 
-`-List` shows the serial ports; the node's is the one that appears when it is plugged in. The script sends the one command line, then prints what the node answers for 15 s. Close any serial monitor first, since only one program can hold the port.
+1. `-List` shows the serial ports; the node's is the one that appears when it is plugged in. Close any serial monitor first, since only one program can hold the port.
+2. `-Help` sends `HELP` and prints the node's command list. Check that `LORA_LINK_TEST` is in it.
+3. The last line sends the two commands in order, 3 s apart, and prints what the node answers for 15 s after the second.
 
-`<NODE_UPLINK_COMMAND>`, the baud rate and the line ending still have to be filled in here: the commands that triggered the uplinks of issues #4 and #7 were sent from outside this repo. The script's defaults are 115200 baud and CRLF.
+The serial console runs at 115200 baud and takes plain text lines, in any case, ended by CRLF or LF; the script sends CRLF. `BLUETOOTH_EXIT` answers `OK BLUETOOTH_EXIT_REQUESTED source=serial`, or `ERR BLUETOOTH_EXIT not_active` when the node was not in Bluetooth mode, which is harmless here.
+
+**Confirm on Nov 29: `LORA_LINK_TEST`.** The baud rate and `BLUETOOTH_EXIT` come from the node firmware's main branch, which is earlier BioSensor work, not course code. `LORA_LINK_TEST` is only in the development build on this node, according to notes from Nov 18, so it is not verified, and its reply is not known. If `HELP` does not list it, the command has another name on this node: give that name to `-Command` instead. Whatever the node answers, the uplink counts as sent only when it shows in Station's log and in AWS, below.
 
 **Confirm the uplink**, within about 10 s:
 
@@ -141,7 +146,7 @@ The node transmits at 0 dBm because of a fault on that board, so keep it within 
 
 **Pack.** Pi 5 with the WM1302 HAT and the Active Cooler · 915 MHz antenna (on the HAT) · the provisioned microSD card, in the Pi · 27 W USB-C PD supply · Ethernet cable · USB Ethernet adapter if the laptop has no port · travel router and its power, set up at home (section 4) · laptop and charger · phone and charger (a hotspot drains it) · test node and its USB cable · USB microSD reader.
 
-**Before leaving.** Rehearsal (section 1) done on this phone and this laptop. `aws sts get-caller-identity` works on the laptop. AWS console signed in, in `us-east-1`, with the Gateways page and the MQTT test client (subscribed to `aesd/lorawan/uplink`) open in two tabs. The node's serial command tested with `send-uplink.ps1`. The video recorded, in case nothing in the room works.
+**Before leaving.** Rehearsal (section 1) done on this phone and this laptop. `aws sts get-caller-identity` works on the laptop. AWS console signed in, in `us-east-1`, with the Gateways page and the MQTT test client (subscribed to `aesd/lorawan/uplink`) open in two tabs. The node's commands checked with `send-uplink.ps1 -Help` and one uplink sent with it (section 5). The video recorded, in case nothing in the room works.
 
 **Power-up order** (about 2 minutes):
 
