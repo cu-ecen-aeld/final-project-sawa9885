@@ -11,16 +11,17 @@
 # by hand with the command in /tmp/pi-outage-test.restore. udhcpc also adds the default route
 # again at its next lease renewal.
 #
-# Every 10 s it logs gwmon's status line (from port 9000 with busybox nc if there is one,
-# otherwise the publish fields are taken from syslog afterwards) and the route state, to
-# /tmp/pi-outage-test.log and to syslog with the tag outage-test.
+# Every 10 s it logs the route state to /tmp/pi-outage-test.log and to syslog with the tag
+# outage-test. The image has no nc, so gwmon's status is logged from the PC meanwhile.
 #
 # This file was partially generated using Claude Code using the chat session at:
 # Link to chat session (issue #13): ISSUE13_SESSION_LINK
 
 SECONDS_OFF=${1:-600}
 LOG=/tmp/pi-outage-test.log
-route=$(ip route show default | head -n 1)
+# busybox "ip route show default" lists every route, so filter by hand.
+default_routes() { ip route | grep "^default"; }
+route=$(default_routes | head -n 1)
 
 say() {
 	echo "$(date -u +%H:%M:%S) $*" >>"$LOG"
@@ -40,13 +41,13 @@ t=0
 while [ $t -lt "$SECONDS_OFF" ]; do
 	sleep 10
 	t=$((t + 10))
-	say "off for $t s, $(ip route show default | wc -l) default route(s)"
+	say "off for $t s, $(default_routes | wc -l) default route(s)"
 done
 # udhcpc may have put it back already at a lease renewal; the log above shows when.
 # shellcheck disable=SC2086 # the route is a list of words
-[ -n "$(ip route show default)" ] || ip route add $route ||
+[ -n "$(default_routes)" ] || ip route add $route ||
 	say "FAILED to put the route back: run $(cat /tmp/pi-outage-test.restore)"
-say "default route back: $(ip route show default)"
+say "default route back: $(default_routes)"
 t=0
 while [ $t -lt 360 ]; do
 	sleep 10

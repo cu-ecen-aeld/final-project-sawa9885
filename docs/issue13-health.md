@@ -84,4 +84,69 @@ The endpoint is the account's `iot:Data-ATS` host name. It is treated as a secre
 
 ## Results
 
-See the sections below, filled in as the tests ran.
+### Host tests (no AWS)
+
+| Test | Result | Log |
+|---|---|---|
+| `make -C gwmon check`: issues #6 and #7 sections 1 to 10 unchanged, plus sections 11 to 16 for the publish, with a fake publish program | 143/143 | [issue13-gwmon-host-test.log](logs/issue13-gwmon-host-test.log) |
+| `make -C gwmon valgrind`: the same under Valgrind, 17 gwmon processes | 144/144, 0 errors, no leaks | [issue13-gwmon-valgrind.log](logs/issue13-gwmon-valgrind.log) |
+| `make -C gwmon publish-check`: the real `gwmon-publish.sh` and `mosquitto_pub` against a local mosquitto 2.0.18 broker with TLS and a required client certificate | 19/19 | [issue13-publish-test.log](logs/issue13-publish-test.log) |
+
+What they show, per DoD item:
+
+- **JSON content and the 5-minute setting (1):** the report is one JSON object on one line with all the status fields; `-I 3` gives reports 3.0, 3.0, 3.0 s apart; without `-I` gwmon logs `health report every 300 s`. With `-w none` and no Station, log or sensor the same 17 keys are there with `null` values.
+- **A publish that hangs (4):** with a fake publish program that never ends (and has a child of its own), the longest time between two watchdog feeds was 1.01 s, against 1.00 s before any publish (feed interval 1 s); 11 feeds in 11.2 s. gwmon killed the program and its child at the 2 s limit. With the real client, a server that accepts the TCP connection and never answers: both attempts killed at the limit, no `mosquitto_pub` left, `wd_last_feed_age=0s`.
+- **Log once (4):** four failed attempts give one syslog line; recovery gives one more (`health publish works again after 4 failed attempts`); a second outage gives one more `failed` line. With the real broker stopped: five failures (`Error: Connection refused` in `/var/run/gwmon-publish.err`), one line.
+- **Resume (5):** after the broker came back, the next attempt worked 1.0 s later (interval 2 s).
+- **Other:** exit status 78 (no credentials) stops the timer after one line; a missing program is a failed attempt; `kill -9` of gwmon takes a running publish with it (`PR_SET_PDEATHSIG`); a clean stop kills it too.
+
+### AWS identity, tried from the PC
+
+[issue13-aws-pc-test.log](logs/issue13-aws-pc-test.log). `scripts/create-health-thing.sh create` made the thing, the policy and certificate `e73c3daa…`. `gwmon-publish.sh` with `mosquitto_pub` published from WSL, and `aws iot-data get-retained-message` read the message back. The policy refuses a publish to another topic and a connect with another client ID (AWS closes the connection, exit status 7).
+
+### S35provision, run by hand on the Pi
+
+[issue13-s35provision-pi.log](logs/issue13-s35provision-pi.log). The script from this branch, run from `/tmp` with `PROVISION_BOOT` pointing at a tmpfs that held only the three `health.*` files: it installed `/etc/gwmon-health/{endpoint,crt,key}` (0600, directory 0700), deleted them from the fake boot partition and removed the CR the Windows AWS CLI had put in the endpoint file. `/etc/station` and the real `/boot` were not changed. Not tested: the script at a real boot (no reboot while nobody is home).
+
+### On the Pi
+
+The SD card was not reflashed and the Pi was not rebooted. The files come from this branch's Buildroot build (`make gwmon mosquitto` in an output directory of its own); SHA-256 on the Pi = in the build's `target/`:
+
+| File on the Pi | SHA-256 (first 16) | Was there before? |
+|---|---|---|
+| `/usr/bin/gwmon` (2.1.0) | `6e7d72e90a80b515` | replaced; 2.0.0 kept in `/root/issue13-backup/gwmon.2.0.0` |
+| `/etc/init.d/S99gwmon` | `5568ff73dada050d` | replaced; old one in `/root/issue13-backup/S99gwmon.2.0.0` |
+| `/usr/bin/gwmon-publish.sh` | `52c36bf6f9cc7526` | new |
+| `/usr/bin/mosquitto_pub` (2.0.22) | `14dc9515100d4fb0` | new |
+| `/usr/lib/libmosquitto.so.1` | `18d263c80bd3bb9c` | new |
+| `/etc/gwmon-health/{endpoint,crt,key}` | (secret) | new, installed by `S35provision` run by hand |
+
+`/root/issue13-backup/revert.sh` puts gwmon 2.0.0 and its init script back. The card's `S35provision` was not changed; the image built from this branch has the new one.
+
+1. **Phase A, next to the live gwmon** (`/tmp/i13/gwmon -p 9013 -w none -I 60`): first report 36 s after start, the second 60 s later, read back from AWS (`temp_c` 31.4).
+2. **Swap.** A detached script stopped gwmon 2.0.0 with `S99gwmon stop` (magic close), installed the files and started gwmon 2.1.0 with `S99gwmon start`. Swap took under 1 s; Station started again and connected; the watchdog was armed again (`timeout 10 s, fed every 2 s`). First report 30 s after the start.
+3. **Outage** ([issue13-network-outage.log](logs/issue13-network-outage.log)). Default route deleted at 22:39:24 UTC. udhcpc put it back at about 22:49:00 to 22:49:05, so the outage was 9 min 36 s to 9 min 41 s (not quite 10 min).
+   - Reports due at 22:43:51 and 22:48:51 failed. syslog has **one** line: `health publish failed: /usr/bin/gwmon-publish.sh exited with status 1. Trying again every 300 s; further failures are not logged until a publish works`.
+   - The watchdog was fed all through: `wd_feeds` rose by 31 every minute, `wd_last_feed_age` was never above 1 s in 86 samples.
+   - The next report, at 22:53:56, worked, 4 min 51 s after the route was back (interval 5 min): `health publish works again after 2 failed attempts`. AWS has it as the retained message, `publish_fails` 2.
+   - Station reconnected to its LNS at 22:49:08 by itself.
+
+## Definition of done
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Every 5 minutes (a setting) one JSON message on `aesd/gateway/<EUI>/health` with the status fields | **Pass.** Default 300 s, `GWMON_PUBLISH_INTERVAL` / `-I`. Messages from the Pi read back from AWS IoT Core. |
+| 2 | Own certificate, provisioned from the boot partition by `S35provision`, not in the repo | **Pass, with one gap:** own thing, policy and certificate; `S35provision` installs them, tested by hand on the Pi against a copy of the boot files, not at a real boot. Nothing secret in the repo. |
+| 3 | The message in the AWS IoT MQTT test client, screenshot in `docs/` | **Needs Sam:** the screenshot needs the AWS console. Read back with `aws iot-data get-retained-message` meanwhile. |
+| 4 | A failed or hung publish never delays the watchdog feed; with the network down, one syslog line | **Pass:** host tests (hang: longest feed gap 1.01 s vs 1.00 s) and the Pi outage (one line, feed age never above 1 s). |
+| 5 | After 10 minutes without Ethernet, publishing resumes within one interval | **Simulated, pass:** 9 min 40 s without the internet (route removed, link up), resumed 4 min 51 s after. **The real cable pull needs Sam** (Nov 29). |
+
+### Outage test on the Pi: method, risk and recovery (written before it ran)
+
+Nobody can touch the Pi from 2026-11-21 to 2026-11-29, so the 10-minute outage is simulated without taking the Ethernet link down. `gwmon/test/pi-outage-test.sh`, started on the Pi with `setsid` so it does not depend on the SSH session, deletes the default route, waits 600 s, and puts the same route back.
+
+- **What it simulates:** the gateway loses the internet. Every connection to AWS fails (Station's and the publisher's), as with a pulled WAN cable. The LAN route stays, so SSH from the LAN keeps working throughout.
+- **Difference from a pulled cable:** the link stays up, so `ifplugd` does not run `ifdown`/`ifup` and DHCP does not restart. Pulling the real cable for 10 minutes is left for Sam on 2026-11-29 (DoD item 5 asks for it).
+- **Risk:** if the script died between the two steps, the gateway would stay off the internet. It would still answer SSH on the LAN.
+- **Recovery:** the exact command to put the route back is in `/tmp/pi-outage-test.restore` on the Pi. udhcpc also adds the default route again at its next lease renewal, and a reboot by the watchdog would too.
+- **No risk to the watchdog:** gwmon does not depend on the network; the test checks that `wd_feeds` keeps rising.
