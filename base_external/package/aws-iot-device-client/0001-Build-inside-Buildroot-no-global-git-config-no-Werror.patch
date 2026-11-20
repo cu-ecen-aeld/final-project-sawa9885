@@ -3,7 +3,7 @@ Date: Fri, 20 Nov 2026 14:41:32 -0700
 Subject: [PATCH] Build inside Buildroot: no global git config, no -Werror,
  shared OpenSSL
 
-Four changes for a cross build from a release tarball with Buildroot
+Seven changes for a cross build from a release tarball with Buildroot
 (issue #15 of cu-ecen-aeld/final-project-sawa9885):
 
 - CMakeLists.txt.versioning ran "git config --global --add safe.directory"
@@ -15,15 +15,24 @@ Four changes for a cross build from a release tarball with Buildroot
   updates.
 - With BUILD_SDK=OFF the host directories /include and /lib were added to
   the search paths. The SDK is found in the toolchain's sysroot.
+- test/ was always added, and it needs googletest. It is now skipped
+  with BUILD_TESTING=OFF, which Buildroot passes.
+- With BUILD_SDK=OFF the SDK's static libraries are linked by name in
+  an order that leaves aws-c-common symbols unresolved. They are linked
+  as a group.
+- With GIT_VERSION=OFF the version was never read from .version, and
+  the function that reads it set its variables in its own scope only:
+  the client printed an empty version. It is now a macro, called when
+  git gives no version.
 
 Upstream-Status: Inappropriate [Buildroot integration]
 ---
- CMakeLists.txt            | 6 ++----
- CMakeLists.txt.versioning | 2 --
- 2 files changed, 2 insertions(+), 6 deletions(-)
+ CMakeLists.txt            | 15 +++++++++------
+ CMakeLists.txt.versioning |  8 ++++----
+ 2 files changed, 13 insertions(+), 10 deletions(-)
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 7f3a8c0..ac696ef 100644
+index 7f3a8c0..a1820d3 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -157,7 +157,7 @@ configure_file("source/Version.h.in" "${PROJECT_BINARY_DIR}/Version.h")
@@ -53,11 +62,31 @@ index 7f3a8c0..ac696ef 100644
  endif ()
  
  set(DEP_DC_LIBS ${DEP_DC_LIBS} aws-crt-cpp aws-c-mqtt aws-c-auth aws-c-io aws-c-cal aws-c-http aws-c-compression aws-c-common aws-c-s3 aws-c-event-stream aws-checksums aws-c-sdkutils)
+@@ -236,7 +234,9 @@ if (NOT EXCLUDE_SHADOW)
+     set(DEP_DC_LIBS ${DEP_DC_LIBS} IotShadow-cpp)
+ endif ()
+ 
+-target_link_libraries(${DC_PROJECT_NAME} ${DEP_DC_LIBS})
++# Buildroot: the SDK is static libraries found by name, which depend on each other in
++# both directions. Let the linker search them as a group.
++target_link_libraries(${DC_PROJECT_NAME} -Wl,--start-group ${DEP_DC_LIBS} -Wl,--end-group)
+ target_link_libraries(${DC_PROJECT_NAME} OpenSSL::SSL)
+ target_link_libraries(${DC_PROJECT_NAME} OpenSSL::Crypto)
+ 
+@@ -266,4 +266,7 @@ if (BUILD_TEST_DEPS)
+             ${CMAKE_BINARY_DIR}/googletest-build)
+ endif ()
+ 
+-add_subdirectory(test)
++# Buildroot: the unit tests need googletest and do not run on the build host.
++if (BUILD_TESTING OR NOT DEFINED BUILD_TESTING)
++    add_subdirectory(test)
++endif ()
 diff --git a/CMakeLists.txt.versioning b/CMakeLists.txt.versioning
-index 630941c..4c1198e 100644
+index 630941c..1b634e1 100644
 --- a/CMakeLists.txt.versioning
 +++ b/CMakeLists.txt.versioning
-@@ -11,8 +11,6 @@
+@@ -11,15 +11,13 @@
  
  cmake_minimum_required(VERSION 3.10)
  
@@ -66,3 +95,27 @@ index 630941c..4c1198e 100644
  
  # Check to make sure we have Git info for this package
  execute_process(COMMAND git log --pretty=format:'%h' -n 1
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                 OUTPUT_VARIABLE GIT_INFO)
+ 
+-function (load_version_from_file)
++macro (load_version_from_file)
+     # Git is not available (this is the case if the source is packaged as an archive), get version from file
+     file(STRINGS ${CMAKE_SOURCE_DIR}/.version ${PROJECT_NAME}_VERSION_LIST)
+     string(REPLACE "*" ";" ${PROJECT_NAME}_VERSION_LIST ${${PROJECT_NAME}_VERSION_LIST})
+@@ -34,7 +32,7 @@ function (load_version_from_file)
+     unset(${PROJECT_NAME}_VERSION_LIST)
+ 
+     message("-- Failed to infer patch version from git, loaded AWS IoT Device Client version from file: ${${PROJECT_NAME}_VERSION_STRING_FULL}")
+-endfunction()
++endmacro()
+ 
+ if (GIT_VERSION AND NOT ${GIT_INFO} STREQUAL "")
+     message("-- Using Git to calculate AWS IoT Device Client version information...")
+@@ -120,4 +118,6 @@ if (GIT_VERSION AND NOT ${GIT_INFO} STREQUAL "")
+ 
+     # exit from cmake processing
+     return()
++else ()
++    load_version_from_file()
+ endif()

@@ -47,7 +47,8 @@ AWS_IOT_DEVICE_CLIENT_CONF_OPTS = \
 	-DEXCLUDE_SAMPLE_SHADOW=ON \
 	-DEXCLUDE_SENSOR_PUBLISH=ON \
 	-DEXCLUDE_SENSOR_PUBLISH_SAMPLES=ON \
-	-DEXCLUDE_SECURE_ELEMENT=ON
+	-DEXCLUDE_SECURE_ELEMENT=ON \
+	-DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 # The .version file in the v1.10.1 tarball still says v1.10.0. The client
 # prints this string at start and with --version.

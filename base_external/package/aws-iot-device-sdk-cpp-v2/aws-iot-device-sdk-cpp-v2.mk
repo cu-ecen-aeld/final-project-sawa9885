@@ -26,7 +26,8 @@ AWS_IOT_DEVICE_SDK_CPP_V2_SITE = https://github.com/aws/aws-iot-device-sdk-cpp-v
 AWS_IOT_DEVICE_SDK_CPP_V2_SITE_METHOD = git
 AWS_IOT_DEVICE_SDK_CPP_V2_GIT_SUBMODULES = YES
 AWS_IOT_DEVICE_SDK_CPP_V2_LICENSE = Apache-2.0
-AWS_IOT_DEVICE_SDK_CPP_V2_LICENSE_FILES = LICENSE
+AWS_IOT_DEVICE_SDK_CPP_V2_LICENSE_FILES = documents/LICENSE crt/aws-crt-cpp/LICENSE \
+	crt/aws-c-iot/LICENSE crt/aws-crt-cpp/crt/s2n/LICENSE
 AWS_IOT_DEVICE_SDK_CPP_V2_INSTALL_STAGING = YES
 AWS_IOT_DEVICE_SDK_CPP_V2_INSTALL_TARGET = NO
 AWS_IOT_DEVICE_SDK_CPP_V2_DEPENDENCIES = openssl
@@ -36,11 +37,14 @@ AWS_IOT_DEVICE_SDK_CPP_V2_DEPENDENCIES = openssl
 #   aws-lc, a second crypto library that would otherwise be compiled.
 # BUILD_SHARED_LIBS=OFF comes after Buildroot's own =ON on the command line.
 # BUILD_TESTING=OFF: no test programs (they would not run on the build host).
+# CMAKE_POLICY_VERSION_MINIMUM: the SDK and parts of the CRT ask for CMake 3.1,
+#   which the CMake 4 of Buildroot 2026.02 refuses unless told to go ahead.
 AWS_IOT_DEVICE_SDK_CPP_V2_CONF_OPTS = \
 	-DBUILD_DEPS=ON \
 	-DUSE_OPENSSL=ON \
 	-DBUILD_SHARED_LIBS=OFF \
 	-DBUILD_TESTING=OFF \
-	-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON \
+	-DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
 $(eval $(cmake-package))
