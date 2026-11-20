@@ -405,6 +405,221 @@ SPID=""
 check "no 'V' was written" [ "$(tr -d '\0' <"$FAKE" | wc -c)" = 0 ]
 rm -f "$TMP"/valgrind.*.log # a killed process has no leak report
 
+# ---- health publish (issue #13). The publish program is a FAKE: a script that stores the report
+# it gets on standard input and then does what its mode file says: exit 0, exit 1, exit 78 or
+# hang (with a child process of its own, to see that gwmon kills the whole process group).
+
+make_fake_publisher() {
+	cat >"$PUBLISH" <<EOF
+#!/bin/bash
+# Fake publish program for the gwmon host test, written by host-test.sh.
+n=\$((\$(cat "$PUBS" 2>/dev/null | wc -l) + 1))
+cat >"$TMP/report.\$n"
+echo "\$\$ \$(date +%s.%N)" >>"$PUBS"
+case "\$(cat "$PMODE" 2>/dev/null)" in
+	fail) exit 1 ;;
+	unconfigured) exit 78 ;;
+	hang) sleep 1000 & echo \$! >>"$PUBKIDS"; wait ;;
+esac
+exit 0
+EOF
+	chmod +x "$PUBLISH"
+}
+
+reset_publish_files() {
+	rm -f "$PUBS" "$PUBKIDS" "$TMP"/report.*
+	echo ok >"$PMODE"
+}
+
+pub_count() { cat "$PUBS" 2>/dev/null | wc -l; }
+log_count() { grep -c "$1" "$TMP/stderr.log"; }
+json_ok() { # json_ok FILE PYTHON-EXPRESSION-ON-r: the file is one JSON object and the expression holds
+	python3 - "$1" "$2" <<'EOF'
+import json, sys
+text = open(sys.argv[1]).read()
+r = json.loads(text)
+sys.exit(0 if isinstance(r, dict) and "\n" not in text and eval(sys.argv[2]) else 1)
+EOF
+}
+
+# Watch the fake watchdog file for SECONDS and print the longest time between two feeds. Only
+# gaps between two observed feeds count, not the time from the start of the watch to the first.
+# One Python process polls the file size every 10 ms, so the test itself adds little jitter.
+longest_feed_gap() { # longest_feed_gap SECONDS
+	python3 - "$FAKE" "$1" <<'EOF'
+import os, sys, time
+path, seconds = sys.argv[1], float(sys.argv[2])
+end = time.monotonic() + seconds
+size, last, gap = os.stat(path).st_size, None, 0.0
+while time.monotonic() < end:
+    now, s = time.monotonic(), os.stat(path).st_size
+    if s != size:
+        if last is not None:
+            gap = max(gap, now - last)
+        size, last = s, now
+    time.sleep(0.01)
+print("%.2f" % gap)
+EOF
+}
+
+PUBLISH=$TMP/fake-publish
+PMODE=$TMP/publish-mode   # ok | fail | unconfigured | hang, read by the fake program at each start
+PUBS=$TMP/publish-starts  # one line per start: "<pid> <seconds since the epoch>"
+PUBKIDS=$TMP/publish-kids # the pid of the sleep each hanging fake program starts
+make_fake_publisher
+
+echo "== 11. Health report: JSON content and the publish interval (issue #13)"
+reset_station_files
+reset_publish_files
+check "gwmon starts and listens" start_foreground "${SUP_ARGS[@]}" -P "$PUBLISH" -I 3 -O 1
+line=$(status)
+echo "    status: $line"
+check "before the first report: publish=never" grep -Eq \
+	' publish=never publishes=0 publish_fails=0 last_publish_age=never$' <<<"$line"
+check "the version 2 fields are unchanged in front of the publish fields" grep -Eq \
+	"$V1_RE station=[a-z]+ station_pid=[0-9]+ station_uptime=[0-9]+s station_restarts=0 station_fails=0 uplinks=[a-z0-9]+ last_uplink_age=never temp=27\.5C publish=" <<<"$line"
+{ uplink_line 1; uplink_line 2; } >>"$SLOG"
+check "the first report is published: publish=ok publishes=1" wait_status ' publish=ok publishes=1 publish_fails=0 last_publish_age=[0-2]s$' 6
+echo "    report: $(cat "$TMP/report.1")"
+version=$("$GWMON" -v | cut -d' ' -f2)
+check "the report is one JSON object on one line" json_ok "$TMP/report.1" "True"
+check "it has the gwmon version ($version) and the time" json_ok "$TMP/report.1" \
+	"r['gwmon_version'] == '$version' and abs(r['time'] - $(date +%s)) < 30"
+check "it has the uptime of the machine and of gwmon" json_ok "$TMP/report.1" \
+	"r['uptime_s'] > 0 and 2 <= r['daemon_uptime_s'] <= 5"
+check "it has the watchdog state" json_ok "$TMP/report.1" \
+	"r['watchdog'] == 'fake' and r['wd_timeout_s'] == 5 and r['wd_feeds'] >= 2 and r['wd_last_feed_age_s'] <= 1"
+check "it has the Station state and the restart count" json_ok "$TMP/report.1" \
+	"r['station'] == 'running' and r['station_restarts'] == 0 and r['station_fails'] == 0 and r['station_uptime_s'] >= 2"
+check "it has the uplinks received and the time since the last one" json_ok "$TMP/report.1" \
+	"r['uplinks'] == 2 and 0 <= r['last_uplink_age_s'] <= 4"
+check "it has the concentrator temperature" json_ok "$TMP/report.1" "r['temp_c'] == 27.5"
+check "the first report is in the syslog output" grep -q "health publish: first report sent, next every 3 s" "$TMP/stderr.log"
+check "three more reports follow" wait_status ' publishes=4 ' 12
+gaps=$(awk 'NR > 1 { printf "%.1f ", $2 - prev } { prev = $2 }' "$PUBS")
+pub_gaps_ok() {
+	awk 'NR > 1 { gap = $2 - prev; if (gap < 2.7 || gap > 3.5) bad = 1 } { prev = $2 } END { exit !(NR >= 4 && !bad) }' "$PUBS"
+}
+check "the reports are 3 s apart, the -I setting (measured: ${gaps% } s)" pub_gaps_ok
+check "a report that works is not logged again" [ "$(log_count "health publish")" = 1 ]
+stop_gwmon
+show_logs
+
+check "gwmon starts and listens (no -I, no Station, no log, no sensor)" start_foreground -w none -P "$PUBLISH"
+sleep 0.5 # the port is open before gwmon logs its publish settings
+check "without -I the interval is 5 minutes" grep -q "health report every 300 s through $PUBLISH (timeout 30 s)" "$TMP/stderr.log"
+kill -TERM "$PID"; wait "$PID"; PID=""
+show_logs
+check "gwmon starts and listens" start_foreground -w none -P "$PUBLISH" -I 2 -O 1
+reset_publish_files
+check "a report is published" wait_status ' publishes=1 ' 5
+echo "    report: $(cat "$TMP/report.1")"
+check "values gwmon does not have are null, the keys are the same" json_ok "$TMP/report.1" \
+	"r['watchdog'] == 'disabled' and r['wd_feeds'] is None and r['station'] == 'off' and r['uplinks'] is None and r['last_uplink_age_s'] is None and r['temp_c'] is None and len(r) == 17"
+kill -TERM "$PID"; wait "$PID"; PID=""
+show_logs
+"$GWMON" -w none -P "$PUBLISH" -I 30 -O 30 2>/dev/null
+check "a publish timeout that is not below the interval is rejected" [ $? = 1 ]
+
+echo "== 12. A publish that hangs: the watchdog feed does not move, the program is killed at the timeout"
+reset_station_files
+reset_publish_files
+check "gwmon starts and listens" start_foreground "${SUP_ARGS[@]}" -P "$PUBLISH" -I 5 -O 2
+base=$(longest_feed_gap 3)
+check "before any publish the longest time between two feeds is about 1 s (measured: $base s)" \
+	awk -v g="$base" 'BEGIN { exit !(g >= 0.8 && g <= 1.3) }'
+echo hang >"$PMODE"
+feeds1=$(status | field wd_feeds)
+t1=$(date +%s.%N)
+gap=$(longest_feed_gap 11) # covers two hanging publishes and both kills
+feeds2=$(status | field wd_feeds)
+elapsed=$(awk -v a="$t1" -v b="$(date +%s.%N)" 'BEGIN { printf "%.1f", b - a }')
+check "two publish programs were started and hung ($(pub_count) starts)" [ "$(pub_count)" -ge 2 ]
+check "with hanging publishes the longest time between two feeds is still about 1 s (measured: $gap s)" \
+	awk -v g="$gap" 'BEGIN { exit !(g >= 0.8 && g <= 1.3) }'
+check "one feed per second all the way through ($((feeds2 - feeds1)) feeds in $elapsed s)" \
+	awk -v n="$((feeds2 - feeds1))" -v e="$elapsed" 'BEGIN { exit !(n >= e - 1.2 && n <= e + 1.2) }'
+line=$(status)
+echo "    status: $line"
+check "the status reports the failures: publish=failing publish_fails=2" grep -Eq ' publish=failing publishes=0 publish_fails=2 last_publish_age=never$' <<<"$line"
+check "the kill at the timeout is in the syslog output" grep -q "health publish failed: $PUBLISH was killed after 2 s without a result" "$TMP/stderr.log"
+check "the second failure is not logged" [ "$(log_count "health publish failed")" = 1 ]
+hung=$(head -n 1 "$PUBS" | cut -d' ' -f1)
+check "the hung program (pid $hung) is gone" gone "$hung"
+check "the process it had started (pid $(head -n 1 "$PUBKIDS")) is gone too" gone "$(head -n 1 "$PUBKIDS")"
+check "the station was not disturbed" grep -Eq ' station=running .* station_restarts=0 ' <<<"$line"
+# Stop gwmon while a publish program hangs.
+n=$(pub_count)
+until [ "$(pub_count)" -gt "$n" ]; do sleep 0.1; done
+sleep 0.3
+hung=$(tail -n 1 "$PUBS" | cut -d' ' -f1)
+stop_gwmon
+check "a clean stop kills the publish program that was running (pid $hung)" gone "$hung"
+show_logs
+
+echo "== 13. A publish that fails is logged once; when it works again that is logged once"
+reset_station_files
+reset_publish_files
+echo fail >"$PMODE"
+check "gwmon starts and listens" start_foreground "${SUP_ARGS[@]}" -P "$PUBLISH" -I 2 -O 1
+check "four attempts fail: publish=failing publish_fails=4" wait_status ' publish=failing publishes=0 publish_fails=4 ' 12
+check "the first failure is in the syslog output, with the exit status" grep -q "health publish failed: $PUBLISH exited with status 1. Trying again every 2 s" "$TMP/stderr.log"
+check "the other three are not: one line for four failures" [ "$(log_count "health publish")" = 1 ]
+feeds=$(status | field wd_feeds)
+check "the watchdog is fed all the time (wd_feeds=$feeds)" [ "${feeds:-0}" -ge 7 ]
+echo ok >"$PMODE"
+t0=$(date +%s.%N)
+back=1
+wait_status ' publish=ok publishes=1 ' 5 && back=0
+elapsed=$(awk -v a="$t0" -v b="$(date +%s.%N)" 'BEGIN { printf "%.1f", b - a }')
+check "once the program can publish again the next attempt works, within one interval of 2 s ($elapsed s)" \
+	[ "$back" = 0 -a "$(awk -v e="$elapsed" 'BEGIN { print (e <= 2.6) }')" = 1 ]
+fails=$(status | field publish_fails)
+check "the recovery is in the syslog output, with the number of failures" grep -Eq "health publish works again after $fails failed attempts\$" "$TMP/stderr.log"
+check "two more reports work and are not logged" wait_status ' publishes=3 ' 8
+check "the syslog output has two publish lines so far" [ "$(log_count "health publish")" = 2 ]
+echo fail >"$PMODE"
+check "a new failure after a success is logged again" wait_status ' publish=failing ' 5
+sleep 0.3
+check "two 'failed' lines for two outages" [ "$(log_count "health publish failed")" = 2 ]
+stop_gwmon
+show_logs
+
+echo "== 14. A publish program without credentials (exit status 78) is not run again"
+reset_publish_files
+echo unconfigured >"$PMODE"
+check "gwmon starts and listens" start_foreground -w "$FAKE" -P "$PUBLISH" -I 2 -O 1
+check "publish=unconfigured" wait_status ' publish=unconfigured publishes=0 publish_fails=0 ' 5
+feeds1=$(status | field wd_feeds)
+sleep 5
+feeds2=$(status | field wd_feeds)
+check "the program was run once only in 7 s" [ "$(pub_count)" = 1 ]
+check "it is in the syslog output once" [ "$(log_count "health publish: no credentials (exit status 78), publishing is off")" = 1 ]
+check "the watchdog is still fed (wd_feeds $feeds1, then $feeds2)" [ "${feeds2:-0}" -gt "${feeds1:-0}" ]
+stop_gwmon
+show_logs
+
+echo "== 15. A publish program that cannot be run is a failed publish, logged once"
+check "gwmon starts and listens" start_foreground -w "$FAKE" -P "$TMP/no-such-program" -I 2 -O 1
+check "publish=failing publish_fails=2" wait_status ' publish=failing publishes=0 publish_fails=2 ' 8
+check "one line in the syslog output" [ "$(log_count "health publish failed: $TMP/no-such-program exited with status 127")" = 1 ]
+stop_gwmon
+show_logs
+
+echo "== 16. kill -9 of gwmon: a publish program that is running does not outlive it"
+reset_publish_files
+echo hang >"$PMODE"
+check "gwmon starts and listens" start_foreground -w "$FAKE" -P "$PUBLISH" -I 2 -O 1
+until [ "$(pub_count)" -ge 1 ]; do sleep 0.1; done
+SPID=$(head -n 1 "$PUBS" | cut -d' ' -f1)
+kill -KILL "$PID"
+wait "$PID" 2>/dev/null
+PID=""
+check "the publish program (pid $SPID) is killed with gwmon" wait_for_exit "$SPID"
+SPID=""
+pkill -f "sleep 1000" 2>/dev/null # the fake program's own child: SIGKILL gave it no chance to clean up
+rm -f "$TMP"/valgrind.*.log # a killed process has no leak report
+
 [ "${VALGRIND:-0}" = 1 ] && echo && echo "Valgrind logs checked: $VG_LOGS"
 echo
 if [ "$FAILS" = 0 ]; then

@@ -5,10 +5,15 @@
 #   /boot/wpa_supplicant.conf            -> /etc/wpa_supplicant.conf   (optional, Wi-Fi)
 #   /boot/{cups,tc}.{uri,trust,crt,key}  -> /etc/station/              (Basics Station)
 #   /boot/provision.{secret,url}         -> /etc/gateway-provision/    (zero-touch provisioning)
+#   /boot/health.{endpoint,crt,key}      -> /etc/gwmon-health/         (gwmon's health reports)
 #
 # provision.secret and provision.url are written by scripts/flash-gateway.ps1 (issue #10). With
 # them, a gateway needs no cups.* files on the card: /usr/sbin/gateway-provision, started by
 # S45gateway-provision, uses the secret once to fetch them from the provisioning function.
+#
+# health.endpoint, health.crt and health.key are the AWS IoT identity gwmon-publish.sh uses to
+# publish gwmon's health report (issue #13). scripts/create-health-thing.sh writes them. It is a
+# certificate of its own, not Station's.
 #
 # Each file is installed with mode 0600 and then deleted from the boot partition, so the secret is
 # kept in one place only. Files that are not on the boot partition are left as they are in /etc,
@@ -19,12 +24,15 @@
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
 # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
+# Link to chat session (issue #13): ISSUE13_SESSION_LINK
 
-BOOT=/boot
+# PROVISION_BOOT is for testing the script against a copy of the boot files.
+BOOT=${PROVISION_BOOT:-/boot}
 WIFI_CONF=/etc/wpa_supplicant.conf
 STATION_DIR=/etc/station
 STATION_FILES="cups.uri cups.trust cups.crt cups.key tc.uri tc.trust tc.crt tc.key"
 PROVISION_DIR=/etc/gateway-provision
+HEALTH_DIR=/etc/gwmon-health
 
 log() {
 	echo "provision: $*"
@@ -82,6 +90,16 @@ start() {
 		chmod 700 "$PROVISION_DIR"
 		for f in secret url; do
 			[ -f "$BOOT/provision.$f" ] && install_secret "$BOOT/provision.$f" "$PROVISION_DIR/$f" text
+		done
+	fi
+
+	# The health publisher's endpoint, certificate and key. The endpoint is a host name.
+	if [ -f "$BOOT/health.endpoint" ] || [ -f "$BOOT/health.crt" ] || [ -f "$BOOT/health.key" ]; then
+		mkdir -p "$HEALTH_DIR"
+		chmod 700 "$HEALTH_DIR"
+		[ -f "$BOOT/health.endpoint" ] && install_secret "$BOOT/health.endpoint" "$HEALTH_DIR/endpoint" text
+		for f in crt key; do
+			[ -f "$BOOT/health.$f" ] && install_secret "$BOOT/health.$f" "$HEALTH_DIR/$f"
 		done
 	fi
 	sync

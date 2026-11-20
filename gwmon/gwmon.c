@@ -1,7 +1,8 @@
 /*
- * gwmon - gateway monitor daemon for the AESD Pi 5 LoRaWAN gateway, version 2 (issues #6, #7).
+ * gwmon - gateway monitor daemon for the AESD Pi 5 LoRaWAN gateway, version 2.1 (issues #6, #7,
+ * #13).
  *
- * gwmon does four things, all from one ppoll() loop in the main thread:
+ * gwmon does five things, all from one ppoll() loop in the main thread:
  *   - A TCP status server (port 9000). Each connection gets one status line and is closed:
  *       gwmon 2.0.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s \
  *           wd_interval=2s wd_feeds=600 wd_last_feed_age=1s station=running station_pid=301 \
@@ -15,6 +16,10 @@
  *     board resets.
  *   - It reports gateway health (version 2): uplinks counted from Station's log file (-l) and the
  *     concentrator board temperature read from the WM1302's STTS751 sensor (-T).
+ *   - It publishes the health report (version 2.1, issue #13). Every -I seconds (default 300)
+ *     gwmon starts the publish program (-P) as a short-lived child with the report as one JSON
+ *     object on its standard input. On the gateway the program is gwmon-publish.sh, which hands
+ *     the report to mosquitto_pub for AWS IoT Core. docs/issue13-health.md has the design.
  *
  * The design follows the course's aesdsocket: -d daemon mode (fork after the socket is bound),
  * signal handlers that only set a flag or do nothing, syslog, and a thread per client kept in a
@@ -55,6 +60,20 @@
  *     it when no CUPS or LNS address is provisioned. gwmon then does not restart the child and
  *     keeps feeding the watchdog, so a gateway without credentials does not reboot in a loop.
  *
+ * Publish rules (issue #13):
+ *   - The MQTT and TLS work is done in another process, never in gwmon. The main loop only does
+ *     fork() and exec, one write() of the report into a pipe before the fork (the report is
+ *     smaller than PIPE_BUF and the pipe is empty, so the write cannot block), waitpid(WNOHANG),
+ *     and a one-shot timerfd. A publish that hangs is killed (SIGKILL to its process group) when
+ *     that timer runs out after -O seconds (default 30). So the watchdog feed is never delayed.
+ *   - Only a change is logged: the first failure after a success (or after the start), and the
+ *     first success after a failure. With the network down for an hour there is one line.
+ *   - Each attempt starts a new program and so a new connection: there is no connection state to
+ *     recover after an outage. The first attempt after the network is back succeeds.
+ *   - Exit status 78 means "no credentials to publish with": gwmon logs it once and stops the
+ *     publish timer, as it does for a Station without credentials.
+ *   - The first report is sent 30 s after gwmon starts (or after -I seconds if that is less).
+ *
  * Shutdown rules:
  *   - SIGINT or SIGTERM: magic close first, then Station is stopped (SIGTERM to its process
  *     group, SIGKILL after 5 s), then the rest of the cleanup. The Pi keeps running.
@@ -64,6 +83,7 @@
  * This file was partially generated using Claude Code using the chat sessions at:
  * Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
  * Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
+ * Link to chat session (issue #13): ISSUE13_SESSION_LINK
  */
 
 #define _GNU_SOURCE
@@ -98,7 +118,7 @@
 #include <time.h>
 #include <unistd.h>
 
-#define GWMON_VERSION "2.0.0"
+#define GWMON_VERSION "2.1.0"
 
 /* Build-time defaults. Each one can be changed with -D at build time or an option at run time. */
 #ifndef GWMON_DEFAULT_PORT
@@ -120,6 +140,13 @@
 #define GWMON_DEFAULT_STABLE_S 30  /* a run at least this long is not a failed start */
 #endif
 
+#ifndef GWMON_DEFAULT_PUB_INTERVAL_S
+#define GWMON_DEFAULT_PUB_INTERVAL_S 300 /* issue #13: one health report every 5 minutes */
+#endif
+#ifndef GWMON_DEFAULT_PUB_TIMEOUT_S
+#define GWMON_DEFAULT_PUB_TIMEOUT_S 30   /* a publish program still running after this is killed */
+#endif
+
 #define LISTEN_BACKLOG 8
 #define MAX_CLIENTS 8          /* concurrent client threads; further connections are closed */
 #define CLIENT_SEND_TIMEOUT_S 2
@@ -130,6 +157,9 @@
 #define BACKOFF_MAX_S 60       /* upper limit of the doubling delay (reached only with -r above 6) */
 #define STOP_WAIT_MS 5000      /* SIGTERM to SIGKILL when gwmon stops Station */
 #define EXIT_NOT_CONFIGURED 78 /* EX_CONFIG: the child has nothing to run and must not be restarted */
+
+#define PUB_FIRST_DELAY_S 30   /* gwmon start to the first health report (less if -I is less) */
+#define JSON_MAX 1024          /* the health report; must stay below PIPE_BUF (4096) */
 
 /* Station writes this, at log level VERBOSE, for each frame it has passed on to the LNS. */
 #define UPLINK_MARK "[S2E:VERB] RX "
@@ -159,6 +189,9 @@ struct config {
 	const char *temp_path;     /* -T: I2C bus device of the STTS751; NULL = off */
 	int max_fails;             /* -r: failed starts in a row before gwmon gives up */
 	int stable_s;              /* -S: a run this long is not a failed start */
+	const char *pub_cmd;       /* -P: the program that publishes a health report; NULL = off */
+	int pub_interval_s;        /* -I: seconds between two health reports */
+	int pub_timeout_s;         /* -O: the publish program is killed after this many seconds */
 };
 
 enum wd_state {
@@ -203,6 +236,24 @@ struct health {
 	double temp_c;
 };
 
+enum pub_state {
+	PUB_OFF,                   /* no -P option */
+	PUB_NEVER,                 /* no attempt has ended yet */
+	PUB_OK,                    /* the last attempt worked */
+	PUB_FAILING,               /* the last attempt failed or was killed at the timeout */
+	PUB_UNCONFIGURED,          /* the program said it has no credentials (exit status 78) */
+};
+
+struct publisher {
+	enum pub_state state;
+	pid_t pid;                 /* the running publish program, or 0 */
+	bool timed_out;            /* gwmon has killed that program at the timeout */
+	unsigned long ok;          /* reports published */
+	unsigned long fails;       /* attempts that failed */
+	unsigned long fails_in_row;
+	struct timespec last_ok;   /* CLOCK_MONOTONIC, valid when ok > 0 */
+};
+
 struct client {
 	pthread_t thread;
 	int fd;
@@ -218,19 +269,25 @@ static struct config g_cfg = {
 	.wd_interval_s = GWMON_DEFAULT_INTERVAL_S,
 	.max_fails = GWMON_DEFAULT_MAX_FAILS,
 	.stable_s = GWMON_DEFAULT_STABLE_S,
+	.pub_interval_s = GWMON_DEFAULT_PUB_INTERVAL_S,
+	.pub_timeout_s = GWMON_DEFAULT_PUB_TIMEOUT_S,
 };
 
 /*
- * g_wd, g_sup and g_health are written by the main thread only and read by the client threads.
+ * g_wd, g_sup, g_health and g_pub are written by the main thread only and read by the client
+ * threads.
  * Every write, and every read outside the main thread, is under g_lock.
  */
 static pthread_mutex_t g_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct watchdog g_wd = { .fd = -1, .state = WD_DISABLED };
 static struct supervisor g_sup = { .state = ST_OFF };
 static struct health g_health;
+static struct publisher g_pub = { .state = PUB_OFF };
 
 /* Used by the main thread only. */
 static int g_restart_fd = -1;  /* one-shot timerfd: the backoff delay before a restart */
+static int g_pub_fd = -1;      /* periodic timerfd: time for the next health report */
+static int g_pub_kill_fd = -1; /* one-shot timerfd: the publish program has run for too long */
 static struct {
 	int fd;                    /* Station's log file, or -1 */
 	ino_t ino;                 /* its inode, to notice that Station has rotated the log */
@@ -825,7 +882,24 @@ static const char *st_state_name(enum st_state state)
 	}
 }
 
-/* Add formatted text to the status line. Text that does not fit is cut off. */
+static const char *pub_state_name(enum pub_state state)
+{
+	switch (state) {
+	case PUB_NEVER:
+		return "never";
+	case PUB_OK:
+		return "ok";
+	case PUB_FAILING:
+		return "failing";
+	case PUB_UNCONFIGURED:
+		return "unconfigured";
+	case PUB_OFF:
+	default:
+		return "off";
+	}
+}
+
+/* Add formatted text to the status line or the report. Text that does not fit is cut off. */
 __attribute__((format(printf, 4, 5)))
 static void status_add(char *buf, size_t size, size_t *len, const char *fmt, ...)
 {
@@ -844,13 +918,14 @@ static void status_add(char *buf, size_t size, size_t *len, const char *fmt, ...
 
 /*
  * Write the status line, newline included, into buf. Returns its length. The version 1 fields
- * come first and are unchanged. The Station, uplink and temperature fields follow, each group
- * only when its option (-s, -l, -T) was given.
+ * come first and are unchanged. The Station, uplink, temperature and publish fields follow, each
+ * group only when its option (-s, -l, -T, -P) was given.
  */
 static size_t format_status(char *buf, size_t size)
 {
 	struct timespec now, boot;
 	struct supervisor sup;
+	struct publisher pub;
 	struct watchdog wd;
 	struct health health;
 	size_t len = 0;
@@ -862,6 +937,7 @@ static size_t format_status(char *buf, size_t size)
 	wd = g_wd;
 	sup = g_sup;
 	health = g_health;
+	pub = g_pub;
 	pthread_mutex_unlock(&g_lock);
 
 	status_add(buf, size - 1, &len, "gwmon %s uptime=%llds daemon_uptime=%llds watchdog=%s",
@@ -907,10 +983,262 @@ static size_t format_status(char *buf, size_t size)
 			status_add(buf, size - 1, &len, " temp=unavailable");
 	}
 
+	if (g_cfg.pub_cmd != NULL) {
+		status_add(buf, size - 1, &len, " publish=%s publishes=%lu publish_fails=%lu",
+			   pub_state_name(pub.state), pub.ok, pub.fails);
+		if (pub.ok > 0)
+			status_add(buf, size - 1, &len, " last_publish_age=%llds",
+				   seconds_between(&pub.last_ok, &now));
+		else
+			status_add(buf, size - 1, &len, " last_publish_age=never");
+	}
+
 	/* status_add() was given one byte less than the buffer, so the newline always fits. */
 	buf[len++] = '\n';
 	buf[len] = '\0';
 	return len;
+}
+
+/*
+ * Write the health report as one JSON object, without a newline, into buf. Returns its length.
+ * It has the fields of the status line. A value gwmon does not have is null, so every report
+ * has the same keys whatever options gwmon was started with. All strings are gwmon's own state
+ * names and the version, so nothing has to be escaped.
+ */
+static size_t format_json(char *buf, size_t size)
+{
+	struct timespec now, boot, wall;
+	struct supervisor sup;
+	struct publisher pub;
+	struct watchdog wd;
+	struct health health;
+	long long run_s;
+	size_t len = 0;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	clock_gettime(CLOCK_BOOTTIME, &boot);
+	clock_gettime(CLOCK_REALTIME, &wall);
+
+	pthread_mutex_lock(&g_lock);
+	wd = g_wd;
+	sup = g_sup;
+	health = g_health;
+	pub = g_pub;
+	pthread_mutex_unlock(&g_lock);
+
+	status_add(buf, size, &len,
+		   "{\"gwmon_version\":\"%s\",\"time\":%lld,\"uptime_s\":%lld,\"daemon_uptime_s\":%lld,"
+		   "\"watchdog\":\"%s\"",
+		   GWMON_VERSION, (long long)wall.tv_sec, (long long)boot.tv_sec,
+		   seconds_between(&g_start, &now), wd_state_name(&wd, &sup));
+	if (wd.fd >= 0)
+		status_add(buf, size, &len,
+			   ",\"wd_timeout_s\":%d,\"wd_feeds\":%lu,\"wd_last_feed_age_s\":%lld",
+			   wd.timeout_s, wd.feeds, seconds_between(&wd.last_feed, &now));
+	else
+		status_add(buf, size, &len,
+			   ",\"wd_timeout_s\":null,\"wd_feeds\":null,\"wd_last_feed_age_s\":null");
+
+	run_s = sup.state == ST_RUNNING ? seconds_between(&sup.started, &now) : 0;
+	status_add(buf, size, &len,
+		   ",\"station\":\"%s\",\"station_uptime_s\":%lld,\"station_restarts\":%lu,"
+		   "\"station_fails\":%d",
+		   st_state_name(sup.state), run_s, sup.restarts,
+		   (sup.state == ST_RUNNING && run_s >= g_cfg.stable_s) ? 0 : sup.fails);
+
+	if (g_cfg.log_path != NULL && health.log_seen)
+		status_add(buf, size, &len, ",\"uplinks\":%lu", health.uplinks);
+	else
+		status_add(buf, size, &len, ",\"uplinks\":null");
+	if (health.have_uplink)
+		status_add(buf, size, &len, ",\"last_uplink_age_s\":%lld",
+			   seconds_between(&health.last_uplink, &now));
+	else
+		status_add(buf, size, &len, ",\"last_uplink_age_s\":null");
+	if (g_cfg.temp_path != NULL && health.temp_valid)
+		status_add(buf, size, &len, ",\"temp_c\":%.1f", health.temp_c);
+	else
+		status_add(buf, size, &len, ",\"temp_c\":null");
+
+	status_add(buf, size, &len, ",\"publishes\":%lu,\"publish_fails\":%lu}", pub.ok, pub.fails);
+	return len;
+}
+
+/* ---------------------------------------------------- health publish (#13) */
+
+/* In the forked child: the report is waiting in the pipe, which becomes standard input. */
+static void pub_child(pid_t parent, int report_fd)
+{
+	sigset_t none;
+
+	setpgid(0, 0);
+	/* Nothing of a publish is worth keeping when gwmon dies. */
+	prctl(PR_SET_PDEATHSIG, SIGKILL);
+	if (getppid() != parent)
+		_exit(EXIT_FAILURE);
+	if (dup2(report_fd, STDIN_FILENO) < 0)
+		_exit(126);
+
+	signal(SIGPIPE, SIG_DFL);
+	sigemptyset(&none);
+	sigprocmask(SIG_SETMASK, &none, NULL);
+
+	execl(g_cfg.pub_cmd, g_cfg.pub_cmd, (char *)NULL);
+	_exit(127);
+}
+
+/* One attempt has ended. Count it, and log it only if the outcome is not that of the last one. */
+static void pub_result(bool ok, const char *how, bool not_configured)
+{
+	struct itimerspec off = { 0 };
+	unsigned long before;
+	enum pub_state was;
+
+	pthread_mutex_lock(&g_lock);
+	was = g_pub.state;
+	before = g_pub.fails_in_row;
+	g_pub.pid = 0;
+	g_pub.timed_out = false;
+	if (not_configured) {
+		g_pub.state = PUB_UNCONFIGURED;
+	} else if (ok) {
+		g_pub.state = PUB_OK;
+		g_pub.ok++;
+		g_pub.fails_in_row = 0;
+		clock_gettime(CLOCK_MONOTONIC, &g_pub.last_ok);
+	} else {
+		g_pub.state = PUB_FAILING;
+		g_pub.fails++;
+		g_pub.fails_in_row++;
+	}
+	pthread_mutex_unlock(&g_lock);
+
+	if (not_configured) {
+		syslog(LOG_NOTICE, "health publish: no credentials (exit status %d), publishing is off",
+		       EXIT_NOT_CONFIGURED);
+		timerfd_settime(g_pub_fd, 0, &off, NULL);
+	} else if (ok && was == PUB_FAILING) {
+		syslog(LOG_NOTICE, "health publish works again after %lu failed attempt%s", before,
+		       before == 1 ? "" : "s");
+	} else if (ok && was != PUB_OK) {
+		syslog(LOG_INFO, "health publish: first report sent, next every %d s",
+		       g_cfg.pub_interval_s);
+	} else if (!ok && was != PUB_FAILING) {
+		syslog(LOG_WARNING, "health publish failed: %s %s. Trying again every %d s; further "
+		       "failures are not logged until a publish works", g_cfg.pub_cmd, how,
+		       g_cfg.pub_interval_s);
+	}
+}
+
+/* Start one publish attempt. Returns at once; the result is picked up by pub_reap(). */
+static void pub_start(void)
+{
+	struct itimerspec limit = { .it_value.tv_sec = g_cfg.pub_timeout_s };
+	char report[JSON_MAX];
+	pid_t parent = getpid();
+	int fds[2];
+	size_t len;
+	pid_t pid;
+
+	if (g_pub.pid > 0)
+		return; /* cannot happen while the timeout is below the interval */
+
+	/*
+	 * The report goes into the pipe before the fork and the write end is closed here, so the
+	 * child finds the whole report and then end-of-file whenever it reads. JSON_MAX is below
+	 * PIPE_BUF and the pipe is new and empty: the write does not block.
+	 */
+	len = format_json(report, sizeof(report));
+	if (pipe2(fds, O_CLOEXEC) != 0) {
+		pub_result(false, "could not be started (pipe)", false);
+		return;
+	}
+	if (write(fds[1], report, len) != (ssize_t)len) {
+		close(fds[0]);
+		close(fds[1]);
+		pub_result(false, "could not be started (write)", false);
+		return;
+	}
+	close(fds[1]);
+
+	pid = fork();
+	if (pid == 0)
+		pub_child(parent, fds[0]); /* does not return */
+	close(fds[0]);
+	if (pid < 0) {
+		pub_result(false, "could not be started (fork)", false);
+		return;
+	}
+	setpgid(pid, pid);
+
+	pthread_mutex_lock(&g_lock);
+	g_pub.pid = pid;
+	g_pub.timed_out = false;
+	pthread_mutex_unlock(&g_lock);
+
+	if (timerfd_settime(g_pub_kill_fd, 0, &limit, NULL) != 0)
+		syslog(LOG_ERR, "cannot set the publish timeout: %s", strerror(errno));
+}
+
+/* The publish program has run for pub_timeout_s seconds: kill it and everything it started. */
+static void pub_kill(void)
+{
+	pid_t pid = g_pub.pid;
+
+	if (pid <= 0)
+		return;
+	pthread_mutex_lock(&g_lock);
+	g_pub.timed_out = true;
+	pthread_mutex_unlock(&g_lock);
+	if (kill(-pid, SIGKILL) != 0)
+		kill(pid, SIGKILL);
+}
+
+/* Ask, without waiting, whether the publish program has ended. Called on every pass of the loop. */
+static void pub_reap(void)
+{
+	struct itimerspec off = { 0 };
+	pid_t pid = g_pub.pid;
+	char how[64];
+	int wstatus;
+	pid_t rc;
+
+	if (pid <= 0)
+		return;
+	rc = waitpid(pid, &wstatus, WNOHANG);
+	if (rc == 0 || (rc < 0 && errno == EINTR))
+		return;
+	timerfd_settime(g_pub_kill_fd, 0, &off, NULL);
+
+	if (rc < 0) {
+		snprintf(how, sizeof(how), "is gone (waitpid: %s)", strerror(errno));
+		pub_result(false, how, false);
+	} else if (g_pub.timed_out) {
+		snprintf(how, sizeof(how), "was killed after %d s without a result", g_cfg.pub_timeout_s);
+		pub_result(false, how, false);
+	} else if (WIFEXITED(wstatus)) {
+		snprintf(how, sizeof(how), "exited with status %d", WEXITSTATUS(wstatus));
+		pub_result(WEXITSTATUS(wstatus) == 0, how, WEXITSTATUS(wstatus) == EXIT_NOT_CONFIGURED);
+	} else if (WIFSIGNALED(wstatus)) {
+		snprintf(how, sizeof(how), "was killed by signal %d", WTERMSIG(wstatus));
+		pub_result(false, how, false);
+	}
+}
+
+/* At shutdown: a publish that is still running is dropped. The watchdog is already closed. */
+static void pub_stop(void)
+{
+	pid_t pid = g_pub.pid;
+	int wstatus;
+
+	if (pid <= 0)
+		return;
+	if (kill(-pid, SIGKILL) != 0)
+		kill(pid, SIGKILL);
+	waitpid(pid, &wstatus, 0);
+	pthread_mutex_lock(&g_lock);
+	g_pub.pid = 0;
+	pthread_mutex_unlock(&g_lock);
 }
 
 /* ----------------------------------------------------------------- clients */
@@ -1088,6 +1416,7 @@ static void usage(const char *prog)
 		"gwmon %s - gateway monitor: TCP status server, hardware watchdog, Station supervisor\n"
 		"Usage: %s [-d] [-p port] [-w device] [-t seconds] [-i seconds]\n"
 		"       [-s program] [-r count] [-S seconds] [-l logfile] [-T i2c-device]\n"
+		"       [-P program] [-I seconds] [-O seconds]\n"
 		"  -d          run as a daemon\n"
 		"  -p port     TCP status port (default %d)\n"
 		"  -w device   watchdog device (default %s); \"none\" turns the watchdog off\n"
@@ -1100,17 +1429,23 @@ static void usage(const char *prog)
 		"  -S seconds  a run shorter than this is a failed start (default %d)\n"
 		"  -l logfile  count uplinks from this Station log file\n"
 		"  -T device   I2C bus of the WM1302's STTS751 temperature sensor, e.g. /dev/i2c-1\n"
+		"  -P program  publish the health report: run this program every -I seconds with the\n"
+		"              report as JSON on its standard input; exit status 0 means published,\n"
+		"              %d means \"no credentials, stop trying\"\n"
+		"  -I seconds  time between two health reports (default %d)\n"
+		"  -O seconds  kill the publish program after this time, below -I (default %d)\n"
 		"  -v          print the version\n",
 		GWMON_VERSION, prog, GWMON_DEFAULT_PORT, GWMON_DEFAULT_WATCHDOG, GWMON_DEFAULT_TIMEOUT_S,
 		GWMON_DEFAULT_INTERVAL_S, EXIT_NOT_CONFIGURED, GWMON_DEFAULT_MAX_FAILS,
-		GWMON_DEFAULT_STABLE_S);
+		GWMON_DEFAULT_STABLE_S, EXIT_NOT_CONFIGURED, GWMON_DEFAULT_PUB_INTERVAL_S,
+		GWMON_DEFAULT_PUB_TIMEOUT_S);
 }
 
 static bool parse_args(int argc, char **argv)
 {
 	int opt;
 
-	while ((opt = getopt(argc, argv, "dp:w:t:i:s:r:S:l:T:vh")) != -1) {
+	while ((opt = getopt(argc, argv, "dp:w:t:i:s:r:S:l:T:P:I:O:vh")) != -1) {
 		switch (opt) {
 		case 'd':
 			g_cfg.daemonize = true;
@@ -1147,6 +1482,17 @@ static bool parse_args(int argc, char **argv)
 		case 'T':
 			g_cfg.temp_path = optarg;
 			break;
+		case 'P':
+			g_cfg.pub_cmd = optarg;
+			break;
+		case 'I':
+			if (!parse_int(optarg, 2, 86400, &g_cfg.pub_interval_s))
+				return false;
+			break;
+		case 'O':
+			if (!parse_int(optarg, 1, 3600, &g_cfg.pub_timeout_s))
+				return false;
+			break;
 		case 'v':
 			printf("gwmon %s\n", GWMON_VERSION);
 			exit(EXIT_SUCCESS);
@@ -1159,6 +1505,11 @@ static bool parse_args(int argc, char **argv)
 	if (g_cfg.wd_interval_s >= g_cfg.wd_timeout_s) {
 		fprintf(stderr, "the feed interval (%d s) must be below the timeout (%d s)\n",
 			g_cfg.wd_interval_s, g_cfg.wd_timeout_s);
+		return false;
+	}
+	if (g_cfg.pub_timeout_s >= g_cfg.pub_interval_s) {
+		fprintf(stderr, "the publish timeout (%d s) must be below the publish interval (%d s)\n",
+			g_cfg.pub_timeout_s, g_cfg.pub_interval_s);
 		return false;
 	}
 	return true;
@@ -1219,14 +1570,21 @@ int main(int argc, char **argv)
 
 	timer_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 	g_restart_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
+	g_pub_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
+	g_pub_kill_fd = timerfd_create(CLOCK_MONOTONIC, TFD_CLOEXEC | TFD_NONBLOCK);
 	period.it_value.tv_sec = g_cfg.wd_interval_s;
 	period.it_interval.tv_sec = g_cfg.wd_interval_s;
-	if (timer_fd < 0 || g_restart_fd < 0 || timerfd_settime(timer_fd, 0, &period, NULL) != 0) {
+	if (timer_fd < 0 || g_restart_fd < 0 || g_pub_fd < 0 || g_pub_kill_fd < 0 ||
+	    timerfd_settime(timer_fd, 0, &period, NULL) != 0) {
 		syslog(LOG_ERR, "cannot start the timers: %s", strerror(errno));
 		if (timer_fd >= 0)
 			close(timer_fd);
 		if (g_restart_fd >= 0)
 			close(g_restart_fd);
+		if (g_pub_fd >= 0)
+			close(g_pub_fd);
+		if (g_pub_kill_fd >= 0)
+			close(g_pub_kill_fd);
 		close(listen_fd);
 		closelog();
 		return EXIT_FAILURE;
@@ -1241,23 +1599,42 @@ int main(int argc, char **argv)
 		tail_open(true); /* whatever an earlier Station wrote is not counted */
 	if (g_cfg.station_cmd != NULL)
 		sup_start();
+	if (g_cfg.pub_cmd != NULL) {
+		struct itimerspec every = { .it_interval.tv_sec = g_cfg.pub_interval_s };
+
+		every.it_value.tv_sec = g_cfg.pub_interval_s < PUB_FIRST_DELAY_S ? g_cfg.pub_interval_s :
+					PUB_FIRST_DELAY_S;
+		pthread_mutex_lock(&g_lock);
+		g_pub.state = PUB_NEVER;
+		pthread_mutex_unlock(&g_lock);
+		if (timerfd_settime(g_pub_fd, 0, &every, NULL) != 0)
+			syslog(LOG_ERR, "cannot start the publish timer: %s", strerror(errno));
+		else
+			syslog(LOG_INFO, "health report every %d s through %s (timeout %d s)",
+			       g_cfg.pub_interval_s, g_cfg.pub_cmd, g_cfg.pub_timeout_s);
+	}
 
 	/*
 	 * The watchdog is fed from this loop, not from a thread of its own, so the feeds stop if the
 	 * loop that serves the status port and supervises Station stops. Nothing in the loop waits
 	 * for Station: its exit arrives as SIGCHLD, which ends ppoll(), and sup_reap() does not block.
+	 * The same holds for the publish program (issue #13): pub_start(), pub_reap() and pub_kill()
+	 * return at once, and the MQTT connection is made by that program, not here.
 	 */
 	while (g_signal == 0) {
-		struct pollfd fds[3] = {
+		struct pollfd fds[5] = {
 			{ .fd = listen_fd, .events = POLLIN },
 			{ .fd = timer_fd, .events = POLLIN },
 			{ .fd = g_restart_fd, .events = POLLIN },
+			{ .fd = g_pub_fd, .events = POLLIN },
+			{ .fd = g_pub_kill_fd, .events = POLLIN },
 		};
 		uint64_t expirations;
 
 		sup_reap();
+		pub_reap();
 
-		if (ppoll(fds, 3, NULL, &wait_mask) < 0) {
+		if (ppoll(fds, 5, NULL, &wait_mask) < 0) {
 			if (errno == EINTR)
 				continue;
 			syslog(LOG_CRIT, "ppoll: %s", strerror(errno));
@@ -1272,6 +1649,10 @@ int main(int argc, char **argv)
 		if ((fds[2].revents & POLLIN) && read(g_restart_fd, &expirations, sizeof(expirations)) > 0 &&
 		    g_sup.state == ST_BACKOFF)
 			sup_start();
+		if ((fds[4].revents & POLLIN) && read(g_pub_kill_fd, &expirations, sizeof(expirations)) > 0)
+			pub_kill();
+		if ((fds[3].revents & POLLIN) && read(g_pub_fd, &expirations, sizeof(expirations)) > 0)
+			pub_start();
 		if (fds[0].revents & POLLIN)
 			accept_client(listen_fd);
 		reap_clients(false);
@@ -1280,6 +1661,7 @@ int main(int argc, char **argv)
 	if (g_signal != 0) {
 		syslog(LOG_INFO, "Caught signal %d, exiting", (int)g_signal);
 		wd_close(); /* first, so nothing later in the shutdown can run into the timeout */
+		pub_stop();
 		sup_stop();
 	} else {
 		/*
@@ -1293,6 +1675,8 @@ int main(int argc, char **argv)
 	reap_clients(true);
 	close(timer_fd);
 	close(g_restart_fd);
+	close(g_pub_fd);
+	close(g_pub_kill_fd);
 	if (g_tail.fd >= 0)
 		close(g_tail.fd);
 	if (g_temp.fd >= 0)
