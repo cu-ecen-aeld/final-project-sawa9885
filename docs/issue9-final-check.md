@@ -10,7 +10,7 @@ The last issue of Sprint 3: build the image from a fresh clone and check it, bri
 | A fresh clone on a clean host builds with `./build.sh` | **Pass.** A new clone of `main` (`3d2ebb0`) in a new empty directory built `sdcard.img` in 37 min with no step besides the README's. [Section 1](#1-clean-clone-build) |
 | The image boots, an uplink reaches AWS, and port 9000 returns status | **Not done for this image: it has not been flashed.** The gateway was running the issue #10 card on 2026-11-20: Connected in AWS, status on port 9000. That card differs from this image in 39 of 2258 files, none of them in behaviour as far as was checked. No uplink was sent. [Section 2](#2-the-image-on-the-pi) |
 | The Project Overview page matches what was built | **Done.** [Section 3](#3-project-overview-wiki-page) lists what was changed |
-| Every issue is closed, with a "DoD verified" comment and links to its commits | **Done for the nine Sprint 1 to 3 issues.** Five stretch-goal issues are open and were not built. [Section 4](#4-issues) |
+| Every issue is closed, with a "DoD verified" comment and links to its commits | **Done for the nine Sprint 1 to 3 issues.** Of the five stretch-goal issues, which were not built, #8 is closed as not planned and four are open. [Section 4](#4-issues) |
 | A "Final Project Video" wiki page has an outline, including challenges and lessons learned, linked from the overview page under Student Video Demos | **Done**: [Sam Walker Final Project Video](https://github.com/cu-ecen-aeld/final-project-sawa9885/wiki/Sam-Walker-Final-Project-Video). The video itself is not recorded yet |
 
 ## 1. Clean-clone build
@@ -109,7 +109,7 @@ The [Project Overview](https://github.com/cu-ecen-aeld/final-project-sawa9885/wi
 |---|---|---|
 | Overview | gwmon "supervises the packet forwarder" | Adds that gwmon starts Basics Station, and zero-touch provisioning |
 | Goals | Five goals, as planned | A table with the result of each. Goal 5, the bench comparison with the commercial gateway, is marked not done (issue #8). Zero-touch provisioning (issue #10) is added as goal 6 |
-| Stretch goals | "A read-only root filesystem, and an LTE modem" | The five open stretch-goal issues, with the statement that none was built. The LTE modem was dropped and has no issue |
+| Stretch goals | "A read-only root filesystem, and an LTE modem" | The five stretch-goal issues, with the statement that none was built. The LTE modem was dropped and has no issue |
 | Block diagram | A reference commercial gateway hearing the same uplinks; `sx1302_hal` feeding Basics Station | The provisioning function and its allow-list, the flash script and the per-card secret. The reference gateway is gone. Basics Station is shown with its own copy of the HAL, and the HAL package as tools. [block-diagram.svg](block-diagram.svg) was redrawn the same way |
 | Target Build System | "Buildroot" | The release, `2026.02.3` |
 | Hardware Platform | "Networking is Wi-Fi first"; the outdoor antenna "for range tests and the bench comparison" | Issue #1 on Wi-Fi and Ethernet, everything later on Ethernet. All tests on the bench, no range test. The GNSS receiver and the commercial gateway were not used. Two more Pi 5 details: no RTC, and the watchdog |
@@ -140,11 +140,12 @@ State on 2026-11-20:
 
 The comments of issues #4 to #7, #10 and #12 named their commits by short hash, mostly as code text, which GitHub does not turn into links. Each of those issues got one more comment that lists its commits as links. Nothing else in a closed issue was changed.
 
-**Open, not built:** the five issues with the `stretch goal` label, #8 (bench comparison with the reference gateway), #11 (sensor readings reach the SoilData API), #13 (publish gateway health to AWS IoT Core), #14 (read-only root filesystem) and #15 (remote shell through AWS IoT secure tunneling). Whether they are closed as not planned or stay open for after the course is the owner's decision and was not made in this issue. Until then "every issue is closed" is true of the planned work only.
+**Stretch goals, not built:** the five issues with the `stretch goal` label. #8 (bench comparison with the reference gateway) was closed as not planned on 2026-11-20. Four are open: #11 (sensor readings reach the SoilData API), #13 (publish gateway health to AWS IoT Core), #14 (read-only root filesystem) and #15 (remote shell through AWS IoT secure tunneling). Whether those four are closed as not planned or stay open for after the course is the owner's decision. Until then "every issue is closed" is true of the planned work only.
 
 ## Not done
 
 - **The clean-build image has not been booted**, and **no uplink was sent** (section 2). That is the open part of this issue's first definition-of-done box.
 - **The demo video is not recorded.** The wiki page has its outline.
-- **The stretch-goal issues are open**, and the Project board was not edited.
+- **Four stretch-goal issues are open** (#11, #13, #14, #15), and the Project board was not edited.
+- **The in-class demo on Wi-Fi** is prepared, not tested: [demo-day.md](demo-day.md).
 - **A host without the Buildroot host packages** was not tried.
