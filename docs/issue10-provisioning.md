@@ -3,7 +3,7 @@
 Flash a card, power the gateway on, and it is connected: the gateway registers itself in AWS IoT Core for LoRaWAN the first time it boots. This page has the design decisions and the results for the issue's definition of done. The README section "Zero-touch provisioning" is the user's view: how to flash, what is stored where, how to deploy the function and how to revoke a gateway.
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #10): ISSUE10_SESSION_LINK -->
+     Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr -->
 
 These are the results for the issue's definition of done, measured on 2026-11-19 UTC (the evening of 2026-11-18 local time) on the Pi 5 with the WM1302, on Ethernet. The card was flashed by `scripts/flash-gateway.ps1` with the image built from commit `6c2014d` (`sdcard.img`, SHA-256 `5179b1d4…4917`), and the function ran the code of commit `a3f065c`.
 

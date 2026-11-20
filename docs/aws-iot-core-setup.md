@@ -4,7 +4,7 @@ Since issue #10 a flashed gateway registers itself at first boot (README, "Zero-
 
 <!-- This file was partially generated using Claude Code using the chat session at:
      Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
-     Link to chat session (issue #10): ISSUE10_SESSION_LINK -->
+     Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr -->
 
 ## 1. Gateway EUI
 

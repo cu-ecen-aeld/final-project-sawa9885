@@ -20,7 +20,7 @@
 # are never logged, and the function does not log the event it is called with.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #10): ISSUE10_SESSION_LINK
+# Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
 
 import base64
 import datetime
