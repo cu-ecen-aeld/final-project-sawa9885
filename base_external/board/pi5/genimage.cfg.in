@@ -1,10 +1,12 @@
-# SD card layout for the Pi 5, matching Raspberry Pi OS: a 128 MB FAT32 boot partition at 8 MiB.
+# SD card layout for the Pi 5, matching Raspberry Pi OS: a 128 MB FAT32 boot partition at 8 MiB,
+# then the read-only root filesystem and a 64 MB writable data partition (issue #14).
 # genimage builds boot.vfat as a standalone file, so -h sets the boot sector's "hidden sectors" to
 # the partition offset, as mkfs.fat does on a real partition.
 # post-image.sh fills in the boot file list below.
 #
 # This file was partially generated using Claude Code using the chat session at:
 # Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
 
 image boot.vfat {
 	vfat {
@@ -34,4 +36,22 @@ image sdcard.img {
 		partition-type = 0x83
 		image = "rootfs.ext4"
 	}
+
+	# Issue #14: the writable data partition, mounted on /data by S00datafs. The root
+	# filesystem above is mounted read-only.
+	partition data {
+		partition-type = 0x83
+		image = "data.ext4"
+	}
+}
+
+# An empty ext4 filesystem (post-image.sh passes an empty --rootpath), formatted here so the
+# first boot needs no manual step. -m 0: no blocks reserved for root, who is the only user.
+image data.ext4 {
+	ext4 {
+		label = "data"
+		use-mke2fs = true
+		extraargs = "-m 0"
+	}
+	size = 64M
 }

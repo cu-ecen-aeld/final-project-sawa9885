@@ -2,16 +2,17 @@
 #
 # Start Wi-Fi on wlan0 with wpa_supplicant and get an address with udhcpc.
 #
-# Credentials never live in the repo. /etc/init.d/S35provision installs /etc/wpa_supplicant.conf from
+# Credentials never live in the repo. /etc/init.d/S35provision installs /data/wpa_supplicant.conf from
 # the FAT boot partition before this script runs. With no such file, Wi-Fi is skipped and the
 # gateway uses Ethernet only.
 #
 # This script was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #1): https://claude.ai/code/cshk_01CSAPnyaYmJc1hcbrUg8bScPJ4y3B8gaWrv83AucuEYdA
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
 
 IFACE=wlan0
-CONF=/etc/wpa_supplicant.conf
+CONF=/data/wpa_supplicant.conf
 WPA_PID=/var/run/wpa_supplicant.${IFACE}.pid
 DHCP_PID=/var/run/udhcpc.${IFACE}.pid
 
@@ -44,8 +45,10 @@ do_start() {
 	[ $? = 0 ] && echo "OK" || echo "FAIL"
 }
 
-# The gateway runs headless, so write the network state to the boot partition, where it can be
-# read on a laptop if the Pi never shows up on the network. No credentials are logged.
+# The gateway runs headless, so write the network state to /var/log/aesd-net.log and, when Wi-Fi is
+# configured, also to the boot partition, where it can be read on a laptop if the Pi never shows up
+# on the network. No credentials are logged. /boot is read-only (issue #14): it is remounted
+# read-write for this one write only, and an Ethernet-only gateway does not write it at all.
 report() {
 	{
 		echo "== aesd-net.log, uptime $(cut -d' ' -f1 /proc/uptime) s"
@@ -56,8 +59,12 @@ report() {
 		echo "== $CONF present: $([ -f "$CONF" ] && echo yes || echo no)"
 		echo "== dmesg (wifi)"; dmesg | grep -i -E 'brcm|wlan|cfg80211|ieee80211|firmware'
 		echo "== syslog (wpa_supplicant, udhcpc)"; grep -E 'wpa_supplicant|udhcpc' /var/log/messages | tail -n 60
-	} > /boot/aesd-net.log 2>&1
+	} > /var/log/aesd-net.log 2>&1
+	[ -f "$CONF" ] || return 0
+	mount -o remount,rw /boot || return 0
+	cp /var/log/aesd-net.log /boot/aesd-net.log
 	sync
+	mount -o remount,ro /boot
 }
 
 start() {

@@ -1,0 +1,4 @@
+# Read by /etc/init.d/S01seedrng. The root filesystem is read-only (issue #14), so the random seed
+# that seedrng carries from one boot to the next is kept on the data partition. S00datafs has
+# mounted /data and created this directory before S01seedrng runs.
+SEEDRNG_ARGS="-d /data/seedrng"

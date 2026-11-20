@@ -1,0 +1,21 @@
+#!/bin/sh
+#
+# Start /usr/sbin/boot-report in the background: it appends one line about this boot (root
+# read-only, /data state, Station connect time, filesystem errors) to /data/log/boots.csv once
+# Station has connected, or after 10 minutes (issue #14).
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+
+case "$1" in
+	start)
+		printf "Starting boot-report: "
+		start-stop-daemon -S -q -b -x /usr/sbin/boot-report
+		[ $? = 0 ] && echo "OK" || echo "FAIL"
+		;;
+	stop|restart|reload)
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+		exit 1
+esac
