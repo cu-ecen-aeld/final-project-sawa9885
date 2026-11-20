@@ -121,6 +121,8 @@ The SD card was not reflashed and the Pi was not rebooted. The files come from t
 | `/usr/lib/libmosquitto.so.1` | `18d263c80bd3bb9c` | new |
 | `/etc/gwmon-health/{endpoint,crt,key}` | (secret) | new, installed by `S35provision` run by hand |
 
+The full image of this branch was built afterwards (`sdcard.img` SHA-256 `baa9be108e9ca7fae7b722ef82d54f3c1cb2fcea19f438e6972db03f1b14e0c2`, not booted; no `mosquitto` broker in it). The files on the Pi are the binaries before Buildroot's final strip: stripped with `aarch64-linux-strip --remove-section=.comment --remove-section=.note` they are byte for byte the ones in the image (`gwmon` `a1669763…`, `mosquitto_pub` `0e8536b9…`, `libmosquitto.so.1` `7e53c0ff…`). `gwmon-publish.sh` and `S99gwmon` are the same files; the image's `S35provision` is `2b9380b7…`.
+
 `/root/issue13-backup/revert.sh` puts gwmon 2.0.0 and its init script back. The card's `S35provision` was not changed; the image built from this branch has the new one.
 
 1. **Phase A, next to the live gwmon** (`/tmp/i13/gwmon -p 9013 -w none -I 60`): first report 36 s after start, the second 60 s later, read back from AWS (`temp_c` 31.4).
