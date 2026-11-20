@@ -1,0 +1,166 @@
+#!/bin/sh
+#
+# Check and mount the writable data partition on /data (issue #14).
+#
+# The root filesystem is mounted read-only and stays that way. Everything the gateway has to keep
+# across a reboot lives on the third partition of the SD card, an ext4 filesystem with the label
+# "data" that genimage creates and formats at build time, so the first boot needs no manual step.
+# The rootfs reaches it through relative symlinks made in post-build.sh:
+#
+#   /etc/station           -> /data/station            Basics Station home: credentials, -bak files
+#   /etc/gateway-provision -> /data/gateway-provision  first-boot provisioning secret (issue #10)
+#   /etc/dropbear          -> /data/dropbear           SSH host key
+#   /etc/gwmon-health      -> /data/gwmon-health       health publisher's identity (issue #13)
+#   /etc/aws-iot-device-client -> /data/aws-iot-device-client  tunnel client's identity (issue #15)
+# and, by path in their configuration:
+#   /data/wpa_supplicant.conf (S35provision, S41wifi), /data/chrony/drift (chrony.conf),
+#   /data/seedrng (/etc/default/seedrng), /data/log/boots.csv (boot-report).
+#
+# This runs first in rcS (S00), before S01seedrng, so every later script finds /data in place.
+#
+# Steps:
+#   1. If /boot/data.reset exists, format the partition again (this is how /data is reset; see
+#      the README) and delete the file.
+#   2. e2fsck -p (preen) repairs what a power cut can leave without asking. If that is not
+#      enough, e2fsck -y. ext4's journal makes this quick and usually a no-op.
+#   3. Mount it with noatime.
+#   4. Failure mode: if the partition is missing, cannot be repaired or does not mount, a tmpfs is
+#      mounted on /data instead. The gateway still boots and SSH works (with a new host key),
+#      but nothing persists and Station has no credentials, so gwmon reports
+#      station=unconfigured. The partition is not formatted automatically, because that would
+#      delete credentials that a repair by hand might still save. A partition with no
+#      filesystem at all (blank) is the exception: there is nothing to lose, so it is formatted.
+#   5. Create the directories the symlinks point to, with the owners and modes the programs
+#      expect, and link Station's station.conf and version.txt from the image into its home.
+#
+# The outcome is one word in /run/datafs.status (ok, repaired, formatted, reset, tmpfs) and the
+# details in /run/datafs.log. syslogd is not running yet, so S01syslogd's log does not have
+# these lines; boot-report copies the status into /data/log/boots.csv.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+
+DEV=/dev/mmcblk0p3
+MNT=/data
+LABEL=data
+STATUS=/run/datafs.status
+LOG=/run/datafs.log
+RESET_FLAG=/boot/data.reset
+
+log() {
+	echo "datafs: $*"
+	echo "datafs: uptime $(cut -d' ' -f1 /proc/uptime) s: $*" >> "$LOG"
+}
+
+format() {
+	log "formatting $DEV as ext4 (label $LABEL)"
+	mke2fs -q -F -t ext4 -L "$LABEL" -m 0 "$DEV" >> "$LOG" 2>&1
+}
+
+# A partition with no filesystem signature at all. blkid prints nothing for it.
+is_blank() {
+	[ -z "$(blkid "$DEV" 2>/dev/null)" ]
+}
+
+check_and_mount() {
+	if [ ! -b "$DEV" ]; then
+		log "$DEV does not exist: this card has the old two-partition layout?"
+		return 1
+	fi
+
+	if [ -e "$RESET_FLAG" ]; then
+		log "$RESET_FLAG found: resetting $MNT"
+		if format; then
+			mount -o remount,rw /boot && rm -f "$RESET_FLAG"
+			mount -o remount,ro /boot
+			result=reset
+		else
+			log "FAILED to format $DEV"
+			return 1
+		fi
+	elif is_blank; then
+		log "$DEV has no filesystem"
+		format || { log "FAILED to format $DEV"; return 1; }
+		result=formatted
+	else
+		# e2fsck exit status: 0 clean, 1 errors fixed, 2 fixed and reboot advised (only matters
+		# for a mounted root), 4 errors left, 8 operational error.
+		e2fsck -p "$DEV" >> "$LOG" 2>&1
+		rc=$?
+		if [ $rc -ge 4 ]; then
+			log "e2fsck -p left errors (status $rc), running e2fsck -y"
+			e2fsck -y "$DEV" >> "$LOG" 2>&1
+			rc=$?
+			if [ $rc -ge 4 ]; then
+				log "e2fsck -y could not repair $DEV (status $rc)"
+				return 1
+			fi
+			result=repaired
+		elif [ $rc -ne 0 ]; then
+			log "e2fsck fixed errors (status $rc)"
+			result=repaired
+		else
+			result=ok
+		fi
+	fi
+
+	if ! mount -t ext4 -o noatime "$DEV" "$MNT" >> "$LOG" 2>&1; then
+		log "mount of $DEV on $MNT failed"
+		return 1
+	fi
+	log "$DEV mounted on $MNT ($result)"
+	echo "$result" > "$STATUS"
+	return 0
+}
+
+populate() {
+	umask 077
+	# The tunnel client refuses to start unless its directory is 0700.
+	for d in station gateway-provision dropbear seedrng gwmon-health aws-iot-device-client; do
+		mkdir -p "$MNT/$d"
+		chmod 700 "$MNT/$d"
+	done
+	# chronyd drops root and writes its drift file as the chrony user.
+	mkdir -p "$MNT/chrony"
+	chown chrony:chrony "$MNT/chrony" 2>/dev/null
+	chmod 755 "$MNT/chrony"
+	umask 022
+	mkdir -p "$MNT/log"
+	# Station's configuration comes from the image (basicstation package), so a new image brings a
+	# new station.conf. Station only reads these two; it writes the credential files next to them.
+	for f in station.conf version.txt; do
+		ln -snf "/usr/share/basicstation/$f" "$MNT/station/$f"
+	done
+}
+
+start() {
+	: > "$LOG"
+	if grep -q " $MNT " /proc/mounts; then
+		log "$MNT is already mounted"
+	elif ! check_and_mount; then
+		log "WARNING: $MNT is a tmpfs for this boot. Nothing will persist. See the README, \"Data partition\"."
+		mount -t tmpfs -o mode=0755,size=16m tmpfs "$MNT"
+		echo tmpfs > "$STATUS"
+	fi
+	populate
+	return 0
+}
+
+stop() {
+	# rcK runs this last in reverse order; "umount -a -r" in inittab unmounts it anyway.
+	sync
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		;;
+	*)
+		echo "Usage: $0 {start|stop}"
+		exit 1
+esac

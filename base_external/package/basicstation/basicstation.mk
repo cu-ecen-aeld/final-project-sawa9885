@@ -25,6 +25,7 @@
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
 # Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
 #
 ################################################################################
 
@@ -111,6 +112,10 @@ endef
 # station.conf has no secret, so it is installed here. The credential files
 # (cups.*, tc.*) are never in the image: S35provision moves them from the boot
 # partition into /etc/station, Station's home directory, at boot.
+# Since issue #14 the root filesystem is read-only and /etc/station is a symlink
+# to /data/station on the data partition, where Station also writes the -bak
+# copies of its credentials. station.conf and version.txt are installed in
+# /usr/share/basicstation, and S00datafs links them into /data/station at boot.
 # version.txt is the "package" version that Station reports to CUPS and
 # prints with --version, as in upstream's examples/corecell/lns-ttn.
 #
@@ -126,8 +131,8 @@ define BASICSTATION_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/usr/bin/station-run.sh
 	rm -f $(TARGET_DIR)/etc/init.d/S60station
 	$(INSTALL) -D -m 0644 $(BASICSTATION_PKGDIR)/station.conf \
-		$(TARGET_DIR)/etc/station/station.conf
-	echo "$(BASICSTATION_VERSION:v%=%)" > $(TARGET_DIR)/etc/station/version.txt
+		$(TARGET_DIR)/usr/share/basicstation/station.conf
+	echo "$(BASICSTATION_VERSION:v%=%)" > $(TARGET_DIR)/usr/share/basicstation/version.txt
 endef
 
 $(eval $(generic-package))

@@ -2,13 +2,18 @@
 #
 # Install first-boot secrets from the FAT boot partition (mounted on /boot) into the rootfs.
 #
-#   /boot/wpa_supplicant.conf            -> /etc/wpa_supplicant.conf   (optional, Wi-Fi)
+#   /boot/wpa_supplicant.conf            -> /data/wpa_supplicant.conf  (optional, Wi-Fi)
 #   /boot/{cups,tc}.{uri,trust,crt,key}  -> /etc/station/              (Basics Station)
 #   /boot/provision.{secret,url}         -> /etc/gateway-provision/    (zero-touch provisioning)
 #   /boot/tunnel.{cert.pem,key.pem,endpoint,thing}
 #                                        -> /etc/aws-iot-device-client/{cert.pem,key.pem,endpoint,thing}
 #                                                                      (remote shell, issue #15)
 #   /boot/health.{endpoint,crt,key}      -> /etc/gwmon-health/         (gwmon's health reports)
+#
+# Since issue #14 the root filesystem is read-only: /etc/station, /etc/gateway-provision,
+# /etc/gwmon-health and /etc/aws-iot-device-client are symlinks into the data partition, which
+# S00datafs has mounted on /data. /boot is mounted read-only too; it is remounted read-write only
+# while there are files to move off it.
 #
 # provision.secret and provision.url are written by scripts/flash-gateway.ps1 (issue #10). With
 # them, a gateway needs no cups.* files on the card: /usr/sbin/gateway-provision, started by
@@ -29,10 +34,11 @@
 # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
 # Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ
 # Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
 
 # PROVISION_BOOT is for testing the script against a copy of the boot files.
 BOOT=${PROVISION_BOOT:-/boot}
-WIFI_CONF=/etc/wpa_supplicant.conf
+WIFI_CONF=/data/wpa_supplicant.conf
 STATION_DIR=/etc/station
 STATION_FILES="cups.uri cups.trust cups.crt cups.key tc.uri tc.trust tc.crt tc.key"
 PROVISION_DIR=/etc/gateway-provision
@@ -79,6 +85,14 @@ start() {
 		return 0
 	fi
 
+	# /boot is read-only (issue #14). Make it writable only when there is something to move.
+	found=
+	for f in wpa_supplicant.conf $STATION_FILES provision.secret provision.url 		health.endpoint health.crt health.key tunnel.cert.pem tunnel.key.pem tunnel.endpoint tunnel.thing; do
+		[ -f "$BOOT/$f" ] && found=1
+	done
+	[ -n "$found" ] || return 0
+	mount -o remount,rw "$BOOT" || log "could not remount $BOOT read-write"
+
 	mkdir -p "$STATION_DIR"
 	chmod 700 "$STATION_DIR"
 
@@ -123,6 +137,7 @@ start() {
 		done
 	fi
 	sync
+	mount -o remount,ro "$BOOT" || log "could not remount $BOOT read-only"
 	return 0
 }
 

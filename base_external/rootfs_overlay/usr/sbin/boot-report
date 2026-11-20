@@ -1,0 +1,75 @@
+#!/bin/sh
+#
+# Record how this boot went, one CSV line per boot in /data/log/boots.csv (issue #14).
+# S90boot-report starts it in the background at every boot. It is what makes the power-cut test
+# a matter of pulling the plug: each boot logs itself, and the file is read once at the end.
+#
+# It waits up to 10 minutes for Basics Station to connect to the LNS ("Connected to MUXS" in
+# /var/log/station.log, the line gwmon also watches), then appends:
+#
+#   boot          running number, kept in /data/log/boot-count
+#   date_utc      wall clock when the line is written (set by NTP by then, if the network is up)
+#   root          ro or rw: how / is mounted
+#   data          /run/datafs.status from S00datafs: ok, repaired, formatted, reset or tmpfs
+#   station_s     uptime in seconds when Station connected, or "none" after 10 minutes
+#   fs_errors     dmesg lines that report a filesystem or SD card error (should be 0)
+#   journal       "replayed" when ext4 replayed /data's journal at mount (normal after a power
+#                 cut, not an error), else "-"
+#   uptime_s      uptime when the line is written
+#
+# The matching dmesg lines of a boot with fs_errors > 0 are kept in /data/log/boot-<n>-dmesg.txt.
+# The file keeps the last 500 boots.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+
+DIR=${BOOTREPORT_DIR:-/data/log}
+CSV=$DIR/boots.csv
+COUNT=$DIR/boot-count
+STATION_LOG=${BOOTREPORT_STATION_LOG:-/var/log/station.log}
+WAIT_S=${BOOTREPORT_WAIT_S:-600}
+KEEP=500
+HEADER=boot,date_utc,root,data,station_s,fs_errors,journal,uptime_s
+
+uptime_s() {
+	cut -d' ' -f1 /proc/uptime
+}
+
+# Kernel messages that mean the card or a filesystem on it is damaged. ext4's own "recovery
+# complete" and "mounted filesystem" lines are not errors.
+FS_ERR='EXT4-fs error|EXT4-fs warning|EXT4-fs \(.*\): (corrupt|bad|failed)|FAT-fs .*(error|corrupt|invalid|not properly unmounted)|JBD2.*(error|abort)|Buffer I/O error|I/O error, dev mmcblk|mmc[0-9]+: .*(error|timeout)|Remounting filesystem read-only'
+
+station_s=none
+n=0
+while [ "$n" -lt "$WAIT_S" ]; do
+	if grep -q 'Connected to MUXS' "$STATION_LOG" 2>/dev/null; then
+		station_s=$(uptime_s)
+		break
+	fi
+	sleep 2
+	n=$((n + 2))
+done
+
+mkdir -p "$DIR" || exit 1
+boot=$(( $(cat "$COUNT" 2>/dev/null || echo 0) + 1 ))
+echo "$boot" > "$COUNT.new" && mv "$COUNT.new" "$COUNT"
+
+root=$(awk '$2 == "/" && $1 != "rootfs" { split($4, o, ","); print o[1] }' /proc/mounts | tail -n 1)
+data=$(cat /run/datafs.status 2>/dev/null || echo unknown)
+errs=$(dmesg | grep -E -i "$FS_ERR")
+if [ -n "$errs" ]; then
+	fs_errors=$(echo "$errs" | wc -l)
+	echo "$errs" > "$DIR/boot-$boot-dmesg.txt"
+else
+	fs_errors=0
+fi
+journal=-
+dmesg | grep -q -E 'EXT4-fs \(mmcblk0p3\): recovery complete' && journal=replayed
+
+[ -s "$CSV" ] || echo "$HEADER" > "$CSV"
+line="$boot,$(date -u +%Y-%m-%dT%H:%M:%SZ),$root,$data,$station_s,$fs_errors,$journal,$(uptime_s)"
+# Write a new file and rename it, so a power cut leaves the old file or the new one, never half.
+{ head -n 1 "$CSV"; tail -n +2 "$CSV" | tail -n $((KEEP - 1)); echo "$line"; } > "$CSV.new" &&
+	sync && mv "$CSV.new" "$CSV"
+sync
+logger -t boot-report "$line"
