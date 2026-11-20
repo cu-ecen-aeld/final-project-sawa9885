@@ -1,0 +1,20 @@
+# Issue #13: the publisher's AWS IoT identity tried from the PC (WSL), 2026-11-20 UTC.
+# Created with scripts/create-health-thing.sh (Sam's yes in the session):
+thing aesd-gateway-0016c001f1135844-health created
+policy aesd-gateway-0016c001f1135844-health created (connect as aesd-gateway-0016c001f1135844-health, publish and retain on aesd/gateway/0016c001f1135844/health)
+certificate e73c3daa created and active
+policy and thing attached to the certificate
+
+# gwmon-publish.sh with mosquitto_pub 2.0.18, the certificate and the Amazon root CA bundle:
+publish exit status 0
+# The policy refuses anything else; AWS IoT closes the connection:
+$ mosquitto_pub ... -i aesd-gateway-0016c001f1135844-health -t aesd/gateway/0016c001f1135844/other -q 1 -m x
+Error: The connection was lost.
+other topic: exit status 7
+$ mosquitto_pub ... -i some-other-client -t aesd/gateway/0016c001f1135844/health -q 1 -m x
+Error: The connection was lost.
+other client ID: exit status 7
+
+# Read back, read-only, with the AWS CLI:
+$ aws iot-data get-retained-message --topic aesd/gateway/0016c001f1135844/health
+{"test":"from the PC, issue 13, run 2"} qos 1 lastModified 2026-11-20T22:12:03.461000Z
