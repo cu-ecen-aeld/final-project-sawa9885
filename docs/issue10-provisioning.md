@@ -25,7 +25,8 @@ Things to know about these results:
 - **This Pi had been registered before.** Its EUI was registered by hand in issue #4. To test a gateway that AWS does not know, that registration (gateway `92f4b2e8-…` and its two certificates) was deleted before the card was flashed, with the owner's approval. The gateway now has a new ID, `ae8306e1-46c0-4467-89c8-334985a906ae`, and the name `gateway-0016c001f1135844`.
 - **The network outage was simulated on a running Pi.** A script on the Pi stopped `ifplugd`, ran `ifdown eth0`, removed the Station credentials, installed a second secret and started `gateway-provision` the way the boot does. It was not a cold boot and not a pulled cable.
 - **"The function is unavailable" was not produced on AWS.** The gateway's handling of HTTP 503 and 502 is tested on the host against a fake function, and the function's own failure path against a fake AWS.
-- **The image was built again after the tests**, when the session link went into the header comments. That image differs from the tested one in comments only and has not been booted.
+- **The image was built again after the tests**, when the session link went into the header comments: commit `26fccd6`, `sdcard.img` SHA-256 `edd4a301…820e`. It differs from the tested image in comments only and has not been booted. The Pi still runs the tested image.
+- **The function on AWS still runs the code of `a3f065c`.** The later commits changed only comments in `provisioning/src` (the session link). `provisioning/deploy.sh` uploads the current code.
 - **AWS makes one certificate more than it uses.** Each time a gateway first asked AWS's CUPS server for its LNS credentials, two certificates appeared in the account within 0.2 s, and only one of them is the gateway's LNS certificate. The other stays active and unused. One is left from issue #4 and two from these tests. The function does not create them and does not know them, so it leaves them alone.
 
 ## Design
