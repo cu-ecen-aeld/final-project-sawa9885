@@ -1,0 +1,78 @@
+== commit: b3d3db8
+== sha256
+484f550a3694eda999a84c2ba8cd62a0f7af46284e4b5776e094c4914519f55f  sdcard.img
+== ls -l images
+-rw-r--r-- 1 sammy sammy 134217728 Nov 20 15:32 images/boot.vfat
+-rw-r--r-- 1 sammy sammy  67108864 Nov 20 15:32 images/data.ext4
+lrwxrwxrwx 1 sammy sammy        11 Nov 20 15:32 images/rootfs.ext4 -> rootfs.ext2
+-rw-r--r-- 1 sammy sammy 478150656 Nov 20 15:32 images/sdcard.img
+== fdisk -l sdcard.img
+Disk images/sdcard.img: 456 MiB, 478150656 bytes, 933888 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+
+Device             Boot  Start    End Sectors  Size Id Type
+images/sdcard.img1       16384 278527  262144  128M  c W95 FAT32 (LBA)
+images/sdcard.img2      278528 802815  524288  256M 83 Linux
+images/sdcard.img3      802816 933887  131072   64M 83 Linux
+== data.ext4 superblock
+Filesystem volume name:   data
+Filesystem features:      has_journal ext_attr resize_inode dir_index orphan_file filetype extent 64bit flex_bg metadata_csum_seed sparse_super dir_nlink extra_isize metadata_csum
+Filesystem state:         clean
+Block count:              65536
+Reserved block count:     0
+== data.ext4 root dir
+      2   40755 (2)      0      0    1024 20-Nov-2026 15:32 .
+      2   40755 (2)      0      0    1024 20-Nov-2026 15:32 ..
+     11   40700 (2)      0      0   12288 20-Nov-2026 15:32 lost+found
+
+== rootfs: /etc/fstab
+# <file system>	<mount pt>	<type>	<options>	<dump>	<pass>
+/dev/root	/		ext4	ro,noauto	0	1
+proc		/proc		proc	defaults	0	0
+devpts		/dev/pts	devpts	defaults,gid=5,mode=620,ptmxmode=0666	0	0
+tmpfs		/dev/shm	tmpfs	mode=1777	0	0
+tmpfs		/tmp		tmpfs	mode=1777	0	0
+tmpfs		/run		tmpfs	mode=0755,nosuid,nodev	0	0
+sysfs		/sys		sysfs	defaults	0	0
+/dev/mmcblk0p1	/boot		vfat	ro,noatime	0	0
+/dev/mmcblk0p3	/data		ext4	noauto,noatime	0	0
+== rootfs: inittab remount line
+18:#::sysinit:/bin/mount -o remount,rw /
+== /etc/station: Type: symlink Fast link dest: "../data/station" 
+== /etc/gateway-provision: Type: symlink Fast link dest: "../data/gateway-provision" 
+== /etc/dropbear: Type: symlink Fast link dest: "../data/dropbear" 
+== /var/log: Type: symlink Fast link dest: "../tmp" 
+== /var/run: Type: symlink Fast link dest: "../run" 
+== /etc/resolv.conf: Type: symlink Fast link dest: "../run/resolv.conf" 
+== /etc/wpa_supplicant.conf: not found 
+== rootfs: /data (must be empty)
+     92   40755 (2)      0      0    1024 20-Nov-2026 15:32 .
+      2   40755 (2)      0      0    1024 20-Nov-2026 15:32 ..
+
+== rootfs: /usr/share/basicstation
+   3308   40755 (2)      0      0    1024 20-Nov-2026 15:31 .
+   3307   40755 (2)      0      0    1024 20-Nov-2026 14:55 ..
+   3309  100644 (1)      0      0    4351 20-Nov-2026 15:31 station.conf
+   3310  100644 (1)      0      0       6 20-Nov-2026 15:31 version.txt
+
+== rootfs: init scripts
+S00datafs S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S45gateway-provision S49chronyd S50crond S50dropbear S90boot-report S99gwmon 
+== rootfs: e2fsck, mke2fs, blkid
+/sbin/e2fsck: Type: regular Mode:  0755 
+/sbin/mke2fs: Type: regular Mode:  0755 
+/sbin/blkid: Type: symlink Mode:  0777 
+/usr/sbin/boot-report: Type: regular Mode:  0755 
+== rootfs: chrony.conf driftfile, default/seedrng
+driftfile /data/chrony/drift
+SEEDRNG_ARGS="-d /data/seedrng"
+== rootfs e2fsck -fn
+rootfs: 3477/65536 files (0.7% non-contiguous), 89286/262144 blocks
+== data e2fsck -fn
+data: 12/16384 files (0.0% non-contiguous), 9545/65536 blocks
+== cmdline.txt
+root=/dev/mmcblk0p2 rootwait console=tty1 console=ttyAMA10,115200
+== kernel root_mountflags
+31:int root_mountflags = MS_RDONLY | MS_SILENT;
