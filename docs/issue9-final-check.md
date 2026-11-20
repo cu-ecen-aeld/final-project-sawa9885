@@ -66,8 +66,8 @@ The image is not byte-for-byte the image of the earlier output tree (`edd4a301â€
 1. Put the Pi's microSD card in the PC's reader. In an elevated PowerShell in the repo, with the AWS CLI signed in:
 
    ```powershell
-   .\scriptslash-gateway.ps1 -List
-   .\scriptslash-gateway.ps1 -DiskNumber <n> -Image <path to the clean build's sdcard.img>
+   .\scripts\flash-gateway.ps1 -List
+   .\scripts\flash-gateway.ps1 -DiskNumber <n> -Image <path to the clean build's sdcard.img>
    ```
 
    The script must print `image SHA-256 dd5252d8â€¦6a00`, `image written and read back` and `RESULT ok`.
