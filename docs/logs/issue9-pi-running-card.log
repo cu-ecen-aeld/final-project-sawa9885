@@ -1,0 +1,102 @@
+# Issue #9: the gateway as it was running on 2026-11-20, before any reflash. Read-only checks.
+# The card holds the image of commit 6c2014d, flashed and provisioned in issue #10. <pi> and <pc> replace LAN addresses.
+
+## 2026-11-20T21:23:03Z  nc <pi> 9000, from a PC on the LAN
+gwmon 2.0.0 uptime=93953s daemon_uptime=93950s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=46976 wd_last_feed_age=0s station=running station_pid=255 station_uptime=93950s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.2C
+
+## AWS: aws iotwireless get-wireless-gateway-statistics, gateway ae8306e1-46c0-4467-89c8-334985a906ae (gateway-0016c001f1135844)
+Connected	2026-11-20T15:44:42.273964056Z
+
+## On the Pi, over SSH
+# uname -srm
+Linux 6.12.61-v8-16k aarch64
+# grep PRETTY_NAME /etc/os-release
+PRETTY_NAME="Buildroot 2026.02.3"
+# cut -d" " -f1 /proc/uptime
+93954.84
+# ls /etc/init.d
+S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S45gateway-provision S49chronyd S50crond S50dropbear S99gwmon rcK rcS 
+# ps (gwmon and Station; the second column is the parent)
+  252     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1
+  255   252 /usr/bin/station --home /etc/station
+# grep -E "gateway EUI|gwmon\[|ntp-hook" /var/log/messages | head -n 7
+Nov 19 19:17:13 aesd-pi5 daemon.info gwmon[252]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 19 19:17:13 aesd-pi5 daemon.info gwmon[252]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 19 19:17:13 aesd-pi5 daemon.info gwmon[252]: gwmon 2.0.0 started, status on TCP port 9000
+Nov 19 19:17:13 aesd-pi5 daemon.info gwmon[252]: station started: /usr/bin/station-run.sh, pid 255
+Nov 19 19:17:15 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 19 19:18:55 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 104.99 s
+Nov 19 19:19:05 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 115.01 s
+# grep -E "ed to MUXS|Concentrator started" /var/log/station.log | tail -n 2
+2026-11-20 15:44:42.242 [TCE:VERB] Connected to MUXS.
+2026-11-20 15:44:44.860 [RAL:INFO] Concentrator started (2s365ms)
+# grep -c "S2E:VERB\] RX " /var/log/station.log   (uplink frames; no node was sending)
+0
+# sha256sum
+192e8d24d283ceae55c83a33379b0bb2ed91055c3b6c8f1d5e0cd3e00a603523  /usr/bin/gwmon
+3d3ccb94aa342c1979aa7f045be6b8ad8e81e85ae2ada6687c7abceea56291cd  /usr/bin/station
+8edbfa7581e2e9d9dc84b2b573e9ddadb7c5db90ebecd01bfe0f2433df103266  /usr/bin/util_chip_id
+e4d2df<n>efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d  /usr/bin/wm1302-reset.sh
+d79128e3902ea97df65d2771cf63482f15881c5320258fb584c936b83c668baa  /usr/bin/reset_lgw.sh
+
+## The card's files against the files inside the clean build's rootfs.ext2 (SHA-256 of every regular file under
+## /bin /sbin /lib /usr /etc, without the gateway's credentials, the SSH host keys and Wi-Fi settings)
+files hashed on the Pi: 2262, in the clean build's rootfs.ext2: 2258
+identical: 2219, different: 39, only on the Pi: 4, only in the clean build: 0
+different:
+  bin/busybox
+  etc/init.d/S35provision
+  etc/init.d/S45gateway-provision
+  lib/udev/ata_id
+  lib/udev/cdrom_id
+  lib/udev/collect
+  lib/udev/dmi_memory_id
+  lib/udev/fido_id
+  lib/udev/mtd_probe
+  lib/udev/scsi_id
+  lib/udev/v4l_id
+  sbin/udevd
+  usr/bin/chronyc
+  usr/bin/curl
+  usr/bin/gpiodetect
+  usr/bin/gpiofind
+  usr/bin/gpioget
+  usr/bin/gpioinfo
+  usr/bin/gpiomon
+  usr/bin/gpioset
+  usr/bin/jq
+  usr/bin/kmod
+  usr/bin/lzmadec
+  usr/bin/lzmainfo
+  usr/bin/station
+  usr/bin/udevadm
+  usr/bin/xz
+  usr/bin/xzdec
+  usr/lib/libcrypto.so.3
+  usr/lib/libgpiodcxx.so.1.1.2
+  usr/lib/libkmod.so.2.5.0
+  usr/lib/libnl-genl-3.so.200.26.0
+  usr/lib/libnl-idiag-3.so.200.26.0
+  usr/lib/libnl-nf-3.so.200.26.0
+  usr/lib/libnl-route-3.so.200.26.0
+  usr/lib/libnl-xfrm-3.so.200.26.0
+  usr/lib/libstdc++.so.6.0.33-gdb.py
+  usr/sbin/chronyd
+  usr/sbin/gateway-provision
+only on the Pi:
+  etc/station/cups-bak.crt
+  etc/station/cups-bak.done
+  etc/station/cups-bak.trust
+  etc/station/cups-bak.uri
+only in the clean build:
+
+## The three scripts that differ: diff of the card's file (<) against the repo's (>)
+# /etc/init.d/S35provision
+< # Link to chat session (issue #10): ISSUE10_SESSION_LINK
+> # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
+# /etc/init.d/S45gateway-provision
+< # Link to chat session (issue #10): ISSUE10_SESSION_LINK
+> # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
+# /usr/sbin/gateway-provision
+< # Link to chat session (issue #10): ISSUE10_SESSION_LINK
+> # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr

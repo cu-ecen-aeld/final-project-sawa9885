@@ -8,7 +8,7 @@ The last issue of Sprint 3: build the image from a fresh clone and check it, bri
 | Definition of done (issue #9) | Result |
 |---|---|
 | A fresh clone on a clean host builds with `./build.sh` | **Pass.** A new clone of `main` (`3d2ebb0`) in a new empty directory built `sdcard.img` in 37 min with no step besides the README's. [Section 1](#1-clean-clone-build) |
-| The image boots, an uplink reaches AWS, and port 9000 returns status | **Not done yet.** The Pi was not reachable on 2026-11-20 and nobody has flashed this image. [Section 2](#2-the-image-on-the-pi) |
+| The image boots, an uplink reaches AWS, and port 9000 returns status | **Not done for this image: it has not been flashed.** The gateway was running the issue #10 card on 2026-11-20: Connected in AWS, status on port 9000. That card differs from this image in 39 of 2258 files, none of them in behaviour as far as was checked. No uplink was sent. [Section 2](#2-the-image-on-the-pi) |
 | The Project Overview page matches what was built | **Done.** [Section 3](#3-project-overview-wiki-page) lists what was changed |
 | Every issue is closed, with a "DoD verified" comment and links to its commits | **Done for the nine Sprint 1 to 3 issues.** Five stretch-goal issues are open and were not built. [Section 4](#4-issues) |
 | A "Final Project Video" wiki page has an outline, including challenges and lessons learned, linked from the overview page under Student Video Demos | **Done**: [Sam Walker Final Project Video](https://github.com/cu-ecen-aeld/final-project-sawa9885/wiki/Sam-Walker-Final-Project-Video). The video itself is not recorded yet |
@@ -61,7 +61,31 @@ The image is not byte-for-byte the image of the earlier output tree (`edd4a301â€
 
 ## 2. The image on the Pi
 
-**Not done yet.** On 2026-11-20 the Pi did not answer on its last address and nothing was flashed. The clean-build image is ready, and these are the steps and the checks.
+### The card that is running now
+
+The Pi was found running at a new DHCP address, with the card that issue #10 flashed (image of commit `6c2014d`) and provisioned. These checks only read: nothing on the Pi or in AWS was changed, and the Pi was not rebooted. Log: [logs/issue9-pi-running-card.log](logs/issue9-pi-running-card.log).
+
+| Check | Result on 2026-11-20, about 21:23 UTC |
+|---|---|
+| Port 9000, from a PC on the LAN | `gwmon 2.0.0 uptime=93953s ... watchdog=active ... station=running station_pid=255 station_uptime=93950s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.2C`: up for 26 hours, Station never restarted |
+| AWS, `get-wireless-gateway-statistics` | `Connected`, `LastUplinkReceivedAt` 15:44:42 UTC, the time of Station's last `Connected to MUXS.` |
+| Boot | Buildroot 2026.02.3, kernel 6.12.61, the 15 init scripts, Station's parent process is gwmon, `gateway EUI 0016c001f1135844` read through `util_chip_id` 2 s after gwmon started |
+| Uplink | **None.** No node transmitted: Station's log has no uplink frame, so `uplinks=0` is right, but this check shows nothing about an uplink reaching AWS |
+
+**How far that card is from the clean build.** Every regular file under `/bin`, `/sbin`, `/lib`, `/usr` and `/etc` on the Pi was hashed over SSH (without the gateway's credentials, the SSH host keys and Wi-Fi settings) and compared with the same file inside the clean build's `rootfs.ext2`:
+
+- 2219 of 2258 files are identical, among them `gwmon`, `util_chip_id`, `lora_pkt_fwd`, `wm1302-reset.sh`, `reset_lgw.sh`, `station-run.sh`, `station.conf`, `S99gwmon` and every other script and configuration file but three.
+- 36 differ and are the compiled programs and libraries that also differ between the two builds on the PC (section 1), `station` among them.
+- 3 differ in one comment line each, the session link of issue #10: `S35provision`, `S45gateway-provision` and `gateway-provision`.
+- The Pi has 4 files more, the `cups-bak.*` copies that Station makes of its credentials. The image has no file that the Pi lacks.
+
+The kernel and the boot partition were not compared.
+
+So the running gateway already shows the boot, the AWS connection and the status port with the same scripts and configuration, and with `reset_lgw.sh` from the package, which answers the point of issue #12. What it does not show is that **this** image boots: its rebuilt kernel, BusyBox and `station` have not run.
+
+### Flashing the clean build: not done yet
+
+Nothing was flashed. The clean-build image is ready, and these are the steps and the checks.
 
 1. Put the Pi's microSD card in the PC's reader. In an elevated PowerShell in the repo, with the AWS CLI signed in:
 
@@ -120,7 +144,7 @@ The comments of issues #4 to #7, #10 and #12 named their commits by short hash, 
 
 ## Not done
 
-- **The image has not been booted** (section 2). That is the open box of this issue's definition of done.
+- **The clean-build image has not been booted**, and **no uplink was sent** (section 2). That is the open part of this issue's first definition-of-done box.
 - **The demo video is not recorded.** The wiki page has its outline.
 - **The stretch-goal issues are open**, and the Project board was not edited.
 - **A host without the Buildroot host packages** was not tried.
