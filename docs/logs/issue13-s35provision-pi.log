@@ -1,0 +1,28 @@
+# Issue #13: the new S35provision run by hand on the Pi (2026-11-20 22:12 UTC), not at boot.
+# A copy of the script from this branch in /tmp/i13, with PROVISION_BOOT pointing at a tmpfs
+# that holds only health.endpoint, health.crt and health.key (copied from the PC with scp -O).
+# The card's own /etc/init.d/S35provision and /boot were not changed.
+
+# before: /etc/station
+drwx------
+# PROVISION_BOOT=/tmp/i13/boot sh /tmp/i13/S35provision start
+provision: installed /etc/gwmon-health/endpoint
+provision: installed /etc/gwmon-health/crt
+provision: installed /etc/gwmon-health/key
+rc=0
+left on the fake boot partition: 0 files
+# ls -la /etc/gwmon-health (owner, size, name)
+drwx------ root 1024 .
+drwxr-xr-x root 1024 ..
+-rw------- root 1240 crt
+-rw------- root 47 endpoint
+-rw------- root 1706 key
+# the endpoint file came from the Windows AWS CLI with CRLF; "text" mode removed it
+CR in endpoint: 0
+# after: /etc/station unchanged (mode, 20 entries); /boot holds no health.* file
+drwx------
+20
+# syslog
+Nov 20 22:12:39 aesd-pi5 user.notice provision: installed /etc/gwmon-health/endpoint
+Nov 20 22:12:39 aesd-pi5 user.notice provision: installed /etc/gwmon-health/crt
+Nov 20 22:12:39 aesd-pi5 user.notice provision: installed /etc/gwmon-health/key
