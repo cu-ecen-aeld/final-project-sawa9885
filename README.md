@@ -58,14 +58,14 @@ A gateway can still be given its credentials as files, as in issues #4 and #5. W
 
 | File on the boot partition | Installed as | Contents |
 |---|---|---|
-| `wpa_supplicant.conf` (optional) | `/etc/wpa_supplicant.conf` | Wi-Fi network. Start from `base_external/board/pi5/wpa_supplicant.conf.example`. |
+| `wpa_supplicant.conf` (optional) | `/data/wpa_supplicant.conf` | Wi-Fi network. Start from `base_external/board/pi5/wpa_supplicant.conf.example`. |
 | `cups.uri` | `/etc/station/cups.uri` | One line: the CUPS endpoint, `https://<id>.cups.lorawan.<region>.amazonaws.com:443`. |
 | `cups.trust` | `/etc/station/cups.trust` | CUPS server trust certificate, as downloaded from AWS. |
 | `cups.crt` | `/etc/station/cups.crt` | Gateway certificate (AWS names it `<id>.cert.pem`). |
 | `cups.key` | `/etc/station/cups.key` | Gateway private key (AWS names it `<id>.private.key`). |
 | `tc.uri`, `tc.trust`, `tc.crt`, `tc.key` (optional) | `/etc/station/tc.*` | The same four for a direct LNS connection (`wss://<id>.lns.lorawan.<region>.amazonaws.com:443`, `lns.trust`). Not needed with CUPS, which fetches them. |
 
-At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot.
+At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot. `/etc/station` and `/etc/gateway-provision` are symlinks into the [data partition](#data-partition).
 
 [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) says where each `cups.*` file comes from in the AWS console. A gateway that finds `cups.uri` or `tc.uri` in `/etc/station` never asks the provisioning function.
 
@@ -149,19 +149,42 @@ aws dynamodb delete-item --table-name aesd-gateway-provisioning-allowlist --key 
 ## Network and time
 
 - Ethernet (`eth0`) uses DHCP and needs no file. BusyBox `ifplugd` (`S41ifplugd`) watches the link: it runs `ifup eth0` when the cable is plugged in, at boot or later, and `ifdown eth0` when it is pulled out, so the address and the default route go away with the cable. `grep ifplugd /var/log/messages` shows each event with the uptime.
-- Wi-Fi (`wlan0`) starts only when `/etc/wpa_supplicant.conf` exists. The image has no such file until `S35provision` installs one: Buildroot's default file, which joins any open network, is removed in `post-build.sh`.
+- Wi-Fi (`wlan0`) starts only when `/data/wpa_supplicant.conf` exists. The image has no such file until `S35provision` installs one: Buildroot's default file, which joins any open network, is removed in `post-build.sh`.
 - The Pi 5 has no RTC battery here, so the clock is wrong after a cold boot. `chronyd` sets it from `pool.ntp.org`. A udhcpc hook (`/usr/share/udhcpc/default.script.d/50-chrony`) tells chronyd when an interface gets a lease, and logs the uptime of the lease and of the first sync: `grep ntp-hook /var/log/messages`. `chronyc tracking` shows the current state, and `chronyc waitsync` blocks until the clock is set.
 - The `ca-certificates` bundle is `/etc/ssl/certs/ca-certificates.crt`.
+
+## Data partition
+
+The root filesystem is mounted read-only, so a power cut cannot corrupt it (issue #14, [docs/issue14-readonly-root.md](docs/issue14-readonly-root.md)). The card has a third partition, 64 MB of ext4 labelled `data`, which the build creates and formats; `S00datafs` checks it with `e2fsck` and mounts it on `/data` at every boot. `/tmp`, `/run`, `/var/run` and `/var/log` are in RAM (tmpfs), and `/boot` is read-only except while `S35provision` moves files off it.
+
+What is stored on `/data`:
+
+| Path | What | Reached as |
+|---|---|---|
+| `/data/station/` | Basics Station's home: `cups.*`, `tc.*`, and the `-bak`/`.done` copies Station makes when CUPS updates them. `station.conf` and `version.txt` are links into the image. | `/etc/station` (symlink) |
+| `/data/gateway-provision/` | The provisioning secret and address until the first boot uses them (issue #10) | `/etc/gateway-provision` (symlink) |
+| `/data/wpa_supplicant.conf` | Wi-Fi network, if one was put on the boot partition | |
+| `/data/dropbear/` | The SSH host key, made at the first boot | `/etc/dropbear` (symlink) |
+| `/data/chrony/drift` | chrony's clock drift | |
+| `/data/seedrng/` | The random seed kept from one boot to the next | |
+| `/data/log/boots.csv` | One line per boot: root `ro`, `/data` state, Station connect time, filesystem errors in `dmesg` | |
+
+`/run/datafs.status` says how `/data` was mounted at this boot: `ok`, `repaired` (`e2fsck` fixed something), `formatted`, `reset`, or `tmpfs`. `tmpfs` means the partition was missing or could not be repaired: the gateway runs, but with no credentials and nothing kept, and `/run/datafs.log` has the details.
+
+**Reset `/data`:** put an empty file named `data.reset` on the card's boot partition and boot. `S00datafs` formats the partition and deletes the file. This deletes the gateway's credentials and SSH host key; the provisioning secret was used at the first boot, so flash the card again with `flash-gateway.ps1` to get the gateway back into AWS. Flashing the card also resets `/data`.
+
+To change a file on the root filesystem by hand while debugging: `mount -o remount,rw /`, then `mount -o remount,ro /` when done.
 
 ## Boot order
 
 1. **Firmware.** The Pi 5 bootloader reads `config.txt` from the boot partition, loads the device tree for the board (see [Buildroot version](#buildroot-version)), turns on SPI and I2C in it (`dtparam=spi=on`, `dtparam=i2c_arm=on`) and starts the kernel `Image` with `root=/dev/mmcblk0p2`.
-2. **Kernel and init.** The kernel mounts the root filesystem and starts BusyBox `init`. `/etc/inittab` mounts `/proc` and everything in `/etc/fstab`, which includes the boot partition on `/boot`, and then runs `/etc/init.d/rcS`.
+2. **Kernel and init.** The kernel mounts the root filesystem read-only and starts BusyBox `init`. `/etc/inittab` mounts `/proc` and everything in `/etc/fstab`, which includes the boot partition on `/boot` (read-only), and then runs `/etc/init.d/rcS`. The root filesystem is never remounted read-write ([Data partition](#data-partition)).
 3. **Init scripts.** `rcS` runs every `/etc/init.d/S*` script with `start`, in the order of their names, one at a time: a script starts only when the one before it has returned.
 
 | Script | From | What it does at boot |
 |---|---|---|
-| `S01seedrng` | Buildroot (`urandom-scripts`) | Seeds the kernel's random number generator. |
+| `S00datafs` | this repo, rootfs overlay | Checks the data partition with `e2fsck` and mounts it on `/data`, or a tmpfs if it cannot be repaired ([Data partition](#data-partition)). |
+| `S01seedrng` | Buildroot (`urandom-scripts`) | Seeds the kernel's random number generator from `/data/seedrng`. |
 | `S01syslogd`, `S02klogd` | Buildroot (BusyBox) | Start logging to `/var/log/messages`. |
 | `S02sysctl` | Buildroot (BusyBox) | Applies `/etc/sysctl.conf`. |
 | `S10udevd` | Buildroot (`eudev`) | Creates the device nodes and loads the drivers named in the device tree. After it, `/dev/spidev0.0` and the RP1 `gpiochip0` exist. |
@@ -169,11 +192,12 @@ aws dynamodb delete-item --table-name aesd-gateway-provisioning-allowlist --key 
 | `S35provision` | this repo, rootfs overlay | Installs the Wi-Fi and Basics Station credentials and the provisioning secret it finds on the boot partition, then deletes them there. |
 | `S40network` | Buildroot (`ifupdown-scripts`) | `ifup -a`: only the loopback interface, since `eth0` is not `auto`. |
 | `S41ifplugd` | this repo, rootfs overlay | Starts `ifplugd`, which brings `eth0` up with DHCP when the cable has a link. |
-| `S41wifi` | this repo, rootfs overlay | Starts Wi-Fi if `/etc/wpa_supplicant.conf` exists. |
+| `S41wifi` | this repo, rootfs overlay | Starts Wi-Fi if `/data/wpa_supplicant.conf` exists. |
 | `S45gateway-provision` | this repo, rootfs overlay | Starts `gateway-provision` in the background. Without Basics Station credentials it asks the provisioning function for them ([Zero-touch provisioning](#zero-touch-provisioning)); with them it exits at once. |
 | `S49chronyd` | Buildroot (`chrony`) | Starts `chronyd`, which sets the clock once an interface has a lease. |
 | `S50crond` | Buildroot (BusyBox) | Starts `crond`. No cron jobs are installed. |
 | `S50dropbear` | Buildroot (`dropbear`) | Starts the SSH server. |
+| `S90boot-report` | this repo, rootfs overlay | Starts `boot-report` in the background, which adds a line about this boot to `/data/log/boots.csv` once Station has connected. |
 | `S99gwmon` | this repo, `gwmon` package | Starts [gwmon](#gwmon), which arms the watchdog and starts Basics Station through `/usr/bin/station-run.sh`. |
 
 The network scripts only start daemons. The DHCP lease and the clock arrive later, in the background, so `S99gwmon` runs about 3 s after the kernel starts, before either is there.
@@ -208,7 +232,7 @@ When gwmon restarts Station later, both resets run again in the same order. `lor
 - **Start at boot:** `gwmon` starts Station and restarts it when it exits (see [gwmon](#gwmon)). Station has no init script of its own. gwmon runs `/usr/bin/station-run.sh`, which reads the SX1302's EUI with `util_chip_id` (which also resets the WM1302), writes it to `/var/run/station.eui`, waits up to 60 s for chronyd to set the clock, then execs `station --home /etc/station` in the foreground. With no `cups.uri` or `tc.uri` in `/etc/station` it logs one line and exits with status 78, which tells gwmon that there is nothing to run.
 - **Boot order:** `S99gwmon` is the last init script, after the credentials, the network daemons, chronyd and SSH. [Boot order](#boot-order) has the whole sequence and the concentrator resets.
 - **Gateway EUI:** the concentrator's EUI. `station.conf` names `/var/run/station.eui` as its `routerid`, so the image isn't tied to one board. `grep 'gateway EUI' /var/log/messages` shows it.
-- **Configuration:** `/etc/station/station.conf` (radio settings for the WM1302, no secrets). The channel plan comes from the network server. The credentials are the `cups.*` files from "Flash and first boot"; Station fetches the LNS address and credentials from CUPS and saves them as `tc.*` in the same directory.
+- **Configuration:** `/etc/station/station.conf` (radio settings for the WM1302, no secrets; a link to `/usr/share/basicstation/station.conf`, since `/etc/station` is on the [data partition](#data-partition)). The channel plan comes from the network server. The credentials are the `cups.*` files from "Flash and first boot"; Station fetches the LNS address and credentials from CUPS and saves them as `tc.*` in the same directory.
 - **Log:** `/var/log/station.log` (tmpfs, 3 x 2 MB at most). The log level is `INFO`, with the `S2E` and `TCE` modules at `VERBOSE`: one `RX` line per received frame, which gwmon counts, and `Connected to MUXS.` when the network server connection is up.
 - **Stop, start, restart:** `/etc/init.d/S99gwmon stop|start|restart` acts on gwmon and Station together. To restart Station alone, `kill $(pidof station)`: gwmon starts it again after 1 s and counts the restart.
 - **AWS IoT Core for LoRaWAN:** [docs/aws-iot-core-setup.md](docs/aws-iot-core-setup.md) has the console steps to register the gateway and a device, and which downloaded file gets which name.
@@ -259,3 +283,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #7 gwmon v2: Basics Station supervision and gateway health | https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx |
 | #10 Zero-touch gateway provisioning | https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr |
 | #12 Reset script in the sx1302-hal package, boot order and Buildroot version | https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o |
+| #14 Read-only root filesystem and data partition | ISSUE14_SESSION_LINK |
