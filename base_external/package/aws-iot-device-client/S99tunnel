@@ -1,0 +1,72 @@
+#!/bin/sh
+#
+# Start and stop the remote-shell tunnel client (issue #15): /usr/bin/tunnel-run.sh, the loop
+# that runs the AWS IoT Device Client with only secure tunneling and restarts it when it exits.
+#
+# The name sorts after S99gwmon, so gwmon and Basics Station are started first, and this script
+# never waits for anything: start-stop-daemon puts the loop in the background and returns. If the
+# client cannot run (no credentials, AWS unreachable, a crash) the gateway works as before, only
+# without the remote shell. gwmon does not know this service and the watchdog does not depend on
+# it.
+#
+# Without the files in /etc/aws-iot-device-client (see tunnel-run.sh) nothing is started. A file
+# named tunnel.disable on the SD card's boot partition also keeps it off.
+#
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #15): ISSUE15_SESSION_LINK
+
+NAME=tunnel
+RUNNER=/usr/bin/tunnel-run.sh
+PIDFILE=/var/run/$NAME.pid
+TUNNEL_DIR=/etc/aws-iot-device-client
+
+start() {
+	if [ -e /boot/tunnel.disable ]; then
+		echo "$NAME: /boot/tunnel.disable exists, not starting"
+		return 0
+	fi
+	for f in cert.pem key.pem endpoint thing; do
+		if [ ! -s "$TUNNEL_DIR/$f" ]; then
+			echo "$NAME: no $TUNNEL_DIR/$f, not starting"
+			return 0
+		fi
+	done
+	printf "Starting %s: " "$NAME"
+	start-stop-daemon -S -q -b -m -p "$PIDFILE" -x "$RUNNER"
+	ret=$?
+	[ $ret = 0 ] && echo "OK" || echo "FAIL"
+	# Never fail the boot because of the tunnel.
+	return 0
+}
+
+stop() {
+	printf "Stopping %s: " "$NAME"
+	# The loop passes SIGTERM on to the client and exits.
+	start-stop-daemon -K -q -p "$PIDFILE"
+	ret=$?
+	n=0
+	while pidof aws-iot-device-client >/dev/null && [ $n -lt 50 ]; do
+		sleep 0.1
+		n=$((n + 1))
+	done
+	killall -9 aws-iot-device-client 2>/dev/null
+	rm -f "$PIDFILE"
+	[ $ret = 0 ] && echo "OK" || echo "FAIL"
+	return 0
+}
+
+case "$1" in
+	start)
+		start
+		;;
+	stop)
+		stop
+		;;
+	restart|reload)
+		stop
+		start
+		;;
+	*)
+		echo "Usage: $0 {start|stop|restart}"
+		exit 1
+esac

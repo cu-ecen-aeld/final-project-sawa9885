@@ -1,0 +1,68 @@
+From: Samuel Walker <112030184+sawa9885@users.noreply.github.com>
+Date: Fri, 20 Nov 2026 14:41:32 -0700
+Subject: [PATCH] Build inside Buildroot: no global git config, no -Werror,
+ shared OpenSSL
+
+Four changes for a cross build from a release tarball with Buildroot
+(issue #15 of cu-ecen-aeld/final-project-sawa9885):
+
+- CMakeLists.txt.versioning ran "git config --global --add safe.directory"
+  on every configure, which edits the build user's ~/.gitconfig. The
+  tarball has no git history, and the version comes from .version.
+- -Werror makes the build depend on the warnings of one compiler version.
+- OPENSSL_USE_STATIC_LIBS made the client carry its own copy of OpenSSL.
+  The target has the shared library, which gets Buildroot's security
+  updates.
+- With BUILD_SDK=OFF the host directories /include and /lib were added to
+  the search paths. The SDK is found in the toolchain's sysroot.
+
+Upstream-Status: Inappropriate [Buildroot integration]
+---
+ CMakeLists.txt            | 6 ++----
+ CMakeLists.txt.versioning | 2 --
+ 2 files changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 7f3a8c0..ac696ef 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -157,7 +157,7 @@ configure_file("source/Version.h.in" "${PROJECT_BINARY_DIR}/Version.h")
+ #########################################
+ # OpenSSL dependency                    #
+ #########################################
+-set(OPENSSL_USE_STATIC_LIBS TRUE)
++# Buildroot: link the shared libcrypto and libssl of the target.
+ find_package(OpenSSL REQUIRED)
+ 
+ #########################################
+@@ -179,8 +179,6 @@ if (BUILD_SDK)
+     add_subdirectory(${CMAKE_BINARY_DIR}/aws-iot-device-sdk-cpp-v2-src
+             ${CMAKE_BINARY_DIR}/aws-iot-device-sdk-cpp-v2-build)
+ else ()
+-    include_directories(/include)
+-    link_directories(/lib)
+ endif ()
+ 
+ ###############################################
+@@ -196,7 +194,7 @@ include_directories("${PROJECT_BINARY_DIR}")
+ if (MSVC)
+     target_compile_options(${DC_PROJECT_NAME} PRIVATE /W4 /WX)
+ else ()
+-    target_compile_options(${DC_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic -Werror)
++    target_compile_options(${DC_PROJECT_NAME} PRIVATE -Wall -Wno-long-long -pedantic)
+ endif ()
+ 
+ set(DEP_DC_LIBS ${DEP_DC_LIBS} aws-crt-cpp aws-c-mqtt aws-c-auth aws-c-io aws-c-cal aws-c-http aws-c-compression aws-c-common aws-c-s3 aws-c-event-stream aws-checksums aws-c-sdkutils)
+diff --git a/CMakeLists.txt.versioning b/CMakeLists.txt.versioning
+index 630941c..4c1198e 100644
+--- a/CMakeLists.txt.versioning
++++ b/CMakeLists.txt.versioning
+@@ -11,8 +11,6 @@
+ 
+ cmake_minimum_required(VERSION 3.10)
+ 
+-# Marking Device Client directory safe
+-execute_process(COMMAND git config --global --add safe.directory ${CMAKE_CURRENT_SOURCE_DIR})
+ 
+ # Check to make sure we have Git info for this package
+ execute_process(COMMAND git log --pretty=format:'%h' -n 1
