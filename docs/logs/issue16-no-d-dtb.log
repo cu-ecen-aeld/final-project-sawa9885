@@ -1,0 +1,33 @@
+# issue #16 step 2, device tree removed. Mount count read raw from the card's rootfs superblock on the PC.
+## before (after the step 1 baseline boot)
+2026-11-21T00:00:35
+partition 2 offset 278528 sectors, size 256 MB
+magic 0xEF53
+Mount count: 1
+Last mount time: 2026-11-21 06:54:30Z
+Last write time: 2026-11-20 21:12:34Z
+State: 1
+## boot partition after the rename: bcm2712-d-rpi-5-b.dtb.off, bcm2712-rpi-5-b.dtb, bcm2712-rpi-500.dtb, bcm2712d0-rpi-5-b.dtb
+## boot with the device tree removed, 2026-11-21T07:03:30Z: gwmon answered on port 9000 8 s into the watch (gwmon uptime 15 s)
+== uptime
+33.82 131.00
+== /boot dtbs
+bcm2712-d-rpi-5-b.dtb.off
+bcm2712-rpi-5-b.dtb
+bcm2712-rpi-500.dtb
+bcm2712d0-rpi-5-b.dtb
+== D0-only compatibles in the live tree (set only by bcm2712d0-rpi-5-b.dtb)
+== gio_aon bank widths (bcm2712-d-rpi-5-b.dts sets <15 6>)
+== spi/i2c
+crw-------    1 root     root       89,   1 Nov 21 07:03 /dev/i2c-1
+crw-------    1 root     root      153,   0 Nov 21 07:03 /dev/spidev0.0
+== model
+Raspberry Pi 5 Model B Rev 1.1
+== brcm,gpio-bank-widths in the live tree (C1 bcm2712-rpi-5-b: aon <0x11 0x06>; both D0 files: aon <0x0f 0x06>)
+/soc@107c000000/gpio@7d508500/brcm,gpio-bank-widths:  00 00 00 20 00 00 00 04
+/soc@107c000000/gpio@7d517c00/brcm,gpio-bank-widths:  00 00 00 0f 00 00 00 06
+== compatibles containing bcm2712d0 (set only by bcm2712d0-rpi-5-b.dtb)
+/soc@107c000000/pinctrl@7d510700/compatible: brcm,bcm2712d0-aon-pinctrl 
+/soc@107c000000/pinctrl@7d504100/compatible: brcm,bcm2712d0-pinctrl 
+(end)
+## result: NOT reproduced. With only the stock DTB set on the card, the firmware loaded bcm2712d0-rpi-5-b.dtb (its D0 pinctrl compatibles and aon bank widths <0x0f 0x06> are in the live tree) and Linux booted: rootfs mounted, gwmon up, /dev/spidev0.0 and /dev/i2c-1 present.

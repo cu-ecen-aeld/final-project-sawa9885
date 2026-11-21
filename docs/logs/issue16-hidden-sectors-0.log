@@ -1,0 +1,11 @@
+# issue #16 step 5, FAT 'hidden sectors' set to 0: the issue #9 clean image (Pi OS-style layout, FAT32 boot partition at sector 16384, all DTBs and overlays) with only the hidden-sectors field (offset 0x1C) of the boot sector and its backup (partition sector 6) changed from 16384 to 0, i.e. the image as it would be without mkfs.fat -h 16384 from d78c27d. Image SHA-256 c398569c8db73b8fe1245112a27f56888ec9d9197c0245e5b2fa1b7d454951c4, flashed with flash-gateway.ps1 (local allow-list), written and read back, provisioning files deleted. Windows mounts the boot partition normally.
+## network watch from 07:24:40Z for 105 s (port-9000 scan of the /24): NO ANSWER
+## rootfs superblock read raw on the PC after the boot attempt
+2026-11-21T00:27:48
+partition 2 offset 278528 sectors, size 256 MB
+magic 0xEF53
+Mount count: 0
+Last mount time: 1970-01-01 00:00:00Z
+Last write time: 2026-11-20 21:12:34Z
+State: 1
+## result: REPRODUCED. Linux never mounted the rootfs (mount count 0, never mounted). The only difference from the step 1 card, which booted, is the FAT hidden-sectors field.
