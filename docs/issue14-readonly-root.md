@@ -94,30 +94,21 @@ Checked offline with the build's own `fdisk`, `debugfs`, `dumpe2fs`, `e2fsck -n`
 
 **Not tested: a boot.** QEMU is not installed on this host, and the Pi 5 kernel (`bcm2712_defconfig`) has no virtio drivers, so a QEMU boot would need a different kernel and different device names (`/dev/vda` instead of `/dev/mmcblk0`), which would test something else. The live Pi could not be used: the layout change needs a reflash. So `S00datafs`, the remounts in `S35provision`, and Station on `/data` have not run yet.
 
-## On the hardware: procedure for Sam (Nov 29 or later)
+## On the hardware
 
-This cannot be tested on the live card: the layout changes, so the card has to be flashed. **The current card is the known-good demo card. Use a second microSD card** if you have one, and keep the demo card as it is until the tests below pass.
+The layout change cannot be tried on a running card: the card has to be flashed. The test card is the spare, which ran the combined Sprint 3 image before; the original gateway card is not touched.
 
-### 1. Flash the spare card (about 10 minutes)
+### 1. Flash (Sam: about 5 minutes)
 
-Keep the original card as it is: it is the fallback for the demo. **Do not use the normal zero-touch flash for this test.** The Pi's EUI is already registered, and for a registered EUI the provisioning function creates a new certificate and revokes the old one (`docs/issue10-provisioning.md`, "An EUI that is already registered"). The original card would then stop connecting until it is flashed again. Instead, the spare card gets a copy of the original card's Station credentials, so no request is made and nothing in AWS changes.
+Power the Pi down, put the spare card in the PC, and in an elevated PowerShell:
 
-1. With the **original** card in the Pi, booted and on the LAN, put the **spare** card in the PC.
-2. Elevated PowerShell in the repo. The allow-list goes to a local file and the address is a dummy, so this makes no AWS call; the secret it writes is never used, because the card will already have credentials:
+```powershell
+& C:\dev\aesd\images\flash-issue14.ps1
+```
 
-   ```powershell
-   .\scripts\flash-gateway.ps1 -List
-   .\scripts\flash-gateway.ps1 -DiskNumber <n> -Image IMAGE_PATH -AllowList file -AllowListFile $env:TEMP\issue14-allowlist.jsonl -ProvisionUrl https://example.invalid/
-   ```
+It lists the disks, and `flash-gateway.ps1` asks before it erases the one it names (disk 2 by default; `-DiskNumber <n>` otherwise): answer only if it is the spare card. The image is `C:\dev\aesd\images\issue14-main-sdcard.img`, `main` plus this issue (IMAGE_PATH). After the write, `copy-boot-files.ps1` (from the issue #9 session) puts the `health.*` and `tunnel.*` files on the boot partition next to the new provisioning secret, and prints only names and sizes. Card back in the Pi, power on.
 
-3. Copy the Station credentials from the running Pi straight onto the spare card's boot partition (drive letter from step 2, here `E:`). Nothing is printed:
-
-   ```powershell
-   scp -i $HOME\.ssh\aesd_pi5_ed25519 "root@<pi-address>:/etc/station/cups.*" E:\
-   ```
-
-   If the original card has `/etc/gwmon-health` or `/etc/aws-iot-device-client` (issues #13, #15), copy those too, renamed to `health.endpoint`, `health.crt`, `health.key` and `tunnel.cert.pem`, `tunnel.key.pem`, `tunnel.endpoint`, `tunnel.thing`. They are not needed for this test.
-4. Eject, shut the Pi down (`poweroff`), swap cards: spare card in the Pi.
+This is the normal zero-touch flash, so the first boot also tests box 3: `S35provision` moves the secret and the `health.*` and `tunnel.*` files from the read-only `/boot` to `/data`, and `gateway-provision` writes Station's credentials there. For a registered EUI the provisioning function makes a new certificate and revokes the old one (issue #10), so the certificate of the card's previous flash stops working; that is the same card.
 
 ### 2. First boot: what to check
 
@@ -137,31 +128,17 @@ Expected:
 - [ ] Reboot once (`reboot`), log in again: the SSH host key is the same (no warning), `grep gateway-provision /var/log/messages` says "credentials are in place, no provisioning request", Station reconnects.
 - [ ] `cat /data/log/boots.csv`: two lines, `ro`, `ok`, a `station_s` value, `fs_errors` 0.
 
-### 3. Power-cut test (20 cuts, about 25 minutes)
+### 3. Forced resets and one power pull
 
-`boot-report` records every boot by itself in `/data/log/boots.csv`, and counts the boot as soon as it starts, so a boot that was cut early shows as a missing number. Sam only pulls the plug and writes down the moment.
+The issue's box was reworded at the owner's request from 20 pulls by hand to 10 automated forced resets plus 1 real power pull.
 
-Each cut: pull the USB-C power cable, count to 5, plug it back in, and pull again at the moment in the table, counted from plugging in. Writing the moment down is enough: for example "cut 3 at 6 s".
+**10 forced resets (automated, about 15 minutes).** `scripts/test/forced-reset-test.sh <pi-address> 10` runs from the PC over SSH. Each reset is `echo b > /proc/sysrq-trigger`: the kernel restarts the board at once, with no shutdown, no unmount and no sync. Resets 1-4 come 5-60 s after Station connected, 5-7 as soon as SSH answers on a fresh boot (about 5 s in: `/data` just mounted, Station not started), and 8-10 at 3-20 s after SSH (Station resetting the radio, waiting for the clock, talking to CUPS, writing its `-bak` files). Before a reset of the last two kinds the Pi is rebooted cleanly to get a fresh boot to cut. After every reset the script waits for SSH and for Station's "Connected to MUXS", then checks: `/` mounted `ro`, `/data` `rw`, `/run/datafs.status` `ok` or `repaired`, and no filesystem or SD card error in `dmesg`.
 
-| Cuts | Pull at | What the Pi is doing | One cycle |
-|---|---|---|---|
-| 1–7 | 3–10 s | Firmware, kernel, `S00datafs` (`e2fsck`, mount), `S35provision` | ~15 s |
-| 8–14 | 20–35 s | Station starting; on the first boots, Station writing the `tc.*` and `-bak` files from CUPS | ~40 s |
-| 15–20 | 90 s or later | Station connected; chrony writing its drift file | ~2 min |
+**1 real power pull (Sam, 1 minute).** While Station is connected: pull the USB-C power cable, count to 5, plug it back. The same checks are then made over SSH.
 
-After cut 20, plug in and leave it alone for 2 minutes. Then the checks:
+**What this does not cover.** A forced reset stops the CPU at once but leaves the SD card powered, so a write the card has already accepted still completes inside the card. A real power cut can also interrupt the card's own controller in the middle of a flash write, and only the one real pull tests that, once. Moments earlier than SSH (firmware, kernel, `e2fsck` in `S00datafs`) are not reached by the resets; the root filesystem is never written, so a cut there can only leave `/data`'s journal to replay, which is what the resets at 5 s exercise.
 
-```powershell
-ssh -i $HOME\.sshesd_pi5_ed25519 root@<pi-address> "cat /data/log/boots.csv; ls /data/log; cat /run/datafs.status; dmesg | grep -i -E 'ext4|fat-fs|mmc0|i/o error'; mount | grep -E ' / | /data | /boot '"
-```
-
-**Pass**, for every line in `boots.csv`: `root` is `ro`, `data` is `ok` or `repaired`, `fs_errors` is 0; the last boot has a number in `station_s` and AWS shows the gateway Connected. Missing boot numbers are the cuts that came before `S90boot-report` started or before Station connected; they pass if the next boot passes. Any `boot-<n>-dmesg.txt` in `/data/log` is a failure and holds the error lines. `journal` = `replayed` is the normal, safe outcome of a cut while `/data` was open.
-
-Copy the output into `docs/logs/issue14-power-cut.log`, with the list of moments.
-
-**Total for Sam: about 45 minutes** (flash 10, first-boot checks 5, cuts 25, final checks 5).
-
-**Back to the original card:** power off, swap cards. Nothing on it or in AWS was changed.
+Results: `docs/logs/issue14-forced-resets.log` and `docs/logs/issue14-power-pull.log`.
 
 ### 4. Reset test (optional)
 
@@ -175,5 +152,5 @@ Put an empty file named `data.reset` on the card's boot partition (from the PC),
 | `genimage` creates `/data`; `./build.sh` with no manual steps | Done: partition 3 in the image; fresh-clone `./build.sh` |
 | Credentials and Wi-Fi on `/data`, installed by `S35provision`, found by Station | Built, untested on hardware: symlinks and paths checked in the image; section 2 above |
 | `/tmp`, `/var/run`, `/var/log` are tmpfs | Done in the image (Buildroot fstab and symlinks); confirm with `mount` in section 2 |
-| Power-cut test, 20 cuts | Needs Sam: section 3 above |
+| Power-cut test: 10 forced resets + 1 real pull | Section 3 above |
 | README: what is on `/data`, how to reset it | Done: README, "Data partition" |
