@@ -1,0 +1,97 @@
+# Issue #15, box 3: SSH through an AWS IoT secure tunnel, LAN proof, 2026-11-21 (UTC)
+#
+# Source end: localproxy v3.3.1 built in WSL on the PC (192.168.0.122). Destination: the
+# device client running from /tmp on the gateway. SSH host key checked against the gateway's
+# own key (HostKeyAlias=192.168.0.103, StrictHostKeyChecking=yes). Tokens, account number and
+# endpoint are not in this file. Two tunnels opened, $1.00 each.
+# Script: open-tunnel, localproxy -s 5555, three ssh logins, close-tunnel.
+
+## Tunnel 1: localproxy without --destination-client-type V1 -- SSH hangs
+
+open 2026-11-21T04:48:16Z
+Running AWS IoT Secure Tunneling Local Proxy version: v3.3.1+8a71618
+[2026-11-20 21:48:27.721423] [info] Starting proxy in source mode
+[2026-11-20 21:48:27.968096] [info] Web socket session ID: (removed)
+[2026-11-20 21:48:27.968859] [info] Updated port mapping for v1 format: 
+[2026-11-20 21:48:27.968876] [info] SSH = 5555
+[2026-11-20 21:48:27.968886] [info] calling setup from loop
+[2026-11-20 21:48:27.969196] [info] Listening for new connection on port 5555
+OPEN	CONNECTED	CONNECTED
+--- ssh with the issue #1 key, through the tunnel (localhost:5555)
+Connection timed out during banner exchange
+Connection to 127.0.0.1 port 5555 timed out
+--- ssh with no key
+Connection to 127.0.0.1 port 5555 timed out
+--- ssh with another key
+Connection to 127.0.0.1 port 5555 timed out
+--- close
+CLOSED
+closed 2026-11-21T04:49:32Z
+
+## Gateway side of tunnel 1 (/var/log/messages)
+# errorCode=13339 is AWS_ERROR_IOTDEVICE_SECURE_TUNNELING_INACTIVE_SERVICE_ID: the client and
+# localproxy v3 disagree on the protocol version, so dropbear's banner never reaches the PC.
+
+Nov 21 04:48:37 aesd-pi5 authpriv.info dropbear[4740]: Child connection from 127.0.0.1:59668
+Nov 21 04:48:37 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 546
+Nov 21 04:48:37 aesd-pi5 user.notice tunnel: [ERROR] {SecureTunnelingContext.cpp}: SecureTunnelingContext::OnSendDataComplete errorCode=13339
+Nov 21 04:48:54 aesd-pi5 authpriv.info dropbear[4740]: Exit before auth from <127.0.0.1:59668>: Integrity error (bad packet size 1397966897)
+
+## Tunnel 2: localproxy --destination-client-type V1 -- works
+
+open 2026-11-21T04:51:21Z
+Running AWS IoT Secure Tunneling Local Proxy version: v3.3.1+8a71618
+[2026-11-20 21:51:32.405727] [info] setting source protocol to V1
+[2026-11-20 21:51:32.407262] [info] Starting proxy in source mode
+[2026-11-20 21:51:33.083153] [info] Web socket session ID: (removed)
+[2026-11-20 21:51:33.084348] [info] Updated port mapping for v1 format: 
+[2026-11-20 21:51:33.084376] [info] SSH = 5555
+[2026-11-20 21:51:33.084386] [info] calling setup from loop
+[2026-11-20 21:51:33.084610] [info] Listening for new connection on port 5555
+OPEN	CONNECTED	CONNECTED
+--- ssh with the issue #1 key, through the tunnel (localhost:5555)
+aesd-pi5
+120872.74 481119.16
+tcp        0      0 127.0.0.1:49500         127.0.0.1:22            ESTABLISHED 
+tcp        0      0 127.0.0.1:22            127.0.0.1:49500         ESTABLISHED 
+--- ssh with no key
+root@localhost: Permission denied (publickey).
+--- ssh with another key
+root@localhost: Permission denied (publickey).
+--- close
+CLOSED
+closed 2026-11-21T04:51:54Z
+
+## Gateway side of tunnel 2 (/var/log/messages, the three logins)
+
+Nov 21 04:51:42 aesd-pi5 authpriv.info dropbear[4781]: Child connection from 127.0.0.1:49500
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 546
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 1500
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 100
+Nov 21 04:51:42 aesd-pi5 authpriv.notice dropbear[4781]: Pubkey auth succeeded for 'root' with ssh-ed25519 key SHA256:6ot3/Eu1PwJrFqjAoVdNUQIjd5ZvE/pzkweByFvPUkQ from 127.0.0.1:49500
+Nov 21 04:51:42 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 36
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 36
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 60
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 196
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 68
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 36
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 88
+Nov 21 04:51:43 aesd-pi5 authpriv.info dropbear[4781]: Exit (root) from <127.0.0.1:49500>: Disconnect received
+Nov 21 04:51:43 aesd-pi5 user.notice tunnel: [WARN]  {SecureTunnelingContext.cpp}: Received empty data buffer in OnTcpForwardDataReceive
+Nov 21 04:51:45 aesd-pi5 authpriv.info dropbear[4791]: Child connection from 127.0.0.1:49502
+Nov 21 04:51:45 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 546
+Nov 21 04:51:45 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 1500
+Nov 21 04:51:45 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:45 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:45 aesd-pi5 authpriv.info dropbear[4791]: Exit before auth from <127.0.0.1:49502>: (user 'root', 0 fails): Exited normally
+Nov 21 04:51:47 aesd-pi5 authpriv.info dropbear[4792]: Child connection from 127.0.0.1:49506
+Nov 21 04:51:47 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 546
+Nov 21 04:51:48 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 1500
+Nov 21 04:51:48 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:48 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:48 aesd-pi5 user.notice tunnel: [INFO]  {SecureTunnelingContext.cpp}: Successfully sent data block. Total bytes sent: 44
+Nov 21 04:51:48 aesd-pi5 authpriv.info dropbear[4792]: Exit before auth from <127.0.0.1:49506>: (user 'root', 0 fails): Exited normally

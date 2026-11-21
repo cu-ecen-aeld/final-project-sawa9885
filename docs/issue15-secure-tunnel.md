@@ -129,7 +129,9 @@ aws iotsecuretunneling open-tunnel \
 # 2. Start the source end on this PC: it listens on localhost:5555.
 #    Keep the token out of the command line: localproxy reads it from AWSIOT_TUNNEL_ACCESS_TOKEN.
 export AWSIOT_TUNNEL_ACCESS_TOKEN=$(jq -r .sourceAccessToken tunnel.json)
-localproxy -r us-east-1 -s 5555 &
+#    --destination-client-type V1 is required: the device client speaks the older tunnel protocol,
+#    and without it the TCP connection opens but SSH hangs before the banner.
+localproxy -r us-east-1 -s 5555 -b 127.0.0.1 --destination-client-type V1 &
 # 3. SSH through it. Only the issue #1 key is accepted.
 ssh -i ~/.ssh/aesd_pi5_ed25519 -p 5555 root@localhost
 # 4. Close it when done, and delete the token file.
@@ -144,7 +146,10 @@ Building `localproxy` on Ubuntu (WSL): it needs the OpenSSL and zlib headers
 (`sudo apt install libssl-dev zlib1g-dev`) and CMake 3.31 or newer with HTTPS (Kitware's release
 tarball works; Buildroot's host CMake has no HTTPS). Then
 `cmake -S . -B build -DLOCALPROXY_DEP_MODE=fetch -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build build -j`
-in a clone of tag v3.3.1: it downloads and checks its own Boost and protobuf.
+in a clone of tag v3.3.1: it downloads and checks its own Boost and protobuf (about 4 min).
+Without sudo, `apt-get download libssl-dev libssl3t64 zlib1g-dev zlib1g` and `dpkg -x` into a
+local prefix work too, with `OPENSSL_ROOT_DIR`/`ZLIB_ROOT` pointed at it; that is how it was built
+for the test below.
 
 ## Results
 
@@ -152,7 +157,7 @@ in a clone of tag v3.3.1: it downloads and checks its own Boost and protobuf.
 |---|---|---|
 | 1. Package, pinned release, tunneling only, init script | Pass | [logs/issue15-build.log](logs/issue15-build.log): only `tunneling/` and the core are compiled; `S99tunnel` and the client are in the image (`sdcard.img` `5b29989d…11a0`, not flashed yet) |
 | 2. Own thing and certificate, from the boot partition by `S35provision`, nothing secret in the repo, minimal policy | Pass, except a cold boot | AWS: thing, certificate and `aesd-tunnel-policy` created 2026-11-21. [logs/issue15-s35provision.log](logs/issue15-s35provision.log): host test 23/23, and the script run on the Pi from `/tmp` against fake boot files. The client connected with that policy. A boot of the new image with real `tunnel.*` files on the card waits for the reflash |
-| 3. SSH through a tunnel from another network | Not done | `localproxy` did not build tonight (see below). Waits for Sam |
+| 3. SSH through a tunnel from another network | LAN: pass. Other network: waits for Sam | [logs/issue15-tunnel-ssh.log](logs/issue15-tunnel-ssh.log): a tunnel opened in AWS gave a root shell on `aesd-pi5` through localproxy on the PC, with the gateway's host key checked; logins with no key or another key were refused. The PC was on the same LAN, but the path is PC → AWS → gateway's outbound connection (dropbear sees `127.0.0.1`). The hotspot run waits for Sam |
 | 4. No new inbound port | Pass | [logs/issue15-netstat.log](logs/issue15-netstat.log): with the client connected, the listening sockets are the same as before (22, 9000, chrony on localhost). The client only has an outbound connection to port 443 |
 | 5. Client crash or AWS unreachable: Station and gwmon unaffected, client comes back | Pass | [logs/issue15-crash-outage.log](logs/issue15-crash-outage.log) |
 | 6. Who, cost, root shell | Pass | the sections above |
@@ -190,13 +195,16 @@ What the tests showed:
   ("Host name was invalid"). `S35provision` already strips CR from text files; `tunnel-run.sh`
   now does too.
 - `localproxy` for the support PC: this PC's WSL has no system CMake, Buildroot's host CMake has
-  no HTTPS for its downloads, and the OpenSSL development headers are missing. Three attempts,
-  three different causes; stopped there.
+  no HTTPS for its downloads, and the OpenSSL development headers are missing. Solved with
+  Kitware's CMake and the headers unpacked without sudo (above).
+- localproxy v3 against device client v1.10.1: the first tunnel connected both ends, but SSH
+  timed out at the banner and the client logged `errorCode=13339`
+  (`..._SECURE_TUNNELING_INACTIVE_SERVICE_ID`). `--destination-client-type V1` on the source fixes
+  it, as AWS's local proxy guide says for the device client. Two tunnels, $2.00 in all.
 
 ## For Sam on Nov 29 (box 3)
 
-1. Let the issue #15 session install the headers in WSL (`sudo apt install libssl-dev zlib1g-dev`)
-   and build `localproxy` (about 15 min), or build it yourself as above.
+1. `localproxy` is built in WSL: `~/aesd/research/issue15/localproxy/build/bin/localproxy`.
 2. Connect this PC to the phone hotspot (not the home LAN). Check: `ping 192.168.0.103` must fail.
 3. Run "Open a session" above. Expected: the dropbear banner, a root prompt on `aesd-pi5`.
    Also try `ssh -p 5555 root@localhost` **without** the key: it must be refused.
