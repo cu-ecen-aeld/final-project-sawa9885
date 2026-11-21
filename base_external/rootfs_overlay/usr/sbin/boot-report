@@ -7,7 +7,8 @@
 # It waits up to 10 minutes for Basics Station to connect to the LNS ("Connected to MUXS" in
 # /var/log/station.log, the line gwmon also watches), then appends:
 #
-#   boot          running number, kept in /data/log/boot-count
+#   boot          running number, kept in /data/log/boot-count. It is counted as soon as the boot
+#                 starts, so a boot cut before its line is written shows as a gap in the numbers.
 #   date_utc      wall clock when the line is written (set by NTP by then, if the network is up)
 #   root          ro or rw: how / is mounted
 #   data          /run/datafs.status from S00datafs: ok, repaired, formatted, reset or tmpfs
@@ -39,6 +40,11 @@ uptime_s() {
 # complete" and "mounted filesystem" lines are not errors.
 FS_ERR='EXT4-fs error|EXT4-fs warning|EXT4-fs \(.*\): (corrupt|bad|failed)|FAT-fs .*(error|corrupt|invalid|not properly unmounted)|JBD2.*(error|abort)|Buffer I/O error|I/O error, dev mmcblk|mmc[0-9]+: .*(error|timeout)|Remounting filesystem read-only'
 
+mkdir -p "$DIR" || exit 1
+boot=$(( $(cat "$COUNT" 2>/dev/null || echo 0) + 1 ))
+echo "$boot" > "$COUNT.new" && sync && mv "$COUNT.new" "$COUNT"
+sync
+
 station_s=none
 n=0
 while [ "$n" -lt "$WAIT_S" ]; do
@@ -49,10 +55,6 @@ while [ "$n" -lt "$WAIT_S" ]; do
 	sleep 2
 	n=$((n + 2))
 done
-
-mkdir -p "$DIR" || exit 1
-boot=$(( $(cat "$COUNT" 2>/dev/null || echo 0) + 1 ))
-echo "$boot" > "$COUNT.new" && mv "$COUNT.new" "$COUNT"
 
 root=$(awk '$2 == "/" && $1 != "rootfs" { split($4, o, ","); print o[1] }' /proc/mounts | tail -n 1)
 data=$(cat /run/datafs.status 2>/dev/null || echo unknown)
