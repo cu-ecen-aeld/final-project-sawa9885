@@ -1,0 +1,151 @@
+# Issue #9: first boot of the combined Sprint 3 image (issues #9, #10, #11, #13, #15, #16), 2026-11-21.
+# Branch claude/integration-sprint3-a7e8ee at 7c7271d. sdcard.img SHA-256 637c30adb0aa6c849228cb5b1451d0c7ce59139293a2b34d764dc7c789e85682.
+# Card flashed with scripts/flash-gateway.ps1 -DiskNumber 2 -Force; boot partition: provision.secret, provision.url,
+# health.{endpoint,crt,key}, tunnel.{cert.pem,key.pem,endpoint,thing}. Pi on Ethernet. Read-only checks.
+# <iot-endpoint> and <id> replace account-specific AWS host names; <pi> the Pi's LAN address.
+
+## 07:44:22 UTC  nc <pi> 9000, 19 s after power-on (before provisioning)
+gwmon 2.1.0 uptime=19s daemon_uptime=15s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=8 wd_last_feed_age=1s station=unconfigured station_pid=0 station_uptime=0s station_restarts=0 station_fails=0 uplinks=unavailable last_uplink_age=never temp=21.0C publish=never publishes=0 publish_fails=0 last_publish_age=never
+
+## 07:45:20 UTC  on the Pi over SSH
+# date -u; uptime
+Sat Nov 21 07:45:20 UTC 2026
+78.46
+# grep PRETTY_NAME /etc/os-release
+PRETTY_NAME="Buildroot 2026.02.3"
+# ls /etc/init.d
+S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S45gateway-provision S49chronyd S50crond S50dropbear S99gwmon S99tunnel rcK rcS 
+# boot partition, file names
+Image System Volume Information aesd-net.log bcm2712-d-rpi-5-b.dtb bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb bcm2712d0-rpi-5-b.dtb cmdline.txt config.txt overlays 
+# credential directories: names and modes only
+/etc/station: 
+  -rw------- cups-bak.crt
+  -rw------- cups-bak.done
+  -rw------- cups-bak.key
+  -rw------- cups-bak.trust
+  -rw------- cups-bak.uri
+  -rw------- cups.crt
+  -rw------- cups.key
+  -rw------- cups.trust
+  -rw------- cups.uri
+  -rw-r--r-- station.conf
+  -rw------- tc-bak.crt
+  -rw------- tc-bak.done
+  -rw------- tc-bak.key
+  -rw------- tc-bak.trust
+  -rw------- tc-bak.uri
+  -rw------- tc.crt
+  -rw------- tc.key
+  -rw------- tc.trust
+  -rw------- tc.uri
+  -rw-r--r-- version.txt
+/etc/gateway-provision: 
+/etc/gwmon-health: 
+  -rw------- crt
+  -rw------- endpoint
+  -rw------- key
+/etc/aws-iot-device-client: 
+  -rw-r--r-- cert.pem
+  -rw------- endpoint
+  -rw------- key.pem
+  -rw------- thing
+# syslog: provision, gateway-provision, ntp-hook, gwmon, station, tunnel
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gateway-provision/secret
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gateway-provision/url
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/endpoint
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/crt
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/key
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/aws-iot-device-client/cert.pem
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/aws-iot-device-client/key.pem
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/aws-iot-device-client/endpoint
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/aws-iot-device-client/thing
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: gwmon 2.1.0 started, status on TCP port 9000
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: station started: /usr/bin/station-run.sh, pid 325
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: health report every 300 s through /usr/bin/gwmon-publish.sh (timeout 30 s)
+Nov 21 07:44:05 aesd-pi5 user.notice station: no cups.uri or tc.uri in /etc/station, not starting (see the README, "Flash and first boot")
+Nov 21 07:44:05 aesd-pi5 daemon.warn gwmon[320]: station (pid 325) exited with status 78 after 0 s
+Nov 21 07:44:05 aesd-pi5 daemon.notice gwmon[320]: station has nothing to run (exit status 78): not restarting it, the watchdog is still fed
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: starting /usr/bin/aws-iot-device-client for thing gateway-0016c001f1135844-tunnel
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.837Z [INFO]  {Config.cpp}: Not creating directory ~/.aws-iot-device-client/sample-shadow/ since sample shadow is disabled
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.837Z [DEBUG] {Config.cpp}: Set LOCK_FILE_PATH=/var/run/
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.837Z [DEBUG] {Config.cpp}: Did not find a runtime configuration file, assuming Fleet Provisioning has not run for this device
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.837Z [DEBUG] {Config.cpp}: Did not find a http proxy config file //.aws-iot-device-client/http-proxy.conf, assuming HTTP proxy is disabled on this device
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.838Z [INFO]  {Main.cpp}: Now running AWS IoT Device Client version v1.10.1-7f9547b
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.838Z [INFO]  {SharedCrtResourceManager.cpp}: SDK logging is disabled. Enable it with --enable-sdk-logging on the command line or logging::enable-sdk-loggin
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.858Z [INFO]  {SharedCrtResourceManager.cpp}: Establishing MQTT connection with client id gateway-0016c001f1135844-tunnel...
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.859Z [ERROR] {SharedCrtResourceManager.cpp}: MQTT Connection failed with error: aws-c-io: AWS_IO_DNS_QUERY_FAILED, A query to dns failed to resolve.
+Nov 21 07:44:05 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:05.859Z [ERROR] {SharedCrtResourceManager.cpp}: Failed to establish shared MQTT connection, but will attempt retry...
+Nov 21 07:44:15 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:15.874Z [INFO]  {SharedCrtResourceManager.cpp}: Establishing MQTT connection with client id gateway-0016c001f1135844-tunnel...
+Nov 21 07:44:15 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:15.874Z [ERROR] {SharedCrtResourceManager.cpp}: MQTT Connection failed with error: aws-c-io: AWS_IO_DNS_QUERY_FAILED, A query to dns failed to resolve.
+Nov 21 07:44:15 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:15.874Z [ERROR] {SharedCrtResourceManager.cpp}: Failed to establish shared MQTT connection, but will attempt retry...
+Nov 21 07:44:15 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 13.56 s
+Nov 21 07:44:21 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 19.57 s
+Nov 21 07:44:23 aesd-pi5 user.notice gateway-provision: gateway EUI 0016c001f1135844, secret fingerprint 1ea2705c..., asking the provisioning function
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.trust
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.crt
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.key
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: installed /etc/station/cups.uri
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: provisioned after 1 tries, uptime 25.18 s
+Nov 21 07:44:27 aesd-pi5 user.notice gateway-provision: restarting gwmon so that it starts Basics Station
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[320]: Caught signal 15, exiting
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[320]: watchdog closed with the magic close after 11 feeds
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: watchdog /dev/watchdog: "Broadcom BCM2835 Watchdog timer", options 0x8180 (magic close)
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: watchdog armed: timeout 10 s, fed every 2 s
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: gwmon 2.1.0 started, status on TCP port 9000
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: station started: /usr/bin/station-run.sh, pid 457
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: health report every 300 s through /usr/bin/gwmon-publish.sh (timeout 30 s)
+Nov 21 07:44:29 aesd-pi5 user.notice station: gateway EUI 0016c001f1135844, starting when the clock is set
+Nov 21 07:44:29 aesd-pi5 user.notice station: starting /usr/bin/station, uptime 26.66 s
+Nov 21 07:44:35 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:35.889Z [INFO]  {SharedCrtResourceManager.cpp}: Establishing MQTT connection with client id gateway-0016c001f1135844-tunnel...
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {SharedCrtResourceManager.cpp}: MQTT connection established with return code: 0
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {SharedCrtResourceManager.cpp}: Shared MQTT connection is ready!
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {Main.cpp}: Secure Tunneling is enabled
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {SharedCrtResourceManager.cpp}: Starting Device Client features.
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {SecureTunnelingFeature.cpp}: Running Secure Tunneling!
+Nov 21 07:44:36 aesd-pi5 user.notice tunnel: 2026-11-21T07:44:36.146Z [INFO]  {Main.cpp}: Client base has been notified that Secure Tunneling has started
+Nov 21 07:44:57 aesd-pi5 daemon.info gwmon[455]: health publish: first report sent, next every 300 s
+# processes (pid, parent, command)
+  324     1 {tunnel-run.sh} /bin/sh /usr/bin/tunnel-run.sh
+  338   324 /usr/bin/aws-iot-device-client --endpoint <iot-endpoint> --cert /etc/aws-iot-device-client/cert.pem --key /etc/aws-i
+  455     1 /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1 -P /usr/bin/gwmon-publish.sh -I 300 -O 30
+  457   455 /usr/bin/station --home /etc/station
+# Station log
+2026-11-21 07:44:30.642 [TCE:VERB] Connected to MUXS.
+2026-11-21 07:44:33.293 [RAL:INFO] Concentrator started (2s362ms)
+2026-11-21 07:44:33.293 [S2E:INFO] Configuring for region: US915 -- 902.0MHz..928.0MHz
+# sha256
+a1669763fcd7dfb7d840260c00ef3c1f52d3712d055880fd46334e2d2c5a1e17  /usr/bin/gwmon
+0b436f647e328133da1085c6884341efc1245882815f0fafe8aeb18fae700bc8  /usr/bin/station
+52c36bf6f9cc75262790b7876b4ba6a316362f3d83b58d4bcbbe5906b057f91a  /usr/bin/gwmon-publish.sh
+5a5960f1a86c0bd595d7491c330ee61ea0e1abce1fc7411d5b397485e11152c0  /usr/bin/aws-iot-device-client
+89b9b70e8343afa1c0e1747eced5a7f8c99002f9cf293cc6c133a43f4c876f21  /usr/sbin/gateway-provision
+ba81df70a93e69bf31040bf88083edf2bc41d90f31b92ed827acb827047957c1  /etc/init.d/S35provision
+
+## Six files on the Pi against the build's rootfs.ext2 (debugfs): identical
+a1669763fcd7dfb7d840260c00ef3c1f52d3712d055880fd46334e2d2c5a1e17  /usr/bin/gwmon
+0b436f647e328133da1085c6884341efc1245882815f0fafe8aeb18fae700bc8  /usr/bin/station
+52c36bf6f9cc75262790b7876b4ba6a316362f3d83b58d4bcbbe5906b057f91a  /usr/bin/gwmon-publish.sh
+5a5960f1a86c0bd595d7491c330ee61ea0e1abce1fc7411d5b397485e11152c0  /usr/bin/aws-iot-device-client
+89b9b70e8343afa1c0e1747eced5a7f8c99002f9cf293cc6c133a43f4c876f21  /usr/sbin/gateway-provision
+ba81df70a93e69bf31040bf88083edf2bc41d90f31b92ed827acb827047957c1  /etc/init.d/S35provision
+
+## AWS, read from the PC
+# aws iotwireless get-wireless-gateway-statistics (gateway-0016c001f1135844)
+Connected	2026-11-21T07:44:30.701462993Z
+# aws iot-data get-retained-message --topic aesd/gateway/0016c001f1135844/health (payload decoded)
+lastModifiedTime 2026-11-21T07:44:57.892Z
+{"gwmon_version":"2.1.0","time":1795247097,"uptime_s":55,"daemon_uptime_s":30,"watchdog":"active","wd_timeout_s":10,"wd_feeds":16,"wd_last_feed_age_s":0,"station":"running","station_uptime_s":30,"station_restarts":0,"station_fails":0,"uplinks":0,"last_uplink_age_s":null,"temp_c":21.8,"publishes":0,"publish_fails":0}
+
+## One uplink from the test node (DevEUI ...7C7C) on COM5, 115200 baud, DTR off
+# scripts/demo/send-uplink.ps1 -Port COM5 -Command BLUETOOTH_EXIT,LORA_LINK_TEST,STATUS
+07:47:05 UTC sent BLUETOOTH_EXIT -> ERR BLUETOOTH_EXIT not_active
+07:47:09 UTC sent LORA_LINK_TEST -> LORA LINK_TEST_QUEUED ... LORA SESSION_START region=US915 fsb=2 restored=1
+                                 -> LORA JOIN_RESULT code=1 network_connected=1 persisted=1 cloud_confirmed=0 rf_disarmed=1
+# Station's log on the Pi
+2026-11-21 07:47:14.140 [S2E:VERB] RX 903.9MHz DR3 SF7/BW125 snr=13.0 rssi=-89 xtime=0xC8000009A13CA5 - updf mhdr=80 DevAddr=00BC32BD FCtrl=80 FCnt=8 FOpts=[] 0D mic=-1130542027 (13 bytes)
+2026-11-21 07:47:15.136 [S2E:INFO] TX ::1 diid=28254 [ant#0] - dntxed: 923.3MHz 26.0dBm ant#0(0) DR13 SF7/BW500 frame=60BD32BC00A00600794FEE02 (12 bytes)
+# 07:47:41 UTC nc <pi> 9000: uplinks=1 last_uplink_age=26s
+# aws iotwireless get-wireless-device-statistics (aesd-test-node)
+"2026-11-21T07:47:14.362917069Z", FPort 13, 903900000 Hz, Gateways: [{"GatewayEui": "0016c001f1135844", "Snr": 13.0, "Rssi": -89.0}]

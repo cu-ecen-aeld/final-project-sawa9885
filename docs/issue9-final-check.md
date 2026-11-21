@@ -8,7 +8,7 @@ The last issue of Sprint 3: build the image from a fresh clone and check it, bri
 | Definition of done (issue #9) | Result |
 |---|---|
 | A fresh clone on a clean host builds with `./build.sh` | **Pass.** A new clone of `main` (`3d2ebb0`) in a new empty directory built `sdcard.img` in 37 min with no step besides the README's. [Section 1](#1-clean-clone-build) |
-| The image boots, an uplink reaches AWS, and port 9000 returns status | **Not done for this image: it has not been flashed.** The gateway was running the issue #10 card on 2026-11-20: Connected in AWS, status on port 9000. That card differs from this image in 39 of 2258 files, none of them in behaviour as far as was checked. No uplink was sent. [Section 2](#2-the-image-on-the-pi) |
+| The image boots, an uplink reaches AWS, and port 9000 returns status | **Pass, with the combined Sprint 3 image built the same way** (2026-11-21): first boot with nothing typed, provisioned, Connected to AWS, status on port 9000, and one uplink from the test node in Station's log and in AWS with this gateway's EUI. The clean build of `main` itself was not booted. [Section 2](#2-the-image-on-the-pi) |
 | The Project Overview page matches what was built | **Done.** [Section 3](#3-project-overview-wiki-page) lists what was changed |
 | Every issue is closed, with a "DoD verified" comment and links to its commits | **Done for the nine Sprint 1 to 3 issues.** Of the five stretch-goal issues, which were not built, #8 is closed as not planned and four are open. [Section 4](#4-issues) |
 | A "Final Project Video" wiki page has an outline, including challenges and lessons learned, linked from the overview page under Student Video Demos | **Done**: [Sam Walker Final Project Video](https://github.com/cu-ecen-aeld/final-project-sawa9885/wiki/Sam-Walker-Final-Project-Video). The video itself is not recorded yet |
@@ -83,23 +83,29 @@ The kernel and the boot partition were not compared.
 
 So the running gateway already shows the boot, the AWS connection and the status port with the same scripts and configuration, and with `reset_lgw.sh` from the package, which answers the point of issue #12. What it does not show is that **this** image boots: its rebuilt kernel, BusyBox and `station` have not run.
 
-### Flashing the clean build: not done yet
+### A flashed card: the combined Sprint 3 image
 
-Nothing was flashed. The clean-build image is ready, and these are the steps and the checks.
+On 2026-11-21 a spare card was flashed with the image of the integration branch `claude/integration-sprint3-a7e8ee` (commit `7c7271d`): `main` with the branches of issues #9, #13, #15, #16 and #11 merged, built with `./build.sh` in a fresh clone of that branch, in an output directory of its own (`sdcard.img` SHA-256 `637c30ad…5682`). Its sources came from the download directory of the clean build of section 1; Buildroot checked every hash. It is not the clean build of section 1, which has not been booted: the combined image was booted instead, so that one flash also gave the first-boot checks of issues #13 and #15. Its kernel, BusyBox, `util_chip_id` and Basics Station are built from the same sources and configuration as the clean build.
 
-1. Put the Pi's microSD card in the PC's reader. In an elevated PowerShell in the repo, with the AWS CLI signed in:
+`scripts/flash-gateway.ps1 -DiskNumber 2 -Force` wrote the card and its provisioning secret (`RESULT ok`); the three `health.*` files of issue #13 and the four `tunnel.*` files of issue #15 were copied to the boot partition next to it. The card went into the Pi with Ethernet, and nothing was typed on the Pi. Log: [logs/issue9-combined-image-first-boot.log](logs/issue9-combined-image-first-boot.log).
 
-   ```powershell
-   .\scripts\flash-gateway.ps1 -List
-   .\scripts\flash-gateway.ps1 -DiskNumber <n> -Image <path to the clean build's sdcard.img>
-   ```
+| Check | Result |
+|---|---|
+| The image boots | Buildroot 2026.02.3, the 16 init scripts (with `S99tunnel` of issue #15). Six programs and scripts on the Pi have the same SHA-256 as inside the build's `rootfs.ext2`, so the card runs this build |
+| Port 9000 | Answered 19 s after power-on with `gwmon 2.1.0 ... watchdog=active station=unconfigured`, before provisioning, and later with `station=running ... uplinks=1 ... publish=ok` |
+| Zero-touch provisioning (issue #10) | `S35provision` installed the secret at 3 s; DHCP lease at 13.6 s, clock set at 19.6 s; `gateway-provision` asked the function and was `provisioned after 1 tries, uptime 25.18 s`; it restarted gwmon |
+| `util_chip_id` reads the EUI (the check that issue #12 moved here) | `station: gateway EUI 0016c001f1135844, starting when the clock is set`, 2 s after gwmon started Station, through `reset_lgw.sh` and `wm1302-reset.sh` from the `sx1302-hal` package |
+| Basics Station connected to AWS | `Connected to MUXS.` at 07:44:30.6 UTC, 27 s after the kernel started; `Concentrator started`, `Configuring for region: US915`. AWS: `Connected` |
+| An uplink reaches AWS | The test node was told to send one uplink over its USB serial port. Station: `RX 903.9MHz DR3 SF7/BW125 snr=13.0 rssi=-89 ... DevAddr=00BC32BD ... FCnt=8` at 07:47:14.1, and the acknowledgement 1 s later. gwmon: `uplinks=1`. AWS, `get-wireless-device-statistics`: `LastUplinkReceivedAt` 07:47:14.36, FPort 13, 903.9 MHz, gateway `0016c001f1135844` with SNR 13.0 and RSSI -89, the values of Station's log |
+| Health report (issue #13) | `health publish: first report sent` at 57 s uptime; AWS IoT holds the retained message on `aesd/gateway/0016c001f1135844/health`, sent at 07:44:57.9 |
+| Secure tunneling client (issue #15) | Started at 3 s, retried while there was no network, `MQTT connection established` and `Running Secure Tunneling!` at 07:44:36, 33 s after it started. No tunnel was opened |
 
-   The script must print `image SHA-256 dd5252d8…6a00`, `image written and read back` and `RESULT ok`.
-2. Put the card in the Pi, connect Ethernet, power it on. Type nothing.
-3. Within 2 minutes the gateway `gateway-0016c001f1135844` must show as Connected in AWS IoT Core for LoRaWAN. The Pi is already registered there from issue #10, so the provisioning function gives the same gateway record a new certificate.
-4. From a PC on the LAN, `nc <pi-address> 9000` must print one status line with `station=running`.
-5. Trigger an uplink from the test node. `uplinks` in the status line must go up, Station's log must have the `RX` line, and AWS must record the uplink with this gateway's EUI.
-6. On the Pi, `util_chip_id` must have printed the EUI (`grep 'gateway EUI' /var/log/messages`), which is the check that issue #12 moved here, and the SHA-256 of `/usr/bin/gwmon` and `/usr/bin/station` must equal those in the log summary, which shows that the card runs this build.
+Things to know about this result:
+
+- **The booted image is the combined image, not the clean build of `main`.** The clean build proves the one-script build from a fresh clone (section 1); this boot proves the image from such a build runs. The two images share every package of `main`; the combined one adds the issue #13 and #15 packages and scripts.
+- **The node was rebooted once by mistake.** The first time the PC opened the node's serial port, with DTR on, the node restarted. `scripts/demo/send-uplink.ps1` now keeps DTR and RTS off. The uplink above came from the second opening.
+- **`LORA_LINK_TEST` is not in the node's `HELP` list**, but the node accepted it (`LORA LINK_TEST_QUEUED`).
+- **The provisioning function replaced the gateway's certificate.** This EUI was already registered, so the function kept the gateway record and gave it a new certificate, as designed in issue #10. One new fingerprint is in the allow-list, now `used`.
 
 ## 3. Project Overview wiki page
 
@@ -144,7 +150,7 @@ The comments of issues #4 to #7, #10 and #12 named their commits by short hash, 
 
 ## Not done
 
-- **The clean-build image has not been booted**, and **no uplink was sent** (section 2). That is the open part of this issue's first definition-of-done box.
+- **The clean build of `main` was not booted.** The combined image of the integration branch was (section 2).
 - **The demo video is not recorded.** The wiki page has its outline.
 - **Four stretch-goal issues are open** (#11, #13, #14, #15), and the Project board was not edited.
 - **The in-class demo on Wi-Fi** is prepared, not tested: [demo-day.md](demo-day.md).

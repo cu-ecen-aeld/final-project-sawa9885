@@ -25,6 +25,9 @@ docs/demo-day.md for the commands, for example -Command BLUETOOTH_EXIT, LORA_LIN
 Send HELP first and print the node's command list, to check that the commands exist on the
 firmware that is on the node.
 
+.PARAMETER Dtr
+Turn DTR on when the port is opened. Off by default, because on the test node it resets the board.
+
 .PARAMETER Baud
 Default 115200.
 
@@ -54,7 +57,8 @@ param(
     [int]$Baud = 115200,
     [ValidateSet('CRLF', 'LF', 'CR')][string]$LineEnding = 'CRLF',
     [int]$PauseSeconds = 3,
-    [int]$Seconds = 15
+    [int]$Seconds = 15,
+    [switch]$Dtr
 )
 
 if ($List) {
@@ -69,7 +73,10 @@ if (-not $Port -or (-not $Command -and -not $Help)) {
 $eol = @{ CRLF = "`r`n"; LF = "`n"; CR = "`r" }[$LineEnding]
 $sp = New-Object System.IO.Ports.SerialPort $Port, $Baud, 'None', 8, 'One'
 $sp.ReadTimeout = 200
-$sp.DtrEnable = $true
+# DTR and RTS stay off: on the node's USB serial port, toggling them resets the board (seen on
+# 2026-11-21: opening the port with DTR on rebooted the node). -Dtr turns DTR on for other boards.
+$sp.DtrEnable = [bool]$Dtr
+$sp.RtsEnable = $false
 try {
     $sp.Open()
 } catch {

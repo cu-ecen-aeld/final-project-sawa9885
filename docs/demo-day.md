@@ -119,12 +119,12 @@ The test node (`aesd-test-node`, DevEUI `A0F262FFFE507C7C`) does not transmit on
 ```
 
 1. `-List` shows the serial ports; the node's is the one that appears when it is plugged in. Close any serial monitor first, since only one program can hold the port.
-2. `-Help` sends `HELP` and prints the node's command list. Check that `LORA_LINK_TEST` is in it.
+2. `-Help` sends `HELP` and prints the node's command list. `LORA_LINK_TEST` is **not** in it, but the node accepts it (2026-11-21).
 3. The last line sends the two commands in order, 3 s apart, and prints what the node answers for 15 s after the second.
 
 The serial console runs at 115200 baud and takes plain text lines, in any case, ended by CRLF or LF; the script sends CRLF. `BLUETOOTH_EXIT` answers `OK BLUETOOTH_EXIT_REQUESTED source=serial`, or `ERR BLUETOOTH_EXIT not_active` when the node was not in Bluetooth mode, which is harmless here.
 
-**Confirm on Nov 29: `LORA_LINK_TEST`.** The baud rate and `BLUETOOTH_EXIT` come from the node firmware's main branch, which is earlier BioSensor work, not course code. `LORA_LINK_TEST` is only in the development build on this node, according to notes from Nov 18, so it is not verified, and its reply is not known. If `HELP` does not list it, the command has another name on this node: give that name to `-Command` instead. Whatever the node answers, the uplink counts as sent only when it shows in Station's log and in AWS, below.
+**Tried on 2026-11-21.** `BLUETOOTH_EXIT` answered `ERR BLUETOOTH_EXIT not_active`, `LORA_LINK_TEST` answered `LORA LINK_TEST_QUEUED`, and 5 s later Station logged the node's uplink (FCnt 8, FPort 13) and sent the acknowledgement; AWS recorded it with this gateway's EUI ([logs/issue9-combined-image-first-boot.log](logs/issue9-combined-image-first-boot.log)). Two things learned: the script keeps DTR and RTS off, because opening the port with DTR on **reboots the node**; and from `powershell -File` the commands must be given as one comma-separated word (`BLUETOOTH_EXIT,LORA_LINK_TEST`), while in an interactive PowerShell the form above works. The uplink still counts as sent only when it shows in Station's log and in AWS, below.
 
 **Confirm the uplink**, within about 10 s:
 
@@ -133,7 +133,7 @@ The serial console runs at 115200 baud and takes plain text lines, in any case, 
 3. **AWS, from the laptop** (read-only):
 
    ```powershell
-   $id = aws iotwireless get-wireless-device --identifier A0F262FFFE507C7C --identifier-type DevEui --query Id --output text
+   $id = aws iotwireless get-wireless-device --identifier a0f262fffe507c7c --identifier-type DevEui --query Id --output text
    aws iotwireless get-wireless-device-statistics --wireless-device-id $id --query "[LastUplinkReceivedAt, LoRaWAN.Gateways]"
    ```
 
