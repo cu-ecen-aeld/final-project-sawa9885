@@ -1,7 +1,7 @@
 # Issue #15: remote shell through AWS IoT secure tunneling
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #15): ISSUE15_SESSION_LINK -->
+     Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ -->
 
 A support engineer opens a tunnel in AWS and gets an SSH session on one gateway, wherever it is,
 with no port open on the customer's network. The gateway only makes outbound TLS connections to

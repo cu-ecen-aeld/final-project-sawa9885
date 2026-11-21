@@ -17,7 +17,7 @@
 # uses them, so nothing from this package is installed on the target.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #15): ISSUE15_SESSION_LINK
+# Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ
 #
 ################################################################################
 

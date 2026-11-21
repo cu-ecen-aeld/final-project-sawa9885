@@ -26,7 +26,7 @@
 # Settings can be changed in /etc/default/tunnel, for example TUNNEL_LOG_LEVEL=DEBUG.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #15): ISSUE15_SESSION_LINK
+# Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ
 
 CLIENT=${TUNNEL_CLIENT:-/usr/bin/aws-iot-device-client}
 TUNNEL_DIR=${TUNNEL_DIR:-/etc/aws-iot-device-client}

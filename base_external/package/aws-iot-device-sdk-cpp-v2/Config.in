@@ -1,5 +1,5 @@
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #15): ISSUE15_SESSION_LINK
+# Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ
 config BR2_PACKAGE_AWS_IOT_DEVICE_SDK_CPP_V2
 	bool "aws-iot-device-sdk-cpp-v2"
 	depends on BR2_INSTALL_LIBSTDCPP
