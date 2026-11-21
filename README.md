@@ -34,7 +34,7 @@ The image starts from that release's `raspberrypi5_defconfig`. Two changes to it
 - **`bcm2712-d-rpi-5-b.dtb`.** The first Pi 5 boards have the C1 stepping of the BCM2712, and newer ones have the D0 stepping, which needs a device tree of its own. The stock defconfig builds `bcm2712-rpi-5-b.dtb`, `bcm2712d0-rpi-5-b.dtb` and `bcm2712-rpi-500.dtb`. The firmware on our board asks for the D0 device tree under the name `bcm2712-d-rpi-5-b.dtb`, which is not in that list. So it found no device tree and Linux never started: the root filesystem's mount count stayed 0. The same kernel booted from a Raspberry Pi OS card, which has that file. `BR2_LINUX_KERNEL_INTREE_DTS_NAME` in `aesd_pi5_defconfig` now adds `broadcom/bcm2712-d-rpi-5-b`, and `post-image.sh` copies every built `.dtb` to the boot partition, so the image has the device tree for either stepping.
 - **The firmware overlays.** `BR2_PACKAGE_RPI_FIRMWARE_INSTALL_DTB_OVERLAYS=y` puts the `overlays/` directory of the Raspberry Pi firmware on the boot partition; the stock defconfig leaves it out. It holds `overlay_map.dtb`, which the Pi 5 firmware reads to choose the overlay variant for the BCM2712, and the overlays that `dtoverlay=` lines in `config.txt` load. This was added in the same debugging session, right after the device tree, to give the firmware everything it looks for on a Raspberry Pi OS card. `config.txt` uses only `dtparam=` lines today, which the base device tree handles. The history has no boot test with the device tree but without the overlays, so they are part of the configuration that works, not a proven requirement.
 
-The commits are `206ef0e` (card layout), `d78c27d` (device tree) and `36a9f8e` (overlays).
+The commits are `206ef0e` (card layout), `d78c27d` (device tree) and `36a9f8e` (overlays). [docs/pi5-buildroot-bringup.md](docs/pi5-buildroot-bringup.md) is the bring-up guide for another Pi 5: each problem with its evidence, how to check a board's stepping and bootloader, and the changes to make to the stock defconfig (issue #16).
 
 ## Flash and first boot
 
@@ -266,3 +266,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #9 Clean-build check, final docs and demo video outline | ISSUE9_SESSION_LINK |
 | #13 Gateway health reports to AWS IoT Core | ISSUE13_SESSION_LINK |
 | #15 Remote shell through AWS IoT secure tunneling | ISSUE15_SESSION_LINK |
+| #16 Bring-up guide: Buildroot on a current Raspberry Pi 5 | ISSUE16_SESSION_LINK |
