@@ -16,7 +16,7 @@ The delivery into the SoilData API was not done. The only SoilData forwarder is 
 | 3 | Reading in the SoilData dashboard within one transmit interval, screenshot | Not done, same reason |
 | 4 | Station log shows the uplink and `dntxed`, node reports the reading delivered | Not done for a SoilData reading. The uplink and `dntxed` through this gateway are shown in [issue4-basicstation-aws.md](issue4-basicstation-aws.md) and in the issue #9 check |
 | 5 | AWS uplink metadata lists this gateway's EUI | Not done for a SoilData reading; shown for the issue #4 uplink |
-| 6 | No keys or secrets in the repo or committed logs | **Pass.** `git grep -l "BEGIN .*PRIVATE KEY"` returns nothing (exit 1); the two new logs were read by eye and hold no 32-hex-digit value |
+| 6 | No keys or secrets in the repo or committed logs | **Pass.** `git grep -l` for the PEM private-key marker finds nothing; the two new logs were read by eye and hold no 32-hex-digit value |
 | 7 | Project Overview lists the SoilData API, forwarder and firmware as shared material | Not done: the sentence to add is at the end of this page |
 
 ### The real AWS run
@@ -95,7 +95,7 @@ About 45 minutes if the test node's keys are at hand and the test company exists
 Before each commit:
 
 ```
-git grep -l "BEGIN .*PRIVATE KEY"            # must print nothing
+git grep -l "BEGIN"".*PRIVATE KEY"          # the issue's check, quoted in two parts so this page does not match it; must print nothing
 git grep -n -i -E "appkey|nwkkey|webhook|api[_-]?key|secret" -- docs/logs
 ```
 
