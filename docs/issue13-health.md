@@ -142,12 +142,20 @@ The full image of this branch was built afterwards (`sdcard.img` SHA-256 `baa9be
 - The watchdog was fed throughout: `wd_feeds` 14344 at 06:36:26 and 14650 at 06:46:38, 306 feeds in 612 s. No reset, Station not restarted.
 - The same report appeared in the AWS IoT MQTT test client, subscribed to `aesd/gateway/+/health`, at 23:48:50 MST: [issue13-mqtt-test-client.png](issue13-mqtt-test-client.png) (cropped to the message panel).
 
+### First boot of a freshly flashed card (2026-11-21)
+
+[issue13-first-boot.log](logs/issue13-first-boot.log). The issue #9 session flashed a spare card with the combined Sprint 3 image (`main` plus the branches of issues #9, #11, #13, #15 and #16), copied `health.endpoint`, `health.crt` and `health.key` to its boot partition, and booted the Pi with nothing typed. Checked read-only over SSH:
+
+- `S35provision` installed `/etc/gwmon-health/{endpoint,crt,key}` 3 s after boot (0600, directory 0700) and no `health.*` file is left on the boot partition.
+- `gwmon`, `gwmon-publish.sh`, `mosquitto_pub` and `S99gwmon` have the same SHA-256 as in this branch's own image build; no broker is installed.
+- `health publish: first report sent` 55 s after boot; the retained message in AWS IoT Core is a report from this boot (07:54:57 UTC, `uptime_s` 655, `publish_fails` 0, `uplinks` 1).
+
 ## Definition of done
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Every 5 minutes (a setting) one JSON message on `aesd/gateway/<EUI>/health` with the status fields | **Pass.** Default 300 s, `GWMON_PUBLISH_INTERVAL` / `-I`. Messages from the Pi read back from AWS IoT Core. |
-| 2 | Own certificate, provisioned from the boot partition by `S35provision`, not in the repo | **Pass, with one gap:** own thing, policy and certificate; `S35provision` installs them, tested by hand on the Pi against a copy of the boot files, not at a real boot. Nothing secret in the repo. |
+| 2 | Own certificate, provisioned from the boot partition by `S35provision`, not in the repo | **Pass:** own thing, policy and certificate. At the first boot of a freshly flashed card `S35provision` installed them from the boot partition (0600, directory 0700) and removed the copies; the first report went out 55 s after boot. [issue13-first-boot.log](logs/issue13-first-boot.log). Nothing secret in the repo. |
 | 3 | The message in the AWS IoT MQTT test client, screenshot in `docs/` | **Pass:** [issue13-mqtt-test-client.png](issue13-mqtt-test-client.png), subscription `aesd/gateway/+/health`, the first report after the cable pull (23:48:50 MST). Cropped to the message: no account, user or endpoint. |
 | 4 | A failed or hung publish never delays the watchdog feed; with the network down, one syslog line | **Pass:** host tests (hang: longest feed gap 1.01 s vs 1.00 s) and the Pi outage (one line, feed age never above 1 s). |
 | 5 | After 10 minutes without Ethernet, publishing resumes within one interval | **Pass:** cable pulled by Sam, link down 9 min 48 s (kernel times); publishing worked 2 min 28 s after link up (interval 5 min). One `failed` line, one `works again` line, watchdog fed every 2 s. [issue13-cable-pull.log](logs/issue13-cable-pull.log). An earlier simulated run (route removed for 9 min 40 s) gave the same result. |

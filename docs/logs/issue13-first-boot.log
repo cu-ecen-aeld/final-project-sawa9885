@@ -1,0 +1,36 @@
+# Issue #13: real-boot check of S35provision and the image's publisher, 2026-11-21 07:57 UTC, read-only over SSH.
+# Card freshly flashed by the issue #9 session with the combined Sprint 3 image (integration branch
+# claude/integration-sprint3-a7e8ee at 7c7271d, sdcard.img SHA-256 637c30ad...5682), with
+# health.endpoint, health.crt and health.key copied to the boot partition. Nothing typed on the Pi.
+# The image's issue #13 sources equal this branch's apart from comments, the session link and the
+# order of the #13 and #15 blocks in S35provision. The Pi was not changed or rebooted by this check.
+
+now 2026-11-21T07:57:19Z, uptime 797.02 s, booted 2026-11-21T07:44:02Z
+--- S35provision lines at this boot
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/endpoint
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/crt
+Nov 21 07:44:05 aesd-pi5 user.notice provision: installed /etc/gwmon-health/key
+--- files (mode, owner, size, name)
+drwx------ root 1024 .
+drwxr-xr-x root 1024 ..
+-rw------- root 1240 crt
+-rw------- root 47 endpoint
+-rw------- root 1706 key
+--- health.* on the boot partition: 0
+--- binaries (SHA-256, first 16): the same as in this branch's own image build (docs/issue13-health.md)
+a1669763fcd7dfb7  /usr/bin/gwmon
+52c36bf6f9cc7526  /usr/bin/gwmon-publish.sh
+0e8536b9e11f3f8b  /usr/bin/mosquitto_pub
+5568ff73dada050d  /etc/init.d/S99gwmon
+ba81df70a93e69bf  /etc/init.d/S35provision
+gwmon 2.1.0
+ls: /usr/sbin/mosquitto: No such file or directory
+--- gwmon (pid 455: gateway-provision restarted gwmon after provisioning Station, as designed in issue #10)
+  455 root     /usr/bin/gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1 -P /usr/bin/gwmon-publish.sh -I 300 -O 30
+Nov 21 07:44:05 aesd-pi5 daemon.info gwmon[320]: health report every 300 s through /usr/bin/gwmon-publish.sh (timeout 30 s)
+Nov 21 07:44:27 aesd-pi5 daemon.info gwmon[455]: health report every 300 s through /usr/bin/gwmon-publish.sh (timeout 30 s)
+Nov 21 07:44:57 aesd-pi5 daemon.info gwmon[455]: health publish: first report sent, next every 300 s
+
+# aws iot-data get-retained-message --topic aesd/gateway/0016c001f1135844/health (payload decoded)
+{"gwmon_version":"2.1.0","time":1795247697,"uptime_s":655,"daemon_uptime_s":630,"watchdog":"active","wd_timeout_s":10,"wd_feeds":316,"wd_last_feed_age_s":0,"station":"running","station_uptime_s":630,"station_restarts":0,"station_fails":0,"uplinks":1,"last_uplink_age_s":462,"temp_c":26.9,"publishes":2,"publish_fails":0}
+qos 1 lastModified 2026-11-21T07:54:57.912000Z  (report time 2026-11-21T07:54:57Z, after the boot at 07:44:02Z)
