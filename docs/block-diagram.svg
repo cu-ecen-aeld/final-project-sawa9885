@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 620" font-family="Segoe UI, Helvetica, Arial, sans-serif">
   <!-- This file was partially generated using Claude Code using the chat session at:
-       Link to chat session (issue #9): ISSUE9_SESSION_LINK -->
+       Link to chat session (issue #9): https://claude.ai/code/cshk_01CSAPnzsPKVdxh1B9DwcKyTH5somisBTRS2fF3ChsBWUS -->
   <title>Pi 5 LoRaWAN gateway: hardware and connectivity</title>
   <defs>
     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">

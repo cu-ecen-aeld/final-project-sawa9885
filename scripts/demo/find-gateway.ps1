@@ -25,7 +25,7 @@ How long to wait for each address. Default 400 ms; all addresses are tried at on
 .\scripts\demo\find-gateway.ps1 -Subnet 192.168.137
 
 This script was partially generated using Claude Code using the chat session at:
-Link to chat session (issue #9): ISSUE9_SESSION_LINK
+Link to chat session (issue #9): https://claude.ai/code/cshk_01CSAPnzsPKVdxh1B9DwcKyTH5somisBTRS2fF3ChsBWUS
 #>
 param(
     [string]$Subnet,

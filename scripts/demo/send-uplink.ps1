@@ -47,7 +47,7 @@ confirmed uplink and its acknowledgement in the first receive window.
 .\scripts\demo\send-uplink.ps1 -Port COM5 -Command BLUETOOTH_EXIT, LORA_LINK_TEST
 
 This script was partially generated using Claude Code using the chat session at:
-Link to chat session (issue #9): ISSUE9_SESSION_LINK
+Link to chat session (issue #9): https://claude.ai/code/cshk_01CSAPnzsPKVdxh1B9DwcKyTH5somisBTRS2fF3ChsBWUS
 #>
 param(
     [switch]$List,

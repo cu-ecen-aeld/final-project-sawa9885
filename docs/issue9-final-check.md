@@ -3,7 +3,7 @@
 The last issue of Sprint 3: build the image from a fresh clone and check it, bring the wiki up to date with what was built, and check that every issue is closed with its evidence.
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #9): ISSUE9_SESSION_LINK -->
+     Link to chat session (issue #9): https://claude.ai/code/cshk_01CSAPnzsPKVdxh1B9DwcKyTH5somisBTRS2fF3ChsBWUS -->
 
 | Definition of done (issue #9) | Result |
 |---|---|

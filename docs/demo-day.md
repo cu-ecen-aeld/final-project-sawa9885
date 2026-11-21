@@ -3,7 +3,7 @@
 For the in-class demo on Dec 2. There the gateway has no Ethernet: the Pi joins a phone hotspot over Wi-Fi, and the laptop joins the same hotspot for port 9000, SSH and the AWS console. The test node hangs off the laptop's USB port.
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #9): ISSUE9_SESSION_LINK -->
+     Link to chat session (issue #9): https://claude.ai/code/cshk_01CSAPnzsPKVdxh1B9DwcKyTH5somisBTRS2fF3ChsBWUS -->
 
 **What has been tested on Wi-Fi, and what has not.** Wi-Fi itself works on this Pi 5 with this image's Wi-Fi setup: issue #1 got a lease and pinged out over `wlan0` only, and issue #5 showed `wlan0` associated at 2412 MHz with a lease and the clock set. Both were a home router, not a phone hotspot, and both were before Basics Station, gwmon v2 and zero-touch provisioning. Every test since issue #4 ran on Ethernet with no Wi-Fi file. So **a Wi-Fi-only gateway with Station connected to AWS has never run.** Everything in sections 2 and 3 below comes from reading the code, not from a test. The rehearsal of section 1 is the test.
 
