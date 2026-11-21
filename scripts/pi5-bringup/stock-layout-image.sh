@@ -8,7 +8,7 @@
 # Writes <out-dir>/sdcard-stock-layout.img.
 #
 # This script was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #16): ISSUE16_SESSION_LINK
+# Link to chat session (issue #16): https://claude.ai/code/cshk_01CSAPnxDBboMaxHaJjdAn7c8T4sFdVoroq8wMccpHTtHo
 
 set -euo pipefail
 
