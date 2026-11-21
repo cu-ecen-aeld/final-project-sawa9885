@@ -26,7 +26,7 @@
 # Exit status: 0 all passed, 1 at least one failed.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+# Link to chat session (issue #14): https://claude.ai/code/cshk_01CSAPnw8JdnxyUhwWGJBPcSLfcF3QEhzhBNyWzKEnnQbG
 
 PI=${1:?usage: $0 <pi-address> [count] [known_hosts]}
 COUNT=${2:-10}

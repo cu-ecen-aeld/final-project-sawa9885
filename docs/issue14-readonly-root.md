@@ -1,7 +1,7 @@
 # Issue #14: read-only root filesystem with a writable data partition
 
 <!-- This file was partially generated using Claude Code using the chat session at:
-     Link to chat session (issue #14): ISSUE14_SESSION_LINK -->
+     Link to chat session (issue #14): https://claude.ai/code/cshk_01CSAPnw8JdnxyUhwWGJBPcSLfcF3QEhzhBNyWzKEnnQbG -->
 
 A gateway in the field loses power without warning. With a read-write ext4 root, a cut at the wrong moment can corrupt the card. Since this issue the root filesystem is never written: everything that has to persist is on a small third partition, and everything else is in RAM.
 

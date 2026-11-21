@@ -25,7 +25,7 @@
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #4): https://claude.ai/code/cshk_01CSAPnz8sDPokK7N8rieHo1BXzy3XPsziDucST29D43Kh
 # Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
-# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+# Link to chat session (issue #14): https://claude.ai/code/cshk_01CSAPnw8JdnxyUhwWGJBPcSLfcF3QEhzhBNyWzKEnnQbG
 #
 ################################################################################
 

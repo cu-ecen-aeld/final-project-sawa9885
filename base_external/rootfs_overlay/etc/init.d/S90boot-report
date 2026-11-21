@@ -5,7 +5,7 @@
 # Station has connected, or after 10 minutes (issue #14).
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #14): ISSUE14_SESSION_LINK
+# Link to chat session (issue #14): https://claude.ai/code/cshk_01CSAPnw8JdnxyUhwWGJBPcSLfcF3QEhzhBNyWzKEnnQbG
 
 case "$1" in
 	start)
