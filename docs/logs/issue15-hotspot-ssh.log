@@ -1,0 +1,33 @@
+# Issue #15, box 3: SSH through an AWS IoT secure tunnel from another network, 2026-11-21 (UTC)
+#
+# The PC was on Sam's phone hotspot; the gateway stayed on the home LAN. The first two lines
+# check that the gateway's LAN address does not answer from the PC. Source end: localproxy
+# v3.3.1 with --destination-client-type V1. Host key checked against the gateway's own key.
+# Tokens, account number, endpoint and addresses are not in this file. One tunnel, $1.00.
+
+gateway not reachable directly: off the home LAN
+internet: HTTP 200
+open 2026-11-21T06:27:38Z
+Running AWS IoT Secure Tunneling Local Proxy version: v3.3.1+8a71618
+[2026-11-20 23:27:46.798866] [info] setting source protocol to V1
+[2026-11-20 23:27:46.800049] [info] Starting proxy in source mode
+[2026-11-20 23:27:47.585326] [info] Web socket session ID: (removed)
+[2026-11-20 23:27:47.587134] [info] Updated port mapping for v1 format: 
+[2026-11-20 23:27:47.587155] [info] SSH = 5555
+[2026-11-20 23:27:47.587161] [info] calling setup from loop
+[2026-11-20 23:27:47.587265] [info] Listening for new connection on port 5555
+OPEN	CONNECTED	CONNECTED
+--- ssh with the issue #1 key, through the tunnel (localhost:5555)
+aesd-pi5
+Sat Nov 21 06:27:57 UTC 2026
+tcp        0      0 127.0.0.1:60346         127.0.0.1:22            ESTABLISHED 
+tcp        0      0 127.0.0.1:22            127.0.0.1:60346         ESTABLISHED 
+Nov 21 06:27:56 aesd-pi5 authpriv.info dropbear[5049]: Child connection from 127.0.0.1:60346
+Nov 21 06:27:57 aesd-pi5 authpriv.notice dropbear[5049]: Pubkey auth succeeded for 'root' with ssh-ed25519 key
+--- ssh with no key
+root@localhost: Permission denied (publickey).
+--- ssh with another key
+root@localhost: Permission denied (publickey).
+--- close
+CLOSED
+closed 2026-11-21T06:28:09Z
