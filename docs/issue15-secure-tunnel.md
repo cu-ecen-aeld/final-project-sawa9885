@@ -115,6 +115,87 @@ gateway can reach on that network, and can stop Station, change credentials or b
 Open a tunnel only with the customer's agreement, close it when done
 (`aws iotsecuretunneling close-tunnel`), and keep the list of IAM identities above short.
 
+## Open a session (support engineer)
+
+On a PC with the AWS CLI signed in to the account and the gateway's SSH key from issue #1, and
+AWS's `localproxy` v3.3.1 built (see below):
+
+```bash
+THING=gateway-0016c001f1135844-tunnel
+# 1. Open the tunnel ($1.00). AWS sends the destination token to the gateway by MQTT.
+aws iotsecuretunneling open-tunnel \
+    --destination-config thingName=$THING,services=SSH \
+    --timeout-config maxLifetimeTimeoutMinutes=30 > tunnel.json
+# 2. Start the source end on this PC: it listens on localhost:5555.
+#    Keep the token out of the command line: localproxy reads it from AWSIOT_TUNNEL_ACCESS_TOKEN.
+export AWSIOT_TUNNEL_ACCESS_TOKEN=$(jq -r .sourceAccessToken tunnel.json)
+localproxy -r us-east-1 -s 5555 &
+# 3. SSH through it. Only the issue #1 key is accepted.
+ssh -i ~/.ssh/aesd_pi5_ed25519 -p 5555 root@localhost
+# 4. Close it when done, and delete the token file.
+aws iotsecuretunneling close-tunnel --tunnel-id $(jq -r .tunnelId tunnel.json)
+rm tunnel.json
+```
+
+The AWS IoT console can do the same from a browser: *Remote operations, Secure tunnels, Create
+tunnel*, quick setup, service SSH, the thing above.
+
+Building `localproxy` on Ubuntu (WSL): it needs the OpenSSL and zlib headers
+(`sudo apt install libssl-dev zlib1g-dev`) and CMake 3.31 or newer with HTTPS (Kitware's release
+tarball works; Buildroot's host CMake has no HTTPS). Then
+`cmake -S . -B build -DLOCALPROXY_DEP_MODE=fetch -DBUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build build -j`
+in a clone of tag v3.3.1: it downloads and checks its own Boost and protobuf.
+
 ## Results
 
-To be completed.
+| DoD box | Result | Evidence |
+|---|---|---|
+| 1. Package, pinned release, tunneling only, init script | Pass | [logs/issue15-build.log](logs/issue15-build.log): only `tunneling/` and the core are compiled; `S99tunnel` and the client are in the image (`sdcard.img` `5b29989d…11a0`, not flashed yet) |
+| 2. Own thing and certificate, from the boot partition by `S35provision`, nothing secret in the repo, minimal policy | Pass, except a cold boot | AWS: thing, certificate and `aesd-tunnel-policy` created 2026-11-21. [logs/issue15-s35provision.log](logs/issue15-s35provision.log): host test 23/23, and the script run on the Pi from `/tmp` against fake boot files. The client connected with that policy. A boot of the new image with real `tunnel.*` files on the card waits for the reflash |
+| 3. SSH through a tunnel from another network | Not done | `localproxy` did not build tonight (see below). Waits for Sam |
+| 4. No new inbound port | Pass | [logs/issue15-netstat.log](logs/issue15-netstat.log): with the client connected, the listening sockets are the same as before (22, 9000, chrony on localhost). The client only has an outbound connection to port 443 |
+| 5. Client crash or AWS unreachable: Station and gwmon unaffected, client comes back | Pass | [logs/issue15-crash-outage.log](logs/issue15-crash-outage.log) |
+| 6. Who, cost, root shell | Pass | the sections above |
+
+Tests on the Pi ran with the client and its files in `/tmp` (lost at the next reboot), started by
+hand with `tunnel-run.sh`, on the card that issue #10 flashed. Nothing outside `/tmp` was changed.
+The outage was made with a blackhole route for the IoT endpoint's address only, removed by the
+same script after the set time.
+
+What the tests showed:
+
+- `kill -9` of the client: `tunnel-run.sh` starts it again 5 s later and it reconnects within 1 s.
+  Station keeps its PID, gwmon's `station_restarts` stays 0, the watchdog stays active.
+- The client's MQTT keep-alive is the SDK default, 1200 s. An outage shorter than that goes
+  unnoticed: the connection carries on afterwards. A longer one is seen at the next keep-alive,
+  and the client reconnects by itself (15 s to 240 s between attempts). So for up to about 20 min
+  after a network outage a tunnel notification can be missed; opening the tunnel again then
+  works.
+
+### Problems found on the way
+
+- The device client's build clones the SDK during configure, edits `~/.gitconfig`, uses `-Werror`,
+  links OpenSSL statically, always builds its googletest tests, links the static SDK in an order
+  that does not resolve, and prints an empty version without git. The patch in the package fixes
+  each (its commit message lists them).
+- CMake 4 refuses the SDK's `cmake_minimum_required(3.1)`: `CMAKE_POLICY_VERSION_MINIMUM=3.5`.
+- An `endpoint` file written by the Windows AWS CLI ends in CR LF, which the client passed to DNS
+  ("Host name was invalid"). `S35provision` already strips CR from text files; `tunnel-run.sh`
+  now does too.
+- `localproxy` for the support PC: this PC's WSL has no system CMake, Buildroot's host CMake has
+  no HTTPS for its downloads, and the OpenSSL development headers are missing. Three attempts,
+  three different causes; stopped there.
+
+## For Sam on Nov 29 (box 3)
+
+1. Let the issue #15 session install the headers in WSL (`sudo apt install libssl-dev zlib1g-dev`)
+   and build `localproxy` (about 15 min), or build it yourself as above.
+2. Connect this PC to the phone hotspot (not the home LAN). Check: `ping 192.168.0.103` must fail.
+3. Run "Open a session" above. Expected: the dropbear banner, a root prompt on `aesd-pi5`.
+   Also try `ssh -p 5555 root@localhost` **without** the key: it must be refused.
+4. Copy the terminal output into `docs/logs/issue15-hotspot-ssh.log` (no token, no endpoint),
+   then `close-tunnel`.
+5. With the new image flashed: put the four `tunnel.*` files from
+   `%USERPROFILE%\aesd-secrets\issue15-tunnel\` on the boot partition (`thing`, `endpoint`,
+   `cert.pem`, `key.pem` renamed to `tunnel.thing` and so on), boot, and check
+   `logread`/`/var/log/messages` for `tunnel: ... Running Secure Tunneling!`.

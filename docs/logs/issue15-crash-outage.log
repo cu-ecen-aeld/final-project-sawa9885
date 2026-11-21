@@ -1,0 +1,18 @@
+# Issue #15, DoD box 5: the tunnel client is killed; Station and gwmon carry on, the client comes back by itself
+# port 9000 before:
+daemon_uptime=17532s watchdog=active station=running station_pid=2433 station_restarts=0 station_fails=0 
+# $ (on the Pi) date -u; pidof aws-iot-device-client; killall -9 aws-iot-device-client
+Sat Nov 21 03:30:33 UTC 2026
+3890
+1 s later: client pid: 
+Sat Nov 21 03:30:46 UTC 2026
+13 s later: client pid: 3927
+# syslog, tag tunnel:
+Nov 21 03:29:065 user.notice tunnel: 2026-11-21T03:29:06.381Z [INFO]  {SecureTunnelingFeature.cpp}: Running Secure Tunneling!
+Nov 21 03:30:335 user.notice tunnel: client exited after 88 s, starting it again in 5 s
+Nov 21 03:30:385 user.notice tunnel: starting /tmp/aws-iot-device-client for thing gateway-0016c001f1135844-tunnel
+Nov 21 03:30:395 user.notice tunnel: 2026-11-21T03:30:39.141Z [INFO]  {SharedCrtResourceManager.cpp}: MQTT connection established with return code: 0
+Nov 21 03:30:395 user.notice tunnel: 2026-11-21T03:30:39.141Z [INFO]  {SecureTunnelingFeature.cpp}: Running Secure Tunneling!
+# port 9000 after:
+daemon_uptime=17545s watchdog=active station=running station_pid=2433 station_restarts=0 station_fails=0 
+# station and gwmon PIDs: 2433 2431

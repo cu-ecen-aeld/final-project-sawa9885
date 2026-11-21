@@ -1,0 +1,25 @@
+# Issue #15: listening sockets on the gateway BEFORE the tunnel client (image of 6c2014d, no client installed)
+# $ (on the Pi) date -u; netstat -tlnu
+Fri Nov 20 21:52:21 UTC 2026
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      
+tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      
+tcp        0      0 :::22                   :::*                    LISTEN      
+udp        0      0 127.0.0.1:323           0.0.0.0:*                           
+udp        0      0 ::1:323                 :::*                                
+
+# AFTER: aws-iot-device-client running from /tmp, MQTT connected, no tunnel open
+# $ (on the Pi) date -u; pidof aws-iot-device-client; netstat -tlnu; netstat -tn | grep ESTABLISHED
+Sat Nov 21 03:29:30 UTC 2026
+3890
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      
+tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      
+tcp        0      0 :::22                   :::*                    LISTEN      
+udp        0      0 127.0.0.1:323           0.0.0.0:*                           
+udp        0      0 ::1:323                 :::*                                
+tcp        0      0 192.168.0.103:55860     <aws-iot-endpoint>:443      ESTABLISHED 
+tcp        0    608 <pi>:22 <lan-pc>:53064     ESTABLISHED 
+tcp        0      0 192.168.0.103:53728     <aws-iot-endpoint>:443        ESTABLISHED 

@@ -50,8 +50,9 @@ for f in cert.pem key.pem endpoint thing; do
 		exit $EXIT_NOT_CONFIGURED
 	fi
 done
-ENDPOINT=$(head -n 1 "$TUNNEL_DIR/endpoint")
-THING=$(head -n 1 "$TUNNEL_DIR/thing")
+# tr: files written on Windows end in CR LF.
+ENDPOINT=$(head -n 1 "$TUNNEL_DIR/endpoint" | tr -d '\r ')
+THING=$(head -n 1 "$TUNNEL_DIR/thing" | tr -d '\r ')
 
 # The client expands "~" for its default paths and keeps a lock file (one client per thing).
 export HOME="${HOME:-/root}"
