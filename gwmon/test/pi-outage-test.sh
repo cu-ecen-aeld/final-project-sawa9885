@@ -15,7 +15,7 @@
 # outage-test. The image has no nc, so gwmon's status is logged from the PC meanwhile.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 SECONDS_OFF=${1:-600}
 LOG=/tmp/pi-outage-test.log

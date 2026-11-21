@@ -23,7 +23,7 @@
 # The script prints names only: no key, no certificate, no account number and no endpoint.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 set -euo pipefail
 

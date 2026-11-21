@@ -29,7 +29,7 @@
 # The GWMON_HEALTH_* variables are for the host test and for trying a build from /tmp.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 HEALTH_DIR=${GWMON_HEALTH_DIR:-/etc/gwmon-health}
 EUI_FILE=${GWMON_HEALTH_EUI_FILE:-/var/run/station.eui}

@@ -28,7 +28,7 @@
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
 # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
 # Link to chat session (issue #15): https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ
-# Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 # PROVISION_BOOT is for testing the script against a copy of the boot files.
 BOOT=${PROVISION_BOOT:-/boot}

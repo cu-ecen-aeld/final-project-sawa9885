@@ -266,6 +266,6 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #10 Zero-touch gateway provisioning | https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr |
 | #12 Reset script in the sx1302-hal package, boot order and Buildroot version | https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o |
 | #11 Sensor readings reach the SoilData API (node registration script, Station log helper) | https://claude.ai/code/cshk_01CSAPnvLCUHW6djnp5K19mA6Jjr4s6zEaqsQpq9xFyAZz |
-| #13 Gateway health reports to AWS IoT Core | ISSUE13_SESSION_LINK |
+| #13 Gateway health reports to AWS IoT Core | https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW |
 | #15 Remote shell through AWS IoT secure tunneling | https://claude.ai/code/cshk_01CSAPnxBTBTRh5jk4ugaU6pVi3LQF38pioZ4gsNNQDvGQ |
 | #16 Bring-up guide: Buildroot on a current Raspberry Pi 5 | https://claude.ai/code/cshk_01CSAPnxDBboMaxHaJjdAn7c8T4sFdVoroq8wMccpHTtHo |

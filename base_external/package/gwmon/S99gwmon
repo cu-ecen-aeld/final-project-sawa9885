@@ -27,7 +27,7 @@
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
 # Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
-# Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 NAME=gwmon
 DAEMON=/usr/bin/gwmon

@@ -3,7 +3,7 @@
 gwmon's status line (TCP 9000, issue #7) only answers on the gateway's LAN. Since gwmon 2.1.0 the same report also goes to AWS IoT Core every 5 minutes, as one JSON message on `aesd/gateway/<gateway EUI>/health`.
 
 This document was partially generated using Claude Code using the chat session at:
-Link to chat session (issue #13): ISSUE13_SESSION_LINK
+Link to chat session (issue #13): https://claude.ai/code/cshk_01CSAPnymCy5ytzpd5YbDkk7GDXruVUH4TTxff71FBWGSW
 
 ## Design
 
