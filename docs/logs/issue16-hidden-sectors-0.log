@@ -9,3 +9,4 @@ Last mount time: 1970-01-01 00:00:00Z
 Last write time: 2026-11-20 21:12:34Z
 State: 1
 ## result: REPRODUCED. Linux never mounted the rootfs (mount count 0, never mounted). The only difference from the step 1 card, which booted, is the FAT hidden-sectors field.
+## status LED (Sam, by eye): a slow repeating cycle of a solid green pulse then a solid red pulse.

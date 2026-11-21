@@ -28,3 +28,4 @@ bcm2712d0 compatibles: 2 (0 = bcm2712-d-rpi-5-b.dtb, 2 = bcm2712d0-rpi-5-b.dtb)
 == kernel log mentions of overlays
 ## result: boots without overlays/ (no overlay_map.dtb): rootfs mounted, gwmon up, SPI and I2C devices present.
 ## note: bcm2712-d-rpi-5-b.dtb was on the card for this boot, yet the firmware loaded bcm2712d0-rpi-5-b.dtb (2 bcm2712d0 compatibles). So this board's firmware asks for bcm2712d0-rpi-5-b.dtb, which the stock defconfig already installs.
+## status LED (Sam, by eye): solid green at power-on, then after a few seconds flashing green (the same on every boot that worked).

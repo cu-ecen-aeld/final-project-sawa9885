@@ -32,7 +32,7 @@ This corrects the record. `206ef0e`'s message calls the layout the fix, and issu
 
 ## 1. The FAT boot sector and the card layout (the fix)
 
-**Symptom.** Linux never started. The root filesystem's mount count stayed 0, so the kernel never mounted it, and even an initramfs build never ran userspace (commit messages of `206ef0e` and `d78c27d`, issue #1). The same kernel, DTBs and `config.txt` booted when started via `tryboot` from a Raspberry Pi OS card. Reproduced on 2026-11-21 (steps 4 and 5 below): no answer on the network within 100 s, where a good card answers in about 20 s, and mount count 0 read on the PC afterwards. We had no HDMI screen or UART adapter, so what the screen and the bootloader's serial log show was not captured, and so we cannot say whether the firmware failed to load the kernel or the kernel failed later.
+**Symptom.** Linux never started. The root filesystem's mount count stayed 0, so the kernel never mounted it, and even an initramfs build never ran userspace (commit messages of `206ef0e` and `d78c27d`, issue #1). The same kernel, DTBs and `config.txt` booted when started via `tryboot` from a Raspberry Pi OS card. Reproduced on 2026-11-21 (steps 4 and 5 below): no answer on the network within 100 s, where a good card answers in about 20 s, and mount count 0 read on the PC afterwards. The status LED shows the difference: a good boot is solid green at power-on, then flashing green after a few seconds; a failed boot repeats a slow cycle of a solid green pulse and a solid red pulse. The work was headless (no HDMI screen, no UART adapter), so the bootloader's screen and serial log were not captured. Without them we cannot say whether the firmware failed to load the kernel or the kernel failed later, and we did not match the LED cycle to an entry in Raspberry Pi's LED warning-code table.
 
 **Cause.** A FAT boot sector has a "hidden sectors" field (offset 0x1C): the number of sectors on the disk before the partition. `mkfs.fat` fills it in when it formats a real partition. genimage builds `boot.vfat` as a separate file and copies it into the card image afterwards, so `mkfs.fat` writes 0. The card's own partition table says where the partition is; only the boot sector is wrong.
 
@@ -150,7 +150,7 @@ Done at the bench in about 35 minutes, with no Buildroot rebuild, on a spare mic
 | 4 | Stock layout (`scripts/pi5-bringup/stock-layout-image.sh`, same files) | **No boot**; mount count 0, never mounted | [issue16-stock-layout.log](logs/issue16-stock-layout.log) |
 | 5 | Issue #9 clean image with only the FAT hidden-sectors field set to 0 | **No boot**; mount count 0, never mounted | [issue16-hidden-sectors-0.log](logs/issue16-hidden-sectors-0.log) |
 
-Step 1 is the "fix back in" boot for steps 4 and 5: the same files on the fixed layout. The status LED pattern was not recorded.
+Step 1 is the "fix back in" boot for steps 4 and 5: the same files on the fixed layout. Status LED, observed by eye: steps 1 to 3 solid green, then flashing green after a few seconds; steps 4 and 5 a slow repeating green pulse, red pulse.
 
 ### Doing it again
 
