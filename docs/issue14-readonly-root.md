@@ -98,18 +98,26 @@ Checked offline with the build's own `fdisk`, `debugfs`, `dumpe2fs`, `e2fsck -n`
 
 This cannot be tested on the live card: the layout changes, so the card has to be flashed. **The current card is the known-good demo card. Use a second microSD card** if you have one, and keep the demo card as it is until the tests below pass.
 
-### 1. Flash
+### 1. Flash the spare card (about 10 minutes)
 
-Image: `\wsl.localhost\Ubuntu\home\sammy\aesd\issue14-tree\buildroot\output\images\sdcard.img`, built from `b3d3db8`, SHA-256 `484f550a…f55f` (full value under "Build and image checks"). If the image is rebuilt (for example after the session link goes into the header comments), use the new one and note its SHA-256 here.
+Keep the original card as it is: it is the fallback for the demo. **Do not use the normal zero-touch flash for this test.** The Pi's EUI is already registered, and for a registered EUI the provisioning function creates a new certificate and revokes the old one (`docs/issue10-provisioning.md`, "An EUI that is already registered"). The original card would then stop connecting until it is flashed again. Instead, the spare card gets a copy of the original card's Station credentials, so no request is made and nothing in AWS changes.
 
-In an elevated PowerShell in the repo (as in the README, "Flash and first boot"):
+1. With the **original** card in the Pi, booted and on the LAN, put the **spare** card in the PC.
+2. Elevated PowerShell in the repo. The allow-list goes to a local file and the address is a dummy, so this makes no AWS call; the secret it writes is never used, because the card will already have credentials:
 
-```powershell
-.\scripts\flash-gateway.ps1 -List
-.\scripts\flash-gateway.ps1 -DiskNumber <n> -Image \\wsl.localhost\Ubuntu\home\sammy\aesd\issue14-tree\buildroot\output\images\sdcard.img
-```
+   ```powershell
+   .\scripts\flash-gateway.ps1 -List
+   .\scripts\flash-gateway.ps1 -DiskNumber <n> -Image IMAGE_PATH -AllowList file -AllowListFile $env:TEMP\issue14-allowlist.jsonl -ProvisionUrl https://example.invalid/
+   ```
 
-The script puts a new provisioning secret on the card. The gateway's EUI is already registered in AWS from issue #10, so the function answers as it did for the re-flashed gateway in `docs/issue10-provisioning.md` (it issues a new certificate for the existing gateway).
+3. Copy the Station credentials from the running Pi straight onto the spare card's boot partition (drive letter from step 2, here `E:`). Nothing is printed:
+
+   ```powershell
+   scp -i $HOME\.ssh\aesd_pi5_ed25519 "root@<pi-address>:/etc/station/cups.*" E:\
+   ```
+
+   If the original card has `/etc/gwmon-health` or `/etc/aws-iot-device-client` (issues #13, #15), copy those too, renamed to `health.endpoint`, `health.crt`, `health.key` and `tunnel.cert.pem`, `tunnel.key.pem`, `tunnel.endpoint`, `tunnel.thing`. They are not needed for this test.
+4. Eject, shut the Pi down (`poweroff`), swap cards: spare card in the Pi.
 
 ### 2. First boot: what to check
 
@@ -129,52 +137,31 @@ Expected:
 - [ ] Reboot once (`reboot`), log in again: the SSH host key is the same (no warning), `grep gateway-provision /var/log/messages` says "credentials are in place, no provisioning request", Station reconnects.
 - [ ] `cat /data/log/boots.csv`: two lines, `ro`, `ok`, a `station_s` value, `fs_errors` 0.
 
-### 3. Power-cut test (20 cuts)
+### 3. Power-cut test (20 cuts, about 25 minutes)
 
-`boot-report` logs every boot by itself, so the test is only pulling the plug. Pull the USB-C power cable, wait 5 s, plug it back. Vary the moment:
+`boot-report` records every boot by itself in `/data/log/boots.csv`, and counts the boot as soon as it starts, so a boot that was cut early shows as a missing number. Sam only pulls the plug and writes down the moment.
 
-| Cuts | Moment |
-|---|---|
-| 1–5 | During boot: 2–10 s after power-on (kernel, `S00datafs`, `S35provision`) |
-| 6–10 | 15–40 s after power-on: Station starting and connecting, chrony stepping the clock |
-| 11–15 | While Station is connected (`nc <pi> 9000` says `running`), at random |
-| 16–18 | Within a few seconds of a Station restart (`kill $(pidof station)` over SSH, then pull): Station may be writing its `-bak` credentials |
-| 19–20 | At random |
+Each cut: pull the USB-C power cable, count to 5, plug it back in, and pull again at the moment in the table, counted from plugging in. Writing the moment down is enough: for example "cut 3 at 6 s".
 
-Between cuts, wait for the gateway to show Connected in AWS (or 2 minutes) unless the row says otherwise; a cut during boot means the previous boot's line in `boots.csv` may be missing, which is expected.
+| Cuts | Pull at | What the Pi is doing | One cycle |
+|---|---|---|---|
+| 1–7 | 3–10 s | Firmware, kernel, `S00datafs` (`e2fsck`, mount), `S35provision` | ~15 s |
+| 8–14 | 20–35 s | Station starting; on the first boots, Station writing the `tc.*` and `-bak` files from CUPS | ~40 s |
+| 15–20 | 90 s or later | Station connected; chrony writing its drift file | ~2 min |
 
-At the end:
+After cut 20, plug in and leave it alone for 2 minutes. Then the checks:
 
 ```powershell
-ssh -i $HOME\.ssh\aesd_pi5_ed25519 root@<pi-address> "cat /data/log/boots.csv; ls /data/log; dmesg | grep -i -E 'ext4|fat-fs|mmc0|i/o error'"
+ssh -i $HOME\.sshesd_pi5_ed25519 root@<pi-address> "cat /data/log/boots.csv; ls /data/log; cat /run/datafs.status; dmesg | grep -i -E 'ext4|fat-fs|mmc0|i/o error'; mount | grep -E ' / | /data | /boot '"
 ```
 
-Copy the output into `docs/logs/issue14-power-cut.log` and fill in the sheet below. A boot passes if it boots, `data` is `ok` or `repaired`, `station_s` is a number, and `fs_errors` is 0. Any `boot-<n>-dmesg.txt` in `/data/log` holds the error lines of that boot.
+**Pass**, for every line in `boots.csv`: `root` is `ro`, `data` is `ok` or `repaired`, `fs_errors` is 0; the last boot has a number in `station_s` and AWS shows the gateway Connected. Missing boot numbers are the cuts that came before `S90boot-report` started or before Station connected; they pass if the next boot passes. Any `boot-<n>-dmesg.txt` in `/data/log` is a failure and holds the error lines. `journal` = `replayed` is the normal, safe outcome of a cut while `/data` was open.
 
-| Cut | Moment (s after power-on, or state) | Boots (y/n) | `data` | Station reconnect (`station_s`) | `fs_errors` | `journal` | Notes |
-|---|---|---|---|---|---|---|---|
-| 1 | | | | | | | |
-| 2 | | | | | | | |
-| 3 | | | | | | | |
-| 4 | | | | | | | |
-| 5 | | | | | | | |
-| 6 | | | | | | | |
-| 7 | | | | | | | |
-| 8 | | | | | | | |
-| 9 | | | | | | | |
-| 10 | | | | | | | |
-| 11 | | | | | | | |
-| 12 | | | | | | | |
-| 13 | | | | | | | |
-| 14 | | | | | | | |
-| 15 | | | | | | | |
-| 16 | | | | | | | |
-| 17 | | | | | | | |
-| 18 | | | | | | | |
-| 19 | | | | | | | |
-| 20 | | | | | | | |
+Copy the output into `docs/logs/issue14-power-cut.log`, with the list of moments.
 
-`journal` = `replayed` means ext4 replayed `/data`'s journal at mount: the normal, safe outcome of a cut while `/data` was open, not an error.
+**Total for Sam: about 45 minutes** (flash 10, first-boot checks 5, cuts 25, final checks 5).
+
+**Back to the original card:** power off, swap cards. Nothing on it or in AWS was changed.
 
 ### 4. Reset test (optional)
 
