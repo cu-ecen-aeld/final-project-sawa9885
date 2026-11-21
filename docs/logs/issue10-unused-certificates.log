@@ -1,0 +1,14 @@
+UTC 2026-11-20T21:18:42Z
+another gateway in the account: 2 certificates in use (not touched)
+gateway ae8306e1: certificates 6e6e1bc4 0e6b8c90 
+certificates in the account: 8
+
+861d25cb: created 2026-11-12T10:11:50.307000-07:00, ACTIVE, used by a gateway: no, policies: 0, things: 0
+861d25cb: deleted
+4f217cb2: created 2026-11-18T19:33:21.666000-07:00, ACTIVE, used by a gateway: no, policies: 0, things: 0
+4f217cb2: deleted
+15b6a3b3: created 2026-11-18T19:38:54.955000-07:00, ACTIVE, used by a gateway: no, policies: 0, things: 0
+15b6a3b3: deleted
+
+certificates in the account: 5
+gateway-0016c001f1135844: Connected 2026-11-20T15:44:42.273964056Z
