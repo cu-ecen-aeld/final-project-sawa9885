@@ -1,0 +1,36 @@
+# Issue #11: register-node.sh against AWS IoT Core for LoRaWAN, 2026-11-21, on a throwaway identity
+# DevEUI ...57b2 and JoinEUI are random values made for this run; the device was deleted afterwards.
+# Profiles and destination came from REGISTER_NODE_* environment variables (destination aesd_uplinks).
+
+## 1. Dry run in a Terminal tab of the Claude desktop app (Git Bash, Windows aws.exe)
+stdin is a terminal
+$ scripts/register-node.sh -c -n aesd-throwaway-57b2 0BC91AFD549C57B2 E382982083C6CF5C
+Node ...57b2 is not registered yet. Device profile, service profile and destination exist (LoRaWAN 1.1).
+Check only (-c): nothing changed.
+exit status 0
+
+## 2. Typing keys in that tab failed: every attempt stopped before AWS was called (exit 2).
+##    Cause found: Enter arrives as CR LF there, so the NwkKey prompt read an empty line;
+##    after that fix, pasted keys still failed (most likely bracketed-paste markers).
+##    The script now skips empty lines and strips CR and paste markers (host test cases added).
+
+## 3. Registration and re-run, prompts answered by a pty harness in WSL with random keys
+##    (Python secrets.token_hex(16), never printed or saved), aws.exe through a path-converting wrapper
+$ scripts/register-node.sh -n aesd-throwaway-57b2 0BC91AFD549C57B2 E382982083C6CF5C
+Node ...57b2 is not registered yet. Device profile, service profile and destination exist (LoRaWAN 1.1).
+AppKey for ...57b2 (32 hex digits, input hidden): 
+NwkKey for ...57b2 (32 hex digits, input hidden): 
+Registered node ...57b2 as "aesd-throwaway-57b2" with destination "aesd_uplinks".
+[harness] answered 2 prompt(s) with random values; key text in output: no
+exit status 0
+$ scripts/register-node.sh -n aesd-throwaway-57b2 0BC91AFD549C57B2 E382982083C6CF5C
+A device with DevEUI ...57b2 is already registered as "aesd-throwaway-57b2". Nothing changed.
+[harness] answered 0 prompt(s) with random values; key text in output: no
+exit status 0
+temporary directory after the runs: 0 entries
+
+## 4. Clean-up
+$ aws iotwireless delete-wireless-device --id <id of ...57b2>
+deleted
+$ aws iotwireless get-wireless-device --identifier-type DevEui --identifier <...57b2>
+ResourceNotFoundException

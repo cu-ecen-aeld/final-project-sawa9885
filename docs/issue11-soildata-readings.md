@@ -1,21 +1,32 @@
 # Issue #11: sensor readings reach the SoilData API through this gateway
-This document was partially generated using Claude Code using the chat session at: SESSION_LINK_PLACEHOLDER_ISSUE_11
+This document was partially generated using Claude Code using the chat session at: https://claude.ai/code/cshk_01CSAPnvLCUHW6djnp5K19mA6Jjr4s6zEaqsQpq9xFyAZz
 
 The path is node → this gateway → AWS IoT Core for LoRaWAN → SoilData forwarder → SoilData API, and the API's receipt goes back to the node as a downlink sent by this gateway. The SoilData API, the forwarder and the node firmware are existing BioSensor Solutions work, private, and not part of this repo. This issue adds only the registration script, a log helper and the checks on this gateway.
 
 Nodes are named here by the last four hex digits of their DevEUI.
 
-## Status of the definition of done (2026-11-20)
+## Outcome (2026-11-21): closed as not planned
+
+The delivery into the SoilData API was not done. The only SoilData forwarder is the production one, and the production forwarder is not changed for a course test. Everything short of the API was tested: the script on the host and against AWS, and the node → gateway → AWS uplink (issues #4 and #9).
 
 | # | Box | Status |
 |---|---|---|
-| 1 | `scripts/register-node.sh` registers a node, idempotent, never prints the AppKey | **Done on the host** with a fake `aws` ([logs/issue11-register-node-test.log](logs/issue11-register-node-test.log), 36 checks). Not yet run against AWS: that is step 2 below |
-| 2 | Test node registered with the script, in a test company of the SoilData API | Needs Sam |
-| 3 | Reading in the SoilData dashboard within one transmit interval, screenshot | Needs Sam and the node |
-| 4 | Station log shows the uplink and `dntxed`, node reports the reading delivered | Needs Sam and the node |
-| 5 | AWS uplink metadata lists this gateway's EUI | Needs Sam and the node |
-| 6 | No keys or secrets in the repo or committed logs | `git grep -l "BEGIN .*PRIVATE KEY"` returns nothing (exit 1). The logs of steps 3 to 5 still have to be checked by eye, with the rule below |
-| 7 | Project Overview lists the SoilData API, forwarder and firmware as shared material | Not yet: the sentence to add is at the end of this page |
+| 1 | `scripts/register-node.sh` registers a node, idempotent, never prints the AppKey | **Pass.** Host test with a fake `aws`, 41 checks ([logs/issue11-register-node-test.log](logs/issue11-register-node-test.log)). Against AWS on 2026-11-21 with a throwaway identity (`...57b2`, destination `aesd_uplinks`): dry run, registration, and a second run that said "already registered ... Nothing changed."; the device was deleted afterwards ([logs/issue11-register-node-aws.log](logs/issue11-register-node-aws.log)) |
+| 2 | Test node registered with the script, in a test company of the SoilData API | Not done: no SoilData test path exists without changing the production forwarder |
+| 3 | Reading in the SoilData dashboard within one transmit interval, screenshot | Not done, same reason |
+| 4 | Station log shows the uplink and `dntxed`, node reports the reading delivered | Not done for a SoilData reading. The uplink and `dntxed` through this gateway are shown in [issue4-basicstation-aws.md](issue4-basicstation-aws.md) and in the issue #9 check |
+| 5 | AWS uplink metadata lists this gateway's EUI | Not done for a SoilData reading; shown for the issue #4 uplink |
+| 6 | No keys or secrets in the repo or committed logs | **Pass.** `git grep -l "BEGIN .*PRIVATE KEY"` returns nothing (exit 1); the two new logs were read by eye and hold no 32-hex-digit value |
+| 7 | Project Overview lists the SoilData API, forwarder and firmware as shared material | Not done: the sentence to add is at the end of this page |
+
+### The real AWS run
+
+The hidden prompt did not work in a Terminal tab of the Claude desktop app on Windows (Git Bash with `aws.exe`). Every try stopped before AWS was called, with exit 2:
+
+- Enter arrives there as CR LF, so the NwkKey prompt read the leftover empty line. The script now skips empty lines and drops CR characters.
+- Pasted keys were still refused after that; most likely the terminal wrapped them in bracketed-paste markers. The script now strips those markers and other control characters. A refused key is reported as the number of hex digits and the character codes of anything else, never the digits themselves.
+
+Both cases are now in the host test, and the CR LF case failed on the old script. The registration itself was then run in WSL under a pseudo-terminal (a Python `pty` harness kept out of the repo) that answered each prompt with a fresh random key that was never printed. The terminal check in the script was not changed.
 
 ## `scripts/register-node.sh`
 
@@ -39,7 +50,7 @@ AWS error text is passed through. An access-denied message can contain the accou
 
 To check that the test can fail, it was also run against a copy of the script with one added line that prints the AppKey to stderr: 3 checks failed, as they should.
 
-Not tested: Git Bash on Windows with `aws.exe` (the script converts the `file://` path with `cygpath` there), and a real AWS account.
+Not tested: typing keys by hand in a Windows terminal after the CR LF and paste fixes (see the outcome above).
 
 ## `scripts/station-log-node.sh`
 
@@ -53,7 +64,9 @@ It prints the `jreq` lines of that DevEUI, the `updf` lines of that DevAddr (Sta
 
 A `dntxed` line names no device, so with other nodes in range a downlink of another node in the same window would be printed too. With this gateway and one node, as in step 3, there are none.
 
-## Steps for Sam on Nov 29
+## Future work: steps for a SoilData test path
+
+Not done (see the outcome above). Kept for when a SoilData test forwarder or dev environment exists.
 
 About 45 minutes if the test node's keys are at hand and the test company exists in the SoilData dashboard. Each step that creates something in AWS is yours to run.
 

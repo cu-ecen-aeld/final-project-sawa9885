@@ -3,7 +3,7 @@
 # with every other line left out. Read-only: it only runs `cat` on the gateway.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #11): SESSION_LINK_PLACEHOLDER_ISSUE_11
+# Link to chat session (issue #11): https://claude.ai/code/cshk_01CSAPnvLCUHW6djnp5K19mA6Jjr4s6zEaqsQpq9xFyAZz
 #
 # Usage:
 #   station-log-node.sh [-a DEVADDR] [-i SSH_KEY] USER@GATEWAY DEVEUI_SUFFIX
