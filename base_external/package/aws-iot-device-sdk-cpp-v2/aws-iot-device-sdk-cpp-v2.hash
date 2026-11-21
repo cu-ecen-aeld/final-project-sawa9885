@@ -1,0 +1,7 @@
+# Locally computed. The git archive of tag v1.30.3 (74c8b683ebe5b1cbf484f6acaa281f56aaa63948)
+# with its submodules, as Buildroot packs it.
+sha256  c2f750dd08783aba4afead000c6923dd014d11dbf748b05528c6c957d7b451db  aws-iot-device-sdk-cpp-v2-v1.30.3-git4.tar.gz
+sha256  f3073600a5b06bb4b53594a1941035c4af6b78455692181cb24f512c6c5bbba1  documents/LICENSE
+sha256  cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30  crt/aws-crt-cpp/LICENSE
+sha256  0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594  crt/aws-c-iot/LICENSE
+sha256  5a3ff814f594afbd71512dca95325d6da09a828469f7894cecf707605cfdc99a  crt/aws-crt-cpp/crt/s2n/LICENSE

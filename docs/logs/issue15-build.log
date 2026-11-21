@@ -1,0 +1,46 @@
+# Issue #15: cross-build of aws-iot-device-sdk-cpp-v2 and aws-iot-device-client (Buildroot 2026.02.3, aarch64 glibc)
+# Package steps from ~/aesd/issue15-pkg.log (the full log is about 160 kB of compiler lines):
+>>> aws-iot-device-client v1.10.1 Extracting
+>>> aws-iot-device-client v1.10.1 Patching
+>>> aws-iot-device-client v1.10.1 Configuring
+>>> aws-iot-device-client v1.10.1 Building
+>>> aws-iot-device-client v1.10.1 Installing to target
+
+# file
+target/usr/bin/aws-iot-device-client: ELF 64-bit LSB pie executable, ARM aarch64, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux-aarch64.so.1, for GNU/Linux 3.7.0, stripped
+
+# ls -l
+-rwxr-xr-x 1 build build    2010 Nov 20 15:40 target/etc/init.d/S99tunnel
+-rwxr-xr-x 1 build build 3217152 Nov 20 15:40 target/usr/bin/aws-iot-device-client
+-rwxr-xr-x 1 build build    4023 Nov 20 15:40 target/usr/bin/tunnel-run.sh
+
+# readelf -d | grep NEEDED
+ 0x0000000000000001 (NEEDED)             Shared library: [libssl.so.3]
+ 0x0000000000000001 (NEEDED)             Shared library: [libcrypto.so.3]
+ 0x0000000000000001 (NEEDED)             Shared library: [libstdc++.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libm.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [libgcc_s.so.1]
+ 0x0000000000000001 (NEEDED)             Shared library: [libc.so.6]
+ 0x0000000000000001 (NEEDED)             Shared library: [ld-linux-aarch64.so.1]
+
+# object files compiled into the client, by source directory (only tunneling among the features)
+      1 FeatureRegistry.cpp.o
+      1 SharedCrtResourceManager.cpp.o
+      1 config
+      6 logging
+      1 main.cpp.o
+      5 tunneling
+      8 util
+
+# make aws-iot-device-sdk-cpp-v2-legal-info aws-iot-device-client-legal-info: exit 0 (licence hashes match)
+
+# sha256sum
+0972beb8e369ee12940a172e5173f05de5cfe33ff9ea53c7901ccf8f533872a4  usr/bin/aws-iot-device-client
+
+# Full image (make in the same output directory, commit 6d49933 plus this log), about 30 min
+-rw-r--r-- 1 build build 411041792 Nov 20 16:10 sdcard.img
+5b29989daa0cccbb2d782804a600b2d602256035109f78b245059c25982d11a0  sdcard.img
+# init scripts in the image:
+S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S45gateway-provision S49chronyd S50crond S50dropbear S99gwmon S99tunnel rcK rcS 
+# client in the image (stripped again by the final target step):
+a634cf34463c51b663e9cd407da45c69780c59e7863176999fc896a756a57e00  usr/bin/aws-iot-device-client

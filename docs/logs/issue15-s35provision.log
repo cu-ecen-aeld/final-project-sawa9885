@@ -1,0 +1,44 @@
+# Issue #15: host test (WSL, dash) of S35provision and tunnel-run.sh
+# $ scripts/test/tunnel-host-test.sh
+PASS S35: directory is 700
+PASS S35: cert.pem is 644
+PASS S35: key.pem is 600
+PASS S35: endpoint is 600
+PASS S35: thing is 600
+PASS S35: certificate copied byte for byte
+PASS S35: endpoint without BOM and CR
+PASS S35: thing without CR
+PASS S35: nothing left on boot
+PASS S35: log names files only
+PASS S35: second boot changes nothing
+PASS run: exit 78 without credentials
+PASS run: client not started without credentials
+PASS run: crashing client restarted (4 or 5 runs in 9.5 s)
+PASS run: delays grow 1, 2, 4 s
+PASS run: delay capped at max
+PASS run: SIGTERM ends the loop with status 0
+PASS run: arguments
+PASS run: SIGTERM stops a running client
+PASS run: one run only
+PASS run: loop exits 0 on SIGTERM
+PASS run: no client left
+PASS run: delay stays at the minimum after good runs
+23 passed, 0 failed
+exit status 0
+
+# On the Pi (busybox sh), a copy of S35provision with its paths moved under a test directory in /tmp, fake files, 2026-11-21
+$ sh S35provision start  (copy with paths under <test>)
+provision: installed <test>/etc/aws-iot-device-client/cert.pem
+provision: installed <test>/etc/aws-iot-device-client/key.pem
+provision: installed <test>/etc/aws-iot-device-client/endpoint
+provision: installed <test>/etc/aws-iot-device-client/thing
+$ ls -la etc/aws-iot-device-client boot
+drwx------ .
+drwx------ ..
+-rw-r--r-- cert.pem
+-rw------- endpoint
+-rw------- key.pem
+-rw------- thing
+boot: 0 files
+endpoint: [example.invalid] thing: [gw-test]
+$ second run
