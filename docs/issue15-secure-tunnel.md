@@ -166,11 +166,18 @@ What the tests showed:
 
 - `kill -9` of the client: `tunnel-run.sh` starts it again 5 s later and it reconnects within 1 s.
   Station keeps its PID, gwmon's `station_restarts` stays 0, the watchdog stays active.
-- The client's MQTT keep-alive is the SDK default, 1200 s. An outage shorter than that goes
-  unnoticed: the connection carries on afterwards. A longer one is seen at the next keep-alive,
-  and the client reconnects by itself (15 s to 240 s between attempts). So for up to about 20 min
-  after a network outage a tunnel notification can be missed; opening the tunnel again then
-  works.
+- Client restarted while the endpoint is unreachable (blackhole route, 180 s): it does not exit,
+  it retries by itself after 10, 20, 40 and 80 s (the SDK maps the refused connect to
+  `AWS_ERROR_FILE_INVALID_PATH`, a misleading name) and is connected and "Running Secure
+  Tunneling" again on the next try that reaches AWS. That try came 22 s before the route was
+  removed: the endpoint name resolves to several addresses and only the one DNS returned at the
+  start was blocked, so this shows the retry, not the exact moment AWS came back. Station kept its
+  PID and gwmon counted no restart throughout.
+- A 150 s blackhole of an established connection went unnoticed: the client's MQTT keep-alive is
+  the SDK default, 1200 s, and the connection carried on afterwards. A longer outage is seen at the
+  next keep-alive, after which the client reconnects as above (15 s to 240 s between attempts;
+  from the code, not tested with a 20-minute outage). So for up to about 20 min after a network
+  outage a tunnel notification can be missed; opening the tunnel again then works.
 
 ### Problems found on the way
 
