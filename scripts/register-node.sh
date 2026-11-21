@@ -3,7 +3,7 @@
 # with an existing device profile, service profile and destination.
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #11): SESSION_LINK_PLACEHOLDER_ISSUE_11
+# Link to chat session (issue #11): https://claude.ai/code/cshk_01CSAPnvLCUHW6djnp5K19mA6Jjr4s6zEaqsQpq9xFyAZz
 #
 # Usage:
 #   register-node.sh [-c] [-n NAME] [-p DEVICE_PROFILE] [-s SERVICE_PROFILE]
@@ -174,11 +174,28 @@ fi
 
 # read_key LABEL VAR: reads 32 hex digits without echo into VAR.
 read_key() {
-    local label=$1 k=
-    IFS= read -r -s -p "$label for ...$short (32 hex digits, input hidden): " k || k=
-    printf '\n' >&2
-    k=${k//[: -]/}
-    [[ $k =~ ^[0-9A-Fa-f]{32}$ ]] || die 2 "$label must be 32 hex digits (nothing was sent to AWS)"
+    local label=$1 k= tries=0
+    # A Windows console sends Enter as CR LF, which can leave an empty line
+    # behind for the next prompt: skip empty lines and drop CRs.
+    while [ -z "$k" ] && [ $tries -lt 3 ]; do
+        IFS= read -r -s -p "$label for ...$short (32 hex digits, input hidden): " k || k=
+        printf '\n' >&2
+        # Bracketed-paste markers (ESC [200~ ... ESC [201~), then any other
+        # control characters, spaces, ':' and '-'.
+        k=${k//$'\e'\[200~/}
+        k=${k//$'\e'\[201~/}
+        k=${k//[[:cntrl:][:space:]:-]/}
+        tries=$((tries + 1))
+    done
+    if ! [[ $k =~ ^[0-9A-Fa-f]{32}$ ]]; then
+        # Say what was wrong without showing any hex digit of the input.
+        local bad=${k//[0-9A-Fa-f]/} codes= c i
+        for ((i = 0; i < ${#bad} && i < 8; i++)); do
+            printf -v c '%02X' "'${bad:i:1}"; codes+=" 0x$c"
+        done
+        k=${k//[^0-9A-Fa-f]/}
+        die 2 "$label must be 32 hex digits: got ${#k} hex digits${codes:+ and other characters (codes:$codes)} (nothing was sent to AWS)"
+    fi
     printf -v "$2" '%s' "$k"
 }
 

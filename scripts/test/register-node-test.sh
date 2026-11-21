@@ -4,7 +4,7 @@
 # pseudo-terminal. Run from anywhere:  bash scripts/test/register-node-test.sh
 #
 # This file was partially generated using Claude Code using the chat session at:
-# Link to chat session (issue #11): SESSION_LINK_PLACEHOLDER_ISSUE_11
+# Link to chat session (issue #11): https://claude.ai/code/cshk_01CSAPnvLCUHW6djnp5K19mA6Jjr4s6zEaqsQpq9xFyAZz
 
 set -u
 here=$(cd "$(dirname "$0")" && pwd)
@@ -142,6 +142,20 @@ else
     grep -q '"OtaaV1_1": {"AppKey": "'"$APPKEY"'", "NwkKey": "'"$NWKKEY"'", "JoinEui": "'"$JOINEUI"'"}' "$FAKE_STATE/request.json" \
         && [ "$rc" = 0 ] && ok "1.1 register with AppKey and NwkKey -> 0" || bad "1.1 register: rc=$rc" "$out"
     no_key_anywhere "1.1"; tmp_empty "1.1"
+
+    # ---- Enter sent as CR LF (Windows console): no empty NwkKey ----------
+    reset; echo 1.1 >"$FAKE_STATE/mac"
+    run_tty "$APPKEY\r\n$NWKKEY\r\n" "$DEVEUI" "$JOINEUI"
+    grep -q '"NwkKey": "'"$NWKKEY"'"' "$FAKE_STATE/request.json" 2>/dev/null \
+        && [ "$rc" = 0 ] && ok "keys ended with CR LF -> 0" || bad "CR LF keys: rc=$rc" "$out"
+    no_key_anywhere "CR LF"; tmp_empty "CR LF"
+
+    # ---- pasted keys wrapped in bracketed-paste markers --------------------
+    reset; echo 1.1 >"$FAKE_STATE/mac"
+    run_tty "\e[200~$APPKEY\e[201~\n\e[200~$NWKKEY\e[201~\n" "$DEVEUI" "$JOINEUI"
+    grep -q '"AppKey": "'"$APPKEY"'", "NwkKey": "'"$NWKKEY"'"' "$FAKE_STATE/request.json" 2>/dev/null \
+        && [ "$rc" = 0 ] && ok "bracketed-paste keys -> 0" || bad "bracketed-paste keys: rc=$rc" "$out"
+    no_key_anywhere "bracketed paste"
 
     # ---- a bad key is refused before anything is sent --------------------
     reset
