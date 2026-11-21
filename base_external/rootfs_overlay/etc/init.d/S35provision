@@ -6,6 +6,9 @@
 #   /boot/{cups,tc}.{uri,trust,crt,key}  -> /etc/station/              (Basics Station)
 #   /boot/provision.{secret,url}         -> /etc/gateway-provision/    (zero-touch provisioning)
 #   /boot/health.{endpoint,crt,key}      -> /etc/gwmon-health/         (gwmon's health reports)
+#   /boot/tunnel.{cert.pem,key.pem,endpoint,thing}
+#                                        -> /etc/aws-iot-device-client/{cert.pem,key.pem,endpoint,thing}
+#                                                                      (remote shell, issue #15)
 #
 # provision.secret and provision.url are written by scripts/flash-gateway.ps1 (issue #10). With
 # them, a gateway needs no cups.* files on the card: /usr/sbin/gateway-provision, started by
@@ -25,6 +28,7 @@
 # Link to chat session (issue #5): https://claude.ai/code/cshk_01CSAPnyKYshomy4KcvdEtyKAXn5vdMngjU3SW9R1aadXg
 # Link to chat session (issue #10): https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr
 # Link to chat session (issue #13): ISSUE13_SESSION_LINK
+# Link to chat session (issue #15): ISSUE15_SESSION_LINK
 
 # PROVISION_BOOT is for testing the script against a copy of the boot files.
 BOOT=${PROVISION_BOOT:-/boot}
@@ -33,6 +37,10 @@ STATION_DIR=/etc/station
 STATION_FILES="cups.uri cups.trust cups.crt cups.key tc.uri tc.trust tc.crt tc.key"
 PROVISION_DIR=/etc/gateway-provision
 HEALTH_DIR=/etc/gwmon-health
+# The AWS IoT Device Client (secure tunneling only, S99tunnel) refuses to start unless its
+# certificate directory is 700, the key 600 and the certificate 644.
+TUNNEL_DIR=/etc/aws-iot-device-client
+TUNNEL_FILES="cert.pem key.pem endpoint thing"
 
 log() {
 	echo "provision: $*"
@@ -102,6 +110,19 @@ start() {
 			[ -f "$BOOT/health.$f" ] && install_secret "$BOOT/health.$f" "$HEALTH_DIR/$f"
 		done
 	fi
+
+	# The remote-shell client's own thing: certificate, key, endpoint and thing name (issue #15).
+	mkdir -p "$TUNNEL_DIR"
+	chmod 700 "$TUNNEL_DIR"
+	for f in $TUNNEL_FILES; do
+		[ -f "$BOOT/tunnel.$f" ] || continue
+		case "$f" in
+			*.pem) install_secret "$BOOT/tunnel.$f" "$TUNNEL_DIR/$f" ;;
+			*) install_secret "$BOOT/tunnel.$f" "$TUNNEL_DIR/$f" text ;;
+		esac
+	done
+	# The certificate is public; the client wants it world-readable.
+	[ -f "$TUNNEL_DIR/cert.pem" ] && chmod 644 "$TUNNEL_DIR/cert.pem"
 	sync
 	return 0
 }

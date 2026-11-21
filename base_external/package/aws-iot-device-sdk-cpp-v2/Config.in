@@ -1,0 +1,19 @@
+# This file was partially generated using Claude Code using the chat session at:
+# Link to chat session (issue #15): ISSUE15_SESSION_LINK
+config BR2_PACKAGE_AWS_IOT_DEVICE_SDK_CPP_V2
+	bool "aws-iot-device-sdk-cpp-v2"
+	depends on BR2_INSTALL_LIBSTDCPP
+	depends on BR2_TOOLCHAIN_HAS_THREADS
+	depends on !BR2_STATIC_LIBS # s2n needs dlopen
+	select BR2_PACKAGE_OPENSSL
+	help
+	  The AWS IoT Device SDK for C++ v2 with the AWS Common Runtime
+	  (aws-crt-cpp and its aws-c-* libraries, s2n-tls) that it
+	  carries as git submodules. Built as static libraries and
+	  installed to staging only: its one user here is
+	  aws-iot-device-client (issue #15).
+
+	  https://github.com/aws/aws-iot-device-sdk-cpp-v2
+
+comment "aws-iot-device-sdk-cpp-v2 needs a toolchain w/ C++, threads, dynamic library"
+	depends on !BR2_INSTALL_LIBSTDCPP || !BR2_TOOLCHAIN_HAS_THREADS || BR2_STATIC_LIBS
