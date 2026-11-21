@@ -119,11 +119,28 @@ After flashing, check that the boot partition has `bcm2712-d-rpi-5-b.dtb` and `o
 
 Goal (definition of done, box 4): with each fix taken out the board fails as described, and with it back it boots. About **35 minutes** in all: no Buildroot rebuild is needed. Fixes 1 and 2 are tested by renaming files on the boot partition of one flashed card. That is faithful: those fixes only add files to the boot partition, and the kernel, rootfs and `config.txt` are the same with and without them. Fix 3 changes the layout, so it needs a second image, which `scripts/pi5-bringup/stock-layout-image.sh` repacks in about a second from the clean build's own files (tried on 2026-11-20).
 
-Do this **before** the issue #9 flash, on the same card: write the card with Raspberry Pi Imager, not `flash-gateway.ps1`. Imager puts no provisioning secret and no AWS credentials on the card, so none of these boots changes anything in AWS. `flash-gateway.ps1` for issue #9 then erases the card.
+One card is enough, and the next real flash erases it. Write it with `flash-gateway.ps1` in its local allow-list mode, then delete `provision.secret` and `provision.url` from the boot partition: the card then has no provisioning secret and no AWS credentials, so none of these boots changes anything in AWS, and the flash itself makes no AWS call (tried in the script's file-target test mode on 2026-11-20). Raspberry Pi Imager works too, but is not needed.
+
+```powershell
+# elevated PowerShell, in the repo
+.\scripts\flash-gateway.ps1 -List
+.\scripts\flash-gateway.ps1 -DiskNumber <n> -Image <image> -AllowList file -AllowListFile $env:TEMP\issue16-allow.json -ProvisionUrl https://invalid.example/
+# then delete provision.secret and provision.url on the card's boot drive
+```
+
+The rootfs mount count, the symptom issue #1 recorded, can be read on the PC after a boot (2 min). In an elevated PowerShell, with `<n>` from `-List`; cancel any Windows offer to format the card:
+
+```powershell
+wsl --mount \\.\PHYSICALDRIVE<n> --bare
+wsl -u root sh -c 'lsblk -o NAME,SIZE,FSTYPE; tune2fs -l /dev/sdX2 | grep -i "mount count"'   # sdX from lsblk
+wsl --unmount \\.\PHYSICALDRIVE<n>
+```
+
+A fresh card reads `Mount count: 0`. A boot that reached Linux adds 1; a failed boot leaves it unchanged.
 
 You need: the Pi with the HAT, an HDMI screen (no keyboard), Ethernet, a phone camera. Optional: a Raspberry Pi Debug Probe (or any 3.3 V USB serial adapter with the Pi 5 debug connector cable) for the UART log. Evidence goes in `docs/logs/` of this branch. Photos are fine as `.jpg`.
 
-**0. Baseline (5 min).** Flash `C:\dev\aesd\images\issue9-clean-sdcard.img` (the issue #9 clean build) with Raspberry Pi Imager ("Use custom", no OS customisation). If you have the debug probe, open the card's boot partition in Explorer and add the line `uart_2ndstage=1` at the end of `config.txt`, and start a serial terminal at 115200 that logs to a file. Boot with Ethernet and HDMI. Within about a minute the HDMI screen shows the `aesd-pi5 login:` prompt. Then, from PowerShell (the card has a new host key, hence the throwaway known-hosts file):
+**0. Baseline (5 min).** Flash `C:\dev\aesd\images\issue9-clean-sdcard.img` (the issue #9 clean build) as above. If you have the debug probe, open the card's boot partition in Explorer and add the line `uart_2ndstage=1` at the end of `config.txt`, and start a serial terminal at 115200 that logs to a file. Boot with Ethernet and HDMI. Within about a minute the HDMI screen shows the `aesd-pi5 login:` prompt. Then, from PowerShell (the card has a new host key, hence the throwaway known-hosts file):
 
 ```powershell
 $pi = '<pi-address>'   # from the router's DHCP list
@@ -145,6 +162,6 @@ bash /mnt/c/dev/aesd/final-project-sawa9885/.claude/worktrees/issue-16-pi5-bring
 /sbin/fdisk -l ~/aesd/issue16-stock-layout/sdcard-stock-layout.img
 ```
 
-`fdisk` must show the boot partition at sector 1, 32M, with the `*` boot flag. The image has the same kernel, DTBs (including `bcm2712-d-rpi-5-b.dtb`), overlays and rootfs as the clean build, so only the layout differs. Flash `\\wsl.localhost\Ubuntu\home\<user>\aesd\issue16-stock-layout\sdcard-stock-layout.img` with Imager, add `uart_2ndstage=1` again if you use the probe, boot. Expected: **unknown** (section 3). Save the `fdisk` output and the result as `issue16-stock-layout.log` (plus `-hdmi.jpg` / `-uart.log`). Then go on with the issue #9 flash, which rewrites the card with the real layout. Its first boot is the "with it back" check for fix 3.
+`fdisk` must show the boot partition at sector 1, 32M, with the `*` boot flag. The image has the same kernel, DTBs (including `bcm2712-d-rpi-5-b.dtb`), overlays and rootfs as the clean build, so only the layout differs. Copy `sdcard-stock-layout.img` to Windows (on 2026-11-20 it is `C:\dev\aesd\images\issue16-stock-layout-sdcard.img`, SHA-256 `6e05a136…`), flash it as above, add `uart_2ndstage=1` again if you use the probe, boot. Expected: **unknown** (section 3). Save the `fdisk` output and the result as `issue16-stock-layout.log` (plus `-hdmi.jpg` / `-uart.log`). Then go on with the next real flash, which rewrites the card with the real layout. Its first boot is the "with it back" check for fix 3.
 
 **Afterwards.** Fill in the "to be captured on Nov 29" places in this guide from the evidence, change "Proven necessary?" in the summary table, and tick box 4 of issue #16 only if each removed fix really made the board fail. If the overlays or the layout turn out not to matter, say so here and leave box 4 for the instructor to judge against the evidence.
