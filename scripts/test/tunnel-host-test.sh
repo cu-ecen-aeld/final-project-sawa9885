@@ -50,7 +50,7 @@ export PATH="$T/bin:$PATH" LOGFILE="$T/log"
 ROOT=$T/root
 mkdir -p "$ROOT/boot" "$ROOT/etc"
 echo "/dev/fake $ROOT/boot vfat rw 0 0" > "$T/mounts"
-sed -e "s|^BOOT=/boot|BOOT=$ROOT/boot|" \
+sed -e "s|^BOOT=.*|BOOT=$ROOT/boot|" \
 	-e "s|=/etc/|=$ROOT/etc/|" \
 	-e "s|/proc/mounts|$T/mounts|g" "$S35" > "$T/S35provision"
 
