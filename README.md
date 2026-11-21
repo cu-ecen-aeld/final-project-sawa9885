@@ -64,6 +64,7 @@ A gateway can still be given its credentials as files, as in issues #4 and #5. W
 | `cups.trust` | `/etc/station/cups.trust` | CUPS server trust certificate, as downloaded from AWS. |
 | `cups.crt` | `/etc/station/cups.crt` | Gateway certificate (AWS names it `<id>.cert.pem`). |
 | `cups.key` | `/etc/station/cups.key` | Gateway private key (AWS names it `<id>.private.key`). |
+| `health.endpoint`, `health.crt`, `health.key` (optional) | `/etc/gwmon-health/{endpoint,crt,key}` | gwmon's own AWS IoT identity for its health reports ([issue #13](docs/issue13-health.md)). `scripts/create-health-thing.sh create <EUI> <dir>` makes them. |
 | `tc.uri`, `tc.trust`, `tc.crt`, `tc.key` (optional) | `/etc/station/tc.*` | The same four for a direct LNS connection (`wss://<id>.lns.lorawan.<region>.amazonaws.com:443`, `lns.trust`). Not needed with CUPS, which fetches them. |
 
 At boot, `S35provision` installs each file it finds with mode 0600 (`/etc/station` is 0700) and deletes it from the boot partition. To change a file later, put the new one on the boot partition and reboot.
@@ -218,13 +219,13 @@ When gwmon restarts Station later, both resets run again in the same order. `lor
 
 ## gwmon
 
-`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. It is a TCP status server that owns the hardware watchdog (version 1, [docs/issue6-gwmon.md](docs/issue6-gwmon.md)), and since version 2 it also starts Basics Station, keeps it running and reports gateway health ([docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md)).
+`gwmon` is the gateway monitor daemon. Its source is in [gwmon/](gwmon/), and `base_external/package/gwmon` builds it into the image. It is a TCP status server that owns the hardware watchdog (version 1, [docs/issue6-gwmon.md](docs/issue6-gwmon.md)), and since version 2 it also starts Basics Station, keeps it running and reports gateway health ([docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md)). Version 2.1 publishes that report to AWS IoT Core every 5 minutes ([docs/issue13-health.md](docs/issue13-health.md)).
 
-- **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1`. `/etc/init.d/S99gwmon stop|restart` also work, and act on Station too. Settings go in `/etc/default/gwmon`: `GWMON_ARGS` for more options, `GWMON_STATION=""` to run gwmon without Station.
+- **Start at boot:** `/etc/init.d/S99gwmon` runs `gwmon -d -s /usr/bin/station-run.sh -l /var/log/station.log -T /dev/i2c-1 -P /usr/bin/gwmon-publish.sh -I 300 -O 30`. `/etc/init.d/S99gwmon stop|restart` also work, and act on Station too. Settings go in `/etc/default/gwmon`: `GWMON_ARGS` for more options, `GWMON_STATION=""` to run gwmon without Station.
 - **Status:** `nc <pi-address> 9000` prints one line and closes:
 
   ```
-  gwmon 2.0.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=600 wd_last_feed_age=1s station=running station_pid=301 station_uptime=1190s station_restarts=0 station_fails=0 uplinks=12 last_uplink_age=37s temp=31.5C
+  gwmon 2.1.0 uptime=1234s daemon_uptime=1200s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=600 wd_last_feed_age=1s station=running station_pid=301 station_uptime=1190s station_restarts=0 station_fails=0 uplinks=12 last_uplink_age=37s temp=31.5C publish=ok publishes=4 publish_fails=0 last_publish_age=95s
   ```
 
   | Field | Meaning |
@@ -238,12 +239,14 @@ When gwmon restarts Station later, both resets run again in the same order. `lor
   | `uplinks` | Frames that Station received and passed on to the network server since gwmon started, counted from the `RX` lines in `/var/log/station.log`. |
   | `last_uplink_age` | Time since the last of those lines was read, or `never`. |
   | `temp` | Temperature of the WM1302 board, from its STTS751 sensor on `/dev/i2c-1`, or `unavailable`. |
+  | `publish` | The last health report to AWS IoT Core: `ok`, `failing`, `never` (none tried yet), `unconfigured` (no credentials in `/etc/gwmon-health`) or, without `-P`, absent. `publishes` and `publish_fails` count reports sent and attempts that failed; `last_publish_age` is the time since the last report sent. |
 
   [docs/issue7-gwmon-v2.md](docs/issue7-gwmon-v2.md) says where each field comes from and what its limits are.
 - **Watchdog:** gwmon opens `/dev/watchdog`, sets a 10 s timeout and feeds it every 2 s from its main loop. If gwmon is killed or hangs, the Pi resets about 10 s later. On SIGTERM or SIGINT it writes the magic close character first, so `S99gwmon stop` and a normal shutdown don't reset the Pi.
 - **Station supervision:** gwmon starts Station as a child process and learns of its exit at once (SIGCHLD). It starts Station again after 1 s. If a start ends within 30 s, it counts as failed and the delay doubles: 2, 4, 8, 16 s. After the 5th failed start in a row gwmon logs that it gives up and stops feeding the watchdog, so the Pi resets about 10 s later. Every exit and every restart is in syslog: `grep gwmon /var/log/messages`. A gateway with no credentials is not a failure: gwmon reports `station=unconfigured` and keeps feeding the watchdog.
+- **Health reports (issue #13):** every 5 minutes gwmon runs `/usr/bin/gwmon-publish.sh` as a child, with the report as JSON on its standard input. The script publishes it with `mosquitto_pub` (QoS 1, retained) to `aesd/gateway/<EUI>/health` in AWS IoT Core, using its own certificate from `/etc/gwmon-health`. gwmon kills an attempt that has not finished after 30 s, so a hung connection never delays the watchdog. syslog gets one line when publishing starts failing and one when it works again. `GWMON_PUBLISH_INTERVAL` and `GWMON_PUBLISH_TIMEOUT` in `/etc/default/gwmon` change the timing, `GWMON_PUBLISH=""` turns it off. The latest report can be read with `aws iot-data get-retained-message --topic aesd/gateway/<EUI>/health`.
 - **If the Pi ever resets in a loop:** put an empty file named `gwmon.disable` on the SD card's boot partition. `S99gwmon` then leaves gwmon, the watchdog and Station off. To run Station by hand in that state: `/usr/bin/station-run.sh &`.
-- **Options:** `gwmon [-d] [-p port] [-w device] [-t timeout] [-i interval] [-s program] [-r count] [-S seconds] [-l logfile] [-T i2c-device]`. `make -C gwmon check` builds it for the host and tests it against a fake watchdog file and a fake Station script. `make -C gwmon valgrind` does the same under Valgrind.
+- **Options:** `gwmon [-d] [-p port] [-w device] [-t timeout] [-i interval] [-s program] [-r count] [-S seconds] [-l logfile] [-T i2c-device] [-P program] [-I seconds] [-O seconds]`. `make -C gwmon check` builds it for the host and tests it against a fake watchdog file, a fake Station script and a fake publish program. `make -C gwmon valgrind` does the same under Valgrind. `make -C gwmon publish-check` runs the real `gwmon-publish.sh` and `mosquitto_pub` against a local mosquitto broker with TLS (needs `mosquitto`, `mosquitto-clients` and `openssl`).
 
 ## AI use
 
@@ -261,3 +264,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #10 Zero-touch gateway provisioning | https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr |
 | #12 Reset script in the sx1302-hal package, boot order and Buildroot version | https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o |
 | #9 Clean-build check, final docs and demo video outline | ISSUE9_SESSION_LINK |
+| #13 Gateway health reports to AWS IoT Core | ISSUE13_SESSION_LINK |

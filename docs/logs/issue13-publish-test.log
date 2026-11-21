@@ -1,0 +1,35 @@
+gcc  -g -O2 -Wall -Wextra -Werror -std=gnu11 -pthread -c -o gwmon.o gwmon.c
+gcc -g -O2 -Wall -Wextra -Werror -std=gnu11 -pthread  -o gwmon gwmon.o 
+./test/publish-test.sh ./gwmon pkg/gwmon-publish.sh
+== publish test: gwmon 2.1.0, mosquitto version 2.0.18, broker on port 18883
+== 1. The publish script on its own
+PASS: a report is published (exit status 0)
+PASS: on the topic aesd/gateway/<lower-case EUI>/health, with the report as the message
+PASS: the broker saw the client ID aesd-gateway-<EUI>-health
+PASS: no credentials: exit status 78 (got 78)
+PASS: no gateway EUI yet: a failed attempt, exit status 1 (got 1)
+PASS: a server certificate that does not check out: a failed attempt (exit status 14), nothing published
+== 2. gwmon publishes through the script every 2 s
+PASS: three reports reach the subscriber
+PASS: the subscriber has them (3)
+    received: aesd/gateway/0016c001deadbeef/health {"gwmon_version":"2.1.0","time":1795212043,"uptime_s":1136,"daemon_uptime_s":6,"watchdog":"fake","wd_timeout_s":5,"wd_feeds":7,"wd_last_feed_age_s":0,"station":"off","station_uptime_s":0,"station_restarts":0,"station_fails":0,"uplinks":null,"last_uplink_age_s":null,"temp_c":null,"publishes":2,"publish_fails":0}
+PASS: the message is gwmon's JSON report
+PASS: nothing but the first report is in the syslog output
+== 3. Broker unreachable: one line in the syslog output, however many attempts fail
+PASS: five attempts fail: publish_fails=5
+PASS: one 'failed' line for five failures
+    health publish failed: pkg/gwmon-publish.sh exited with status 1. Trying again every 2 s; further failures are not logged until a publish works
+    mosquitto_pub said: Error: Connection refused
+PASS: the watchdog is fed every second meanwhile (wd_feeds 17, 3 s later 20)
+== 4. The broker is back: publishing resumes within one interval
+PASS: the next attempt works, 0.8 s after the broker is back (interval 2 s)
+PASS: one 'works again' line
+== 5. A server that accepts the connection and then says nothing: gwmon kills the publish
+PASS: two attempts hang and are killed: publish_fails=2
+PASS: the kill is in the syslog output once
+PASS: no mosquitto_pub is left running
+    status: gwmon 2.1.0 uptime=1161s daemon_uptime=10s watchdog=fake wd_timeout=5s wd_interval=1s wd_feeds=11 wd_last_feed_age=0s publish=failing publishes=0 publish_fails=2 last_publish_age=never
+PASS: the watchdog is still fed (wd_last_feed_age=0s)
+
+RESULT: all checks passed
+./test/publish-test.sh: line 31: 177759 Killed                  mosquitto_sub -h localhost -p "$MQTT_PORT" --cafile "$TMP/ca.crt" --cert "$TMP/client.crt" --key "$TMP/client.key" -t 'aesd/#' -v >> "$TMP/received" 2>> "$TMP/sub.log"

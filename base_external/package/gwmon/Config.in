@@ -1,10 +1,14 @@
 # This file was partially generated using Claude Code using the chat sessions at:
 # Link to chat session (issue #6): https://claude.ai/code/cshk_01CSAPnx7BhY3Nsk5bW261b3NkPKAXvdTJyxZN6b8vcSPT
 # Link to chat session (issue #7): https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx
+# Link to chat session (issue #13): ISSUE13_SESSION_LINK
 config BR2_PACKAGE_GWMON
 	bool "gwmon"
 	depends on BR2_USE_MMU # fork()
 	depends on BR2_TOOLCHAIN_HAS_THREADS
+	select BR2_PACKAGE_MOSQUITTO # runtime, mosquitto_pub
+	select BR2_PACKAGE_OPENSSL # mosquitto_pub with TLS
+	select BR2_PACKAGE_CA_CERTIFICATES # runtime, the Amazon root CAs
 	help
 	  Gateway monitor daemon for the AESD Pi 5 LoRaWAN gateway.
 	  It serves one status line per connection on TCP port 9000
@@ -12,8 +16,13 @@ config BR2_PACKAGE_GWMON
 	  also starts LoRa Basics Station (/usr/bin/station-run.sh
 	  from the basicstation package, when it is installed),
 	  restarts it when it exits, and reports uplinks and the
-	  concentrator temperature.
-	  Installs /usr/bin/gwmon and /etc/init.d/S99gwmon. The
+	  concentrator temperature. Version 2.1 publishes that
+	  report to AWS IoT Core every 5 minutes: gwmon runs
+	  /usr/bin/gwmon-publish.sh, which uses mosquitto_pub from
+	  the mosquitto package. The mosquitto broker is not needed
+	  (BR2_PACKAGE_MOSQUITTO_BROKER can be turned off).
+	  Installs /usr/bin/gwmon, /usr/bin/gwmon-publish.sh and
+	  /etc/init.d/S99gwmon. The
 	  source is in gwmon/ at the top of this repository.
 
 comment "gwmon needs a toolchain w/ threads"
