@@ -133,15 +133,24 @@ The full image of this branch was built afterwards (`sdcard.img` SHA-256 `baa9be
    - The next report, at 22:53:56, worked, 4 min 51 s after the route was back (interval 5 min): `health publish works again after 2 failed attempts`. AWS has it as the retained message, `publish_fails` 2.
    - Station reconnected to its LNS at 22:49:08 by itself.
 
+### Cable pull and MQTT test client (2026-11-21, Sam at the bench)
+
+[issue13-cable-pull.log](logs/issue13-cable-pull.log). Sam pulled the Pi's Ethernet cable at 06:36:35 UTC (kernel: `eth0: Link is Down`) and plugged it back at 06:46:23 (`Link is Up - 1Gbps/Full`), 9 min 48 s later. `ifplugd` ran `ifdown` and `ifup`; the DHCP lease was back at 06:46:30.
+
+- The reports due at 06:38:51 and 06:43:51 failed; syslog has one line for both (06:38:51).
+- The report at 06:48:51 worked, 2 min 28 s after the link came back: `health publish works again after 2 failed attempts`.
+- The watchdog was fed throughout: `wd_feeds` 14344 at 06:36:26 and 14650 at 06:46:38, 306 feeds in 612 s. No reset, Station not restarted.
+- The same report appeared in the AWS IoT MQTT test client, subscribed to `aesd/gateway/+/health`, at 23:48:50 MST: [issue13-mqtt-test-client.png](issue13-mqtt-test-client.png) (cropped to the message panel).
+
 ## Definition of done
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Every 5 minutes (a setting) one JSON message on `aesd/gateway/<EUI>/health` with the status fields | **Pass.** Default 300 s, `GWMON_PUBLISH_INTERVAL` / `-I`. Messages from the Pi read back from AWS IoT Core. |
 | 2 | Own certificate, provisioned from the boot partition by `S35provision`, not in the repo | **Pass, with one gap:** own thing, policy and certificate; `S35provision` installs them, tested by hand on the Pi against a copy of the boot files, not at a real boot. Nothing secret in the repo. |
-| 3 | The message in the AWS IoT MQTT test client, screenshot in `docs/` | **Needs Sam:** the screenshot needs the AWS console. Read back with `aws iot-data get-retained-message` meanwhile. |
+| 3 | The message in the AWS IoT MQTT test client, screenshot in `docs/` | **Pass:** [issue13-mqtt-test-client.png](issue13-mqtt-test-client.png), subscription `aesd/gateway/+/health`, the first report after the cable pull (23:48:50 MST). Cropped to the message: no account, user or endpoint. |
 | 4 | A failed or hung publish never delays the watchdog feed; with the network down, one syslog line | **Pass:** host tests (hang: longest feed gap 1.01 s vs 1.00 s) and the Pi outage (one line, feed age never above 1 s). |
-| 5 | After 10 minutes without Ethernet, publishing resumes within one interval | **Simulated, pass:** 9 min 40 s without the internet (route removed, link up), resumed 4 min 51 s after. **The real cable pull needs Sam** (Nov 29). |
+| 5 | After 10 minutes without Ethernet, publishing resumes within one interval | **Pass:** cable pulled by Sam, link down 9 min 48 s (kernel times); publishing worked 2 min 28 s after link up (interval 5 min). One `failed` line, one `works again` line, watchdog fed every 2 s. [issue13-cable-pull.log](logs/issue13-cable-pull.log). An earlier simulated run (route removed for 9 min 40 s) gave the same result. |
 
 ### Outage test on the Pi: method, risk and recovery (written before it ran)
 

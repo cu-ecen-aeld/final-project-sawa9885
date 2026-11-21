@@ -1,0 +1,104 @@
+# Issue #13, DoD item 5: the Pi's Ethernet cable pulled by Sam, 2026-11-21 UTC (23:36 to 23:46 MST).
+# gwmon 2.1.0 live, publish every 300 s (next due 06:38:51, 06:43:51, 06:48:51).
+# Link down 06:36:35 to link up 06:46:23 (kernel): 9 min 48 s. DHCP lease 06:46:30.
+# Publishing failed at 06:38:51 and 06:43:51 (one syslog line), worked at 06:48:51: 2 min 28 s after link up.
+# The report arrived in the AWS IoT MQTT test client at 23:48:50 MST (docs/issue13-mqtt-test-client.png).
+# Watchdog: wd_feeds 14344 at 06:36:26 and 14650 at 06:46:38: 306 feeds in 612 s, one every 2 s; no reset (uptime continuous).
+
+# Syslog of the Pi
+Nov 21 06:36:35 aesd-pi5 kern.info kernel: [127166.090576] macb 1f00100000.ethernet eth0: Link is Down
+Nov 21 06:36:36 aesd-pi5 daemon.info ifplugd(eth0): link is down
+Nov 21 06:36:38 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 down'
+Nov 21 06:36:38 aesd-pi5 user.notice ifplugd.action: eth0 link down, uptime 127167.73 s: ifdown
+Nov 21 06:36:38 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 21 06:36:39 aesd-pi5 daemon.info ifplugd(eth0): upping interface
+Nov 21 06:36:39 aesd-pi5 kern.info kernel: [127169.673632] macb 1f00100000.ethernet eth0: PHY [1f00100000.ethernet-ffffffff:01] driver [Broadcom BCM54213PE] (irq=POLL)
+Nov 21 06:36:39 aesd-pi5 kern.info kernel: [127169.684654] macb 1f00100000.ethernet eth0: configuring for phy/rgmii-id link mode
+Nov 21 06:38:51 aesd-pi5 daemon.warn gwmon[2431]: health publish failed: /usr/bin/gwmon-publish.sh exited with status 1. Trying again every 300 s; further failures are not logged until a publish works
+Nov 21 06:46:23 aesd-pi5 kern.info kernel: [127753.391557] macb 1f00100000.ethernet eth0: Link is Up - 1Gbps/Full - flow control off
+Nov 21 06:46:23 aesd-pi5 daemon.info ifplugd(eth0): link is up
+Nov 21 06:46:23 aesd-pi5 daemon.info ifplugd(eth0): executing '/etc/ifplugd/ifplugd.action eth0 up'
+Nov 21 06:46:23 aesd-pi5 user.notice ifplugd.action: eth0 link up, uptime 127753.57 s: ifup
+Nov 21 06:46:27 aesd-pi5 daemon.info ifplugd(eth0): exit code: 0
+Nov 21 06:46:30 aesd-pi5 user.notice ntp-hook: eth0 has a DHCP lease, uptime 127759.83 s
+Nov 21 06:46:30 aesd-pi5 user.notice ntp-hook: clock synchronised by NTP, uptime 127759.84 s
+Nov 21 06:48:51 aesd-pi5 daemon.notice gwmon[2431]: health publish works again after 2 failed attempts
+
+# gwmon's status line from the PC every 10 s (empty while the cable was out: the PC could not reach the Pi)
+06:34:53 gwmon 2.1.0 uptime=127063s daemon_uptime=28592s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14297 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=28592s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=62s
+06:35:04 gwmon 2.1.0 uptime=127073s daemon_uptime=28603s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14302 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=28603s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=72s
+06:35:14 gwmon 2.1.0 uptime=127084s daemon_uptime=28613s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14307 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=28613s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=83s
+06:35:24 gwmon 2.1.0 uptime=127094s daemon_uptime=28624s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14313 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=28624s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=93s
+06:35:34 gwmon 2.1.0 uptime=127105s daemon_uptime=28634s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14318 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=28634s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=103s
+06:35:45 gwmon 2.1.0 uptime=127115s daemon_uptime=28644s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14323 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=28644s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=114s
+06:35:55 gwmon 2.1.0 uptime=127126s daemon_uptime=28655s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14328 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=28655s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=124s
+06:36:05 gwmon 2.1.0 uptime=127136s daemon_uptime=28665s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14333 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=28665s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=135s
+06:36:16 gwmon 2.1.0 uptime=127146s daemon_uptime=28675s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14338 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=28675s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=145s
+06:36:26 gwmon 2.1.0 uptime=127157s daemon_uptime=28686s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14344 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=28686s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.4C publish=ok publishes=93 publish_fails=3 last_publish_age=156s
+06:36:36 
+06:36:53 
+06:37:08 
+06:37:22 
+06:37:35 
+06:37:47 
+06:38:01 
+06:38:14 
+06:38:28 
+06:38:40 
+06:38:53 
+06:39:07 
+06:39:20 
+06:39:34 
+06:39:47 
+06:39:59 
+06:40:13 
+06:40:26 
+06:40:40 
+06:40:53 
+06:41:05 
+06:41:19 
+06:41:32 
+06:41:46 
+06:41:59 
+06:42:12 
+06:42:26 
+06:42:39 
+06:42:53 
+06:43:06 
+06:43:19 
+06:43:33 
+06:43:46 
+06:44:00 
+06:44:13 
+06:44:26 
+06:44:40 
+06:44:52 
+06:45:07 
+06:45:19 
+06:45:32 
+06:45:46 
+06:45:58 
+06:46:11 
+06:46:25 
+06:46:38 gwmon 2.1.0 uptime=127768s daemon_uptime=29298s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14650 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29298s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.1C publish=failing publishes=93 publish_fails=5 last_publish_age=767s
+06:46:49 gwmon 2.1.0 uptime=127779s daemon_uptime=29308s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14655 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29308s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.1C publish=failing publishes=93 publish_fails=5 last_publish_age=778s
+06:46:59 gwmon 2.1.0 uptime=127789s daemon_uptime=29318s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14660 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29318s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=788s
+06:47:09 gwmon 2.1.0 uptime=127800s daemon_uptime=29329s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14665 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29329s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=798s
+06:47:20 gwmon 2.1.0 uptime=127810s daemon_uptime=29339s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14670 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29339s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=809s
+06:47:30 gwmon 2.1.0 uptime=127820s daemon_uptime=29350s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14676 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29350s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=819s
+06:47:40 gwmon 2.1.0 uptime=127831s daemon_uptime=29360s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14681 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29360s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=830s
+06:47:51 gwmon 2.1.0 uptime=127841s daemon_uptime=29370s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14686 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29370s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=failing publishes=93 publish_fails=5 last_publish_age=840s
+06:48:02 gwmon 2.1.0 uptime=127852s daemon_uptime=29381s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14691 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29381s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=failing publishes=93 publish_fails=5 last_publish_age=850s
+06:48:12 gwmon 2.1.0 uptime=127862s daemon_uptime=29391s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14696 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29391s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=failing publishes=93 publish_fails=5 last_publish_age=861s
+06:48:22 gwmon 2.1.0 uptime=127872s daemon_uptime=29402s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14702 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29402s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=failing publishes=93 publish_fails=5 last_publish_age=871s
+06:48:33 gwmon 2.1.0 uptime=127883s daemon_uptime=29412s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14707 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29412s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=882s
+06:48:43 gwmon 2.1.0 uptime=127893s daemon_uptime=29422s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14712 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29422s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=failing publishes=93 publish_fails=5 last_publish_age=892s
+06:48:53 gwmon 2.1.0 uptime=127904s daemon_uptime=29433s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14717 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29433s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=ok publishes=94 publish_fails=5 last_publish_age=2s
+06:49:04 gwmon 2.1.0 uptime=127914s daemon_uptime=29443s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14722 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29443s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=ok publishes=94 publish_fails=5 last_publish_age=13s
+06:49:15 gwmon 2.1.0 uptime=127925s daemon_uptime=29454s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14728 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29454s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=ok publishes=94 publish_fails=5 last_publish_age=24s
+06:49:25 gwmon 2.1.0 uptime=127935s daemon_uptime=29465s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14733 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29465s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=ok publishes=94 publish_fails=5 last_publish_age=34s
+06:49:36 gwmon 2.1.0 uptime=127946s daemon_uptime=29475s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14738 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29475s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=ok publishes=94 publish_fails=5 last_publish_age=45s
+06:49:46 gwmon 2.1.0 uptime=127957s daemon_uptime=29486s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14744 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29486s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=ok publishes=94 publish_fails=5 last_publish_age=55s
+06:49:57 gwmon 2.1.0 uptime=127968s daemon_uptime=29497s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14749 wd_last_feed_age=1s station=running station_pid=2433 station_uptime=29497s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=ok publishes=94 publish_fails=5 last_publish_age=67s
+06:50:09 gwmon 2.1.0 uptime=127979s daemon_uptime=29508s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14755 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29508s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=31.9C publish=ok publishes=94 publish_fails=5 last_publish_age=78s
+06:50:19 gwmon 2.1.0 uptime=127989s daemon_uptime=29518s watchdog=active wd_timeout=10s wd_interval=2s wd_feeds=14760 wd_last_feed_age=0s station=running station_pid=2433 station_uptime=29518s station_restarts=0 station_fails=0 uplinks=0 last_uplink_age=never temp=32.0C publish=ok publishes=94 publish_fails=5 last_publish_age=88s
