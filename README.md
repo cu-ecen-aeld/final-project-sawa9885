@@ -3,6 +3,7 @@
 An 8-channel LoRaWAN gateway built from a Raspberry Pi 5 and a Seeed WM1302 (Semtech SX1302) concentrator. It runs a custom Buildroot image with LoRa Basics Station, which forwards to AWS IoT Core for LoRaWAN. A gateway monitor daemon, `gwmon`, supervises the forwarder, feeds the hardware watchdog and reports health over TCP.
 
 - **Project Overview:** [Project Overview wiki page](https://github.com/cu-ecen-aeld/final-project-sawa9885/wiki/Project-Overview)
+- **Video:** [Sam Walker Final Project Video](https://github.com/cu-ecen-aeld/final-project-sawa9885/wiki/Sam-Walker-Final-Project-Video) (outline, challenges and lessons learned)
 - **Schedule:** [Project-Schedule](https://github.com/users/sawa9885/projects/1/views/1?groupedBy%5BcolumnId%5D=435387974)
 
 ## Build
@@ -17,7 +18,7 @@ cd final-project-sawa9885
 
 Under WSL2, build in the Linux filesystem (not `/mnt/c`) and drop the Windows entries from `PATH` first, since Buildroot refuses a `PATH` with spaces: `export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`.
 
-The image is `buildroot/output/images/sdcard.img`. `./clean.sh` removes the build output, and `./save_config.sh` saves `menuconfig` changes to `base_external/configs/aesd_pi5_defconfig`.
+The image is `buildroot/output/images/sdcard.img`. [docs/issue9-final-check.md](docs/issue9-final-check.md) has the check of exactly these steps from a fresh clone (issue #9), with the build time. `./clean.sh` removes the build output, and `./save_config.sh` saves `menuconfig` changes to `base_external/configs/aesd_pi5_defconfig`.
 
 - `base_external/` is the `BR2_EXTERNAL` tree: the defconfig, board scripts, the packages (`sx1302-hal`, `basicstation`, `gwmon`) and the rootfs overlay.
 - `base_external/board/pi5/genimage.cfg.in` lays the card out like Raspberry Pi OS: a 128 MB FAT32 boot partition at 8 MiB. With Buildroot's stock layout (a 32 MB FAT16 partition at sector 1) our Pi 5 did not start Linux.
@@ -259,3 +260,4 @@ Code written with LLM help carries a comment linking the shared chat sessions, f
 | #7 gwmon v2: Basics Station supervision and gateway health | https://claude.ai/code/cshk_01CSAPnyUYrsMvoThgHLYdiX7npiZ7nu2SeVLaZKVhC3Lx |
 | #10 Zero-touch gateway provisioning | https://claude.ai/code/cshk_01CSAPnw19XXA81xkir2Ei316vsRvZPpL3YkJGDGzNdFWr |
 | #12 Reset script in the sx1302-hal package, boot order and Buildroot version | https://claude.ai/code/cshk_01CSAPnyB6NYsQjh8cnLyFAbCunAiAa9mYaAhYh9v1jy8o |
+| #9 Clean-build check, final docs and demo video outline | ISSUE9_SESSION_LINK |

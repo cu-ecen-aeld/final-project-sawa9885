@@ -1,0 +1,222 @@
+# Issue #9: clean-clone build. Summary of the full build log (the raw log has 70164 lines).
+# Paths: <repo> is the fresh clone, <home> the build user's home directory.
+
+## Host, commit and times
+host: SamLaptop, Ubuntu 24.04.3 LTS, kernel 6.6.87.2-microsoft-standard-WSL2, 16 CPUs, 15 GB RAM
+directory: <home>/aesd/issue9-clean (new, empty)
+BR2 environment variables: 0
+start: 2026-11-20T20:35:26Z
+clone done: 2026-11-20T20:35:48Z
+commit: 3d2ebb05ca78f804c4cf01e1e67454e8d4d626fa
+buildroot: 2026.02.3 679b9ead7620bbf193620d1ebf56f53c1764d37a
+end: 2026-11-20T21:12:35Z
+build.sh exit status: 0
+build.log lines: 70164
+sdcard.img bytes: 411041792
+sdcard.img sha256: dd5252d81ddbec0f822b0f84fc48e6e51a4c368f2d099268ace3db5406886a00
+
+## Commands, in a new empty directory
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+git clone --recursive https://github.com/cu-ecen-aeld/final-project-sawa9885.git
+cd final-project-sawa9885
+./build.sh
+
+## First lines of the build log
+Synchronizing submodule url for 'buildroot'
+No buildroot/.config yet, loading base_external/configs/aesd_pi5_defconfig
+make: Entering directory '<repo>/buildroot'
+
+## Downloads: nothing came from a cache
+buildroot/dl after the build: 49 package directories, 661M
+'>>> <package> Downloading' steps in the log: 49
+files fetched over the network by wget in this build: 89
+
+## Packages installed to the target or the host, in build order
+  1  host-skeleton  (host)
+  2  host-m4 1.4.21 (host)
+  3  host-libtool 2.4.6 (host)
+  4  host-autoconf 2.72 (host)
+  5  host-autoconf-archive 2023.02.20 (host)
+  6  host-automake 1.16.5 (host)
+  7  host-gettext-tiny 0.3.2 (host)
+  8  host-gettext  (host)
+  9  host-pkgconf 2.3.0 (host)
+ 10  host-libzlib 1.3.2 (host)
+ 11  host-zlib  (host)
+ 12  host-util-linux 2.41.4 (host)
+ 13  host-e2fsprogs 1.47.3 (host)
+ 14  host-attr 2.5.2 (host)
+ 15  host-acl 2.3.2 (host)
+ 16  host-fakeroot 1.37.1.2 (host)
+ 17  host-makedevs  (host)
+ 18  host-libxcrypt 4.5.2 (host)
+ 19  host-mkpasswd  (host)
+ 20  skeleton-init-common  (target)
+ 21  skeleton-init-sysv  (target)
+ 22  skeleton  (target)
+ 23  toolchain-external-bootlin 2025.08-1 (target)
+ 24  toolchain-external  (target)
+ 25  toolchain  (target)
+ 26  brcmfmac_sdio-firmware-rpi 6596d332eaadd63e2413e3937715a084f61c39e2 (target)
+ 27  i2c-tools 4.4 (target)
+ 28  libzlib 1.3.2 (target)
+ 29  zlib  (target)
+ 30  libopenssl 3.6.2 (target)
+ 31  openssl  (target)
+ 32  xz 5.8.3 (target)
+ 33  kmod 33 (target)
+ 34  libxcrypt 4.5.2 (target)
+ 35  host-gperf 3.3 (host)
+ 36  util-linux-libs 2.41.4 (target)
+ 37  eudev 3.2.14 (target)
+ 38  udev  (target)
+ 39  util-linux 2.41.4 (target)
+ 40  busybox 1.37.0 (target)
+ 41  host-libopenssl 3.6.2 (host)
+ 42  host-openssl  (host)
+ 43  host-expat 2.8.1 (host)
+ 44  host-libffi 3.4.8 (host)
+ 45  host-python3 3.14.5 (host)
+ 46  ca-certificates 20260223 (target)
+ 47  libcap 2.78 (target)
+ 48  chrony 4.8 (target)
+ 49  host-dosfstools 4.2 (host)
+ 50  dropbear 2026.91 (target)
+ 51  host-eudev 3.2.14 (host)
+ 52  host-libconfuse 3.3 (host)
+ 53  host-genimage 19 (host)
+ 54  ifupdown-scripts  (target)
+ 55  initscripts  (target)
+ 56  host-bison 3.8.2 (host)
+ 57  host-flex 2.6.4 (host)
+ 58  libnl 3.11.0 (target)
+ 59  iw 6.17 (target)
+ 60  jq 1.8.1 (target)
+ 61  host-xz 5.8.3 (host)
+ 62  host-kmod 33 (host)
+ 63  libcurl 8.20.0 (target)
+ 64  libgpiod 1.6.5 (target)
+ 65  host-lzip 1.25 (host)
+ 66  host-mtools 4.0.48 (host)
+ 67  host-patchelf 0.13 (host)
+ 68  rpi-firmware 063bcab6c8a90efb0d19f69d88cbbc7ec79cab68 (target)
+ 69  urandom-scripts  (target)
+ 70  wireless-regdb 2026.05.30 (target)
+ 71  wpa_supplicant 2.11 (target)
+ 72  linux custom (target)
+ 73  basicstation v2.0.6 (target)
+ 74  gwmon 2.0.0 (target)
+ 75  sx1302-hal V2.1.0 (target)
+
+## Warnings and errors
+lines with 'warning:': 261
+lines with 'error:' or 'Error ': 3
+5760:make[2]: [Makefile:379: libext2fs.dvi] Error 127 (ignored)
+5764:make[2]: [Makefile:363: install-doc-libs] Error 1 (ignored)
+5767:make[2]: [Makefile:365: install-doc-libs] Error 1 (ignored)
+
+## Last lines of the build log
+	8193, 24577, 40961, 57345, 73729, 204801, 221185
+
+Allocating group tables:  0/32     done                            
+Writing inode tables:  0/32     done                            
+Creating journal (8192 blocks): done
+Copying files into the device: done
+Writing superblocks and filesystem accounting information:  0/32     done
+
+ln -sf rootfs.ext2 <repo>/buildroot/output/images/rootfs.ext4
+ln -snf <repo>/buildroot/output/host/aarch64-buildroot-linux-gnu/sysroot <repo>/buildroot/output/staging
+>>>   Executing post-image script <repo>/base_external/board/pi5/post-image.sh
+INFO: cmd: "mkdir -p "<repo>/buildroot/output/build/genimage.tmp"" (stderr):
+INFO: cmd: "rm -rf "<repo>/buildroot/output/build/genimage.tmp"/*" (stderr):
+INFO: cmd: "mkdir -p "<repo>/buildroot/output/build/genimage.tmp"" (stderr):
+INFO: cmd: "cp -a "/tmp/tmp.4d9WKBCUZF" "<repo>/buildroot/output/build/genimage.tmp/root"" (stderr):
+INFO: cmd: "mkdir -p "<repo>/buildroot/output/images"" (stderr):
+INFO: vfat(boot.vfat): cmd: "mkdosfs -F 32 -n BOOT -h 16384  '<repo>/buildroot/output/images/boot.vfat'" (stderr):
+INFO: vfat(boot.vfat): adding file 'bcm2712-d-rpi-5-b.dtb' as 'bcm2712-d-rpi-5-b.dtb' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/bcm2712-d-rpi-5-b.dtb' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'bcm2712-rpi-5-b.dtb' as 'bcm2712-rpi-5-b.dtb' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/bcm2712-rpi-5-b.dtb' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'bcm2712-rpi-500.dtb' as 'bcm2712-rpi-500.dtb' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/bcm2712-rpi-500.dtb' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'bcm2712d0-rpi-5-b.dtb' as 'bcm2712d0-rpi-5-b.dtb' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/bcm2712d0-rpi-5-b.dtb' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/cmdline.txt' as 'rpi-firmware/cmdline.txt' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/rpi-firmware/cmdline.txt' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/config.txt' as 'rpi-firmware/config.txt' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/rpi-firmware/config.txt' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'rpi-firmware/overlays' as 'rpi-firmware/overlays' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/rpi-firmware/overlays' '::'" (stderr):
+INFO: vfat(boot.vfat): adding file 'Image' as 'Image' ...
+INFO: vfat(boot.vfat): cmd: "MTOOLS_SKIP_CHECK=1 mcopy -sp -i '<repo>/buildroot/output/images/boot.vfat' '<repo>/buildroot/output/images/Image' '::'" (stderr):
+INFO: hdimage(sdcard.img): adding primary partition 'boot' (in MBR) from 'boot.vfat' ...
+INFO: hdimage(sdcard.img): adding primary partition 'rootfs' (in MBR) from 'rootfs.ext4' ...
+INFO: hdimage(sdcard.img): adding primary partition '[MBR]' ...
+INFO: hdimage(sdcard.img): writing MBR
+INFO: cmd: "rm -rf "<repo>/buildroot/output/build/genimage.tmp/"" (stderr):
+make: Leaving directory '<repo>/buildroot'
+Image: buildroot/output/images/sdcard.img
+
+## Images
+24365568   2026-11-20T21:12:06Z  Image
+78740      2026-11-20T21:12:06Z  bcm2712-d-rpi-5-b.dtb
+78744      2026-11-20T21:12:06Z  bcm2712-rpi-5-b.dtb
+78700      2026-11-20T21:12:06Z  bcm2712-rpi-500.dtb
+78748      2026-11-20T21:12:06Z  bcm2712d0-rpi-5-b.dtb
+134217728  2026-11-20T21:12:34Z  boot.vfat
+1128       2026-11-20T21:12:34Z  genimage.cfg
+268435456  2026-11-20T21:12:34Z  rootfs.ext2
+11         2026-11-20T21:12:34Z  rootfs.ext4
+4096       2026-11-20T20:49:06Z  rpi-firmware
+411041792  2026-11-20T21:12:35Z  sdcard.img
+
+dd5252d81ddbec0f822b0f84fc48e6e51a4c368f2d099268ace3db5406886a00  sdcard.img
+40c9355f7aeffd1b8542825020721171f9295e8525aaadf5f21a1ad8c84d9a0f  rootfs.ext2
+00a15d911d0c9c8b2517655a2afb179a8e3a793c3020426d2e3ecba4cbe63058  boot.vfat
+
+## The clone after the build
+git status --short (tracked files changed or untracked files not ignored): 0 lines
+ 679b9ead7620bbf193620d1ebf56f53c1764d37a buildroot (2026.02.3)
+git -C buildroot status --short: 0 lines
+
+## Root filesystem: init scripts
+S01seedrng S01syslogd S02klogd S02sysctl S10udevd S11modules S35provision S40network S41ifplugd S41wifi S45gateway-provision S49chronyd S50crond S50dropbear S99gwmon rcK rcS 
+
+## Root filesystem: this project's files (mode, size, SHA-256 from rootfs.ext2 via debugfs)
+/usr/bin/gwmon                        0755    27056 192e8d24d283ceae55c83a33379b0bb2ed91055c3b6c8f1d5e0cd3e00a603523
+/usr/bin/station                      0755   985880 63f7d6e1b52d3204e6d3c59ea65174e17db16f3cdd412ab7cdc817b40ea65f6e
+/usr/bin/station-run.sh               0755     4098 b15fbe4b9d6ecc528f1813988f4f757096bd6cccd9e9683c123fe9c092b4c4d3
+/usr/bin/util_chip_id                 0755   171304 8edbfa7581e2e9d9dc84b2b573e9ddadb7c5db90ebecd01bfe0f2433df103266
+/usr/bin/lora_pkt_fwd                 0755   257528 3a34572a71d114de996233feefa53b44a8692cadf563b3524204b62117446fb8
+/usr/bin/reset_lgw.sh                 0755     1023 d79128e3902ea97df65d2771cf63482f15881c5320258fb584c936b83c668baa
+/usr/bin/wm1302-reset.sh              0755     1804 e4d2df669962881002efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d
+/usr/sbin/gateway-provision           0755     9018 89b9b70e8343afa1c0e1747eced5a7f8c99002f9cf293cc6c133a43f4c876f21
+/etc/init.d/S35provision              0755     3422 905b7b466a0bff1622d17f2f1271477062a6701df9a280ecd0e4afb6bdf57ad6
+/etc/init.d/S41ifplugd                0755     2072 fcba83301356d4c300335f7489c5a024a046170324c7bd2eacd926fe3631409f
+/etc/init.d/S41wifi                   0755     2785 6737e1ac366dd567cd1b608e503c6497936ad668bd43f781f88dc4a04e1f7205
+/etc/init.d/S45gateway-provision      0755     1673 b0393cd793b0213897a035edf8238ad6318371bb3db887e6febb346c59065c9a
+/etc/init.d/S99gwmon                  0755     3162 bc0fb04ba117f24dbf095ff7512cd813aa6d57ed4875a147136304d8e0ac26cf
+/etc/station/station.conf             0644     4351 130a02962d677cc8215a0bbeae1ef590b3b3558edb505de15600244290c941f0
+/usr/bin/curl                         0755   215192 363dae09028d088c8c0d5c8712881613a81fdb26d15a74afb0bc2cccae3a4915
+/usr/bin/jq                           0755    26400 e9ef0958b35b310dc7f3ec9cc655bdce225ede6ea2b70fb5bc1ed89b45aac160
+
+wm1302-reset.sh in the repo: e4d2df669962881002efd794eebfa3fd5bb9891480987f3a62322c0a252b4a3d
+
+## packages-file-list.txt: files owned by this project's packages
+basicstation,./usr/bin/station
+basicstation,./usr/bin/station-run.sh
+basicstation,./etc/station/station.conf
+basicstation,./etc/station/version.txt
+gwmon,./usr/bin/gwmon
+gwmon,./etc/init.d/S99gwmon
+sx1302-hal,./usr/bin/lora_pkt_fwd
+sx1302-hal,./usr/bin/util_chip_id
+sx1302-hal,./usr/bin/reset_lgw.sh
+sx1302-hal,./usr/bin/wm1302-reset.sh
+sx1302-hal,./etc/lora_pkt_fwd/global_conf.json
+
+## Boot partition (boot.vfat)
+bcm2712-d-rpi-5-b.dtb bcm2712-rpi-5-b.dtb bcm2712-rpi-500.dtb bcm2712d0-rpi-5-b.dtb cmdline.txt config.txt overlays/ Image 
+
+## No private key in the repo
+git grep exit status: 1 (1 = no match)

@@ -1,0 +1,13 @@
+## make -C gwmon check (gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0)
+RESULT: all checks passed
+exit status: 0
+
+## python3 -m unittest discover -s provisioning/test (Python 3.12.3, jq: jq-1.8.1 from buildroot/output/host/bin after 'make host-jq')
+----------------------------------------------------------------------
+Ran 32 tests in 13.170s
+
+OK
+exit status: 0
+
+gwmon check: 79 lines start with PASS, 0 with FAIL
+make host-jq did not change sdcard.img (same SHA-256 before and after)
